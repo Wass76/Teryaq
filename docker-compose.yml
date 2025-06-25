@@ -3,27 +3,22 @@ version: '3.8'
 
 # Database service
 services:
-  treadx-db:
+  teryaq-db:
     image: postgres:latest
-    container_name: treadx-db
+    container_name: teryaq-db
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: password
-      POSTGRES_DB: treadx
+      POSTGRES_DB: teryaq
       PGDATA: /var/lib/postgresql/data # Internal path where Postgres stores data
     ports:
       - "5432:5432" # Maps container port 5432 to host port 5432 (optional for direct access)
     networks:
-      - treadx-net
+      - teryaq-net
     restart: unless-stopped
     volumes:
-      # This mount for /docker-entrypoint-initdb.d is for *initial* database setup,
-      # typically for a V1 script that sets up the very first database state
-      # or creates the database itself if not handled by environment variables.
-      # Flyway will handle subsequent schema changes.
-      - ./src/main/resources/db/migration:/docker-entrypoint-initdb.d
       # Named Volume for Persistent Database Data (CRUCIAL FOR DATA PERSISTENCE & RESTORATION)
-      - treadx_pg_data:/var/lib/postgresql/data # Maps internal PGDATA to a named Docker volume
+      - teryaq_pg_data:/var/lib/postgresql/data # Maps internal PGDATA to a named Docker volume
     healthcheck: # IMPORTANT: This ensures the DB is truly ready before apps connect
       test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
       interval: 5s
@@ -32,33 +27,33 @@ services:
       start_period: 10s # Give the DB some initial time to come up
 
   # application service
-  treadx-app:
+  teryaq-app:
     build: . # Builds the Docker image from the Dockerfile in the current directory
-    image: treadx-app # Name for your built Docker image
+    image: teryaq-app # Name for your built Docker image
     depends_on:
-      # treadx-app will start ONLY AFTER treadx-db is healthy
-      treadx-db:
+      # teryaq-app will start ONLY AFTER teryaq-db is healthy
+      teryaq-db:
         condition: service_healthy
-    container_name: treadx-backend
+    container_name: teryaq-backend
     ports:
-      - "9003:9003" # Maps container port 9003 to host port 9003
+      - "3000:3000" # Maps container port 3000 to host port 3000
     environment:
-      # Database connection details, using the Docker Compose service name 'treadx-db' as the hostname
-      SPRING_DATASOURCE_URL: jdbc:postgresql://treadx-db:5432/treadx
+      # Database connection details, using the Docker Compose service name 'teryaq-db' as the hostname
+      SPRING_DATASOURCE_URL: jdbc:postgresql://teryaq-db:5432/teryaq
       SPRING_DATASOURCE_USERNAME: postgres
       SPRING_DATASOURCE_PASSWORD: password
-      SPRING_DATASOURCE_DATABASE: treadx
+      SPRING_DATASOURCE_DATABASE: teryaq
       # Ensure Flyway is enabled (though usually auto-detected)
       SPRING_FLYWAY_ENABLED: "true"
       SPRING_FLYWAY_LOCATIONS: "classpath:/db/migration"
       SPRING_FLYWAY_BASELINE_ON_MIGRATE: "true"
     networks:
-      - treadx-net # Connects to the shared network
+      - teryaq-net # Connects to the shared network
 
 networks:
-  treadx-net:
-    external: true # Assumes this network is created manually (e.g., docker network create treadx-net)
+  teryaq-net:
+    driver: bridge
 
 # Define the named volume for data persistence
 volumes:
-  treadx_pg_data: # This is the named volume that Docker manages on your host
+  teryaq_pg_data: # This is the named volume that Docker manages on your host
