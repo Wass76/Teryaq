@@ -1,0 +1,1461 @@
+{
+  "info": {
+    "_postman_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+    "name": "TreadX API Collection",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Postman collection generated from TreadX Spring Boot controllers. Remember to set the 'baseUrl' and 'jwt_token' environment variables."
+  },
+  "item": [
+    {
+      "name": "User Management",
+      "description": "APIs for managing system users and their information",
+      "item": [
+        {
+          "name": "User Login",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"username\": \"testuser\",\n    \"password\": \"password123\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/users/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "users",
+                "login"
+              ]
+            },
+            "description": "Authenticates a user and returns a JWT token"
+          },
+          "response": []
+        },
+        {
+          "name": "Get All Users",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/users",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "users"
+              ]
+            },
+            "description": "Retrieves a list of all users in the system. Requires PLATFORM_ADMIN role."
+          },
+          "response": []
+        },
+        {
+          "name": "Get User by ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/users/{{userId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "users",
+                "{{userId}}"
+              ]
+            },
+            "description": "Retrieves a specific user by their ID. Requires PLATFORM_ADMIN role or ownership."
+          },
+          "response": []
+        },
+        {
+          "name": "Create New User",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"username\": \"newuser\",\n    \"email\": \"newuser@example.com\",\n    \"password\": \"securepassword\",\n    \"firstName\": \"John\",\n    \"lastName\": \"Doe\",\n    \"roleIds\": [],\n    \"additionalPermissionIds\": []\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/users",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "users"
+              ]
+            },
+            "description": "Creates a new user in the system. Requires PLATFORM_ADMIN or SALES_MANAGER role."
+          },
+          "response": []
+        },
+        {
+          "name": "Update User",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"email\": \"updated.user@example.com\",\n    \"firstName\": \"Jane\",\n    \"lastName\": \"Doe\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/users/{{userId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "users",
+                "{{userId}}"
+              ]
+            },
+            "description": "Updates an existing user's information. Requires PLATFORM_ADMIN role or ownership."
+          },
+          "response": []
+        },
+        {
+          "name": "Delete User",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/users/{{userId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "users",
+                "{{userId}}"
+              ]
+            },
+            "description": "Deletes a user from the system. Requires PLATFORM_ADMIN role."
+          },
+          "response": []
+        },
+        {
+          "name": "Update User Permissions",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "[\n    101,\n    102\n]"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/users/{{userId}}/permissions",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "users",
+                "{{userId}}",
+                "permissions"
+              ]
+            },
+            "description": "Updates the additional permissions for a user. Requires PLATFORM_ADMIN role."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Current User",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/users/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "users",
+                "me"
+              ]
+            },
+            "description": "Retrieves the currently authenticated user's information."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Role Management",
+      "description": "APIs for managing system roles and permissions",
+      "item": [
+        {
+          "name": "Get All Roles",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/roles",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "roles"
+              ]
+            },
+            "description": "Retrieves a list of all roles in the system. Requires PLATFORM_ADMIN role."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Role by ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/roles/{{roleId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "roles",
+                "{{roleId}}"
+              ]
+            },
+            "description": "Retrieves a specific role by its ID. Requires PLATFORM_ADMIN role."
+          },
+          "response": []
+        },
+        {
+          "name": "Create New Role",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"name\": \"NEW_ROLE\",\n    \"description\": \"A description for the new role\",\n    \"permissionIds\": []\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/roles",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "roles"
+              ]
+            },
+            "description": "Creates a new role in the system. Requires PLATFORM_ADMIN role."
+          },
+          "response": []
+        },
+        {
+          "name": "Update Role",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"name\": \"UPDATED_ROLE\",\n    \"description\": \"An updated description for the role\",\n    \"permissionIds\": []\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/roles/{{roleId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "roles",
+                "{{roleId}}"
+              ]
+            },
+            "description": "Updates an existing role. Requires PLATFORM_ADMIN role."
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Role",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/roles/{{roleId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "roles",
+                "{{roleId}}"
+              ]
+            },
+            "description": "Deletes a role from the system. Requires PLATFORM_ADMIN role."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Role Permissions",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/roles/{{roleId}}/permissions",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "roles",
+                "{{roleId}}",
+                "permissions"
+              ]
+            },
+            "description": "Retrieves all permissions associated with a specific role. Requires PLATFORM_ADMIN role."
+          },
+          "response": []
+        },
+        {
+          "name": "Update Role Permissions",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "[\n    201,\n    202\n]"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/roles/{{roleId}}/permissions",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "roles",
+                "{{roleId}}",
+                "permissions"
+              ]
+            },
+            "description": "Updates the permissions associated with a specific role. Requires PLATFORM_ADMIN role."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Address Management",
+      "description": "APIs for managing addresses and location data",
+      "item": [
+        {
+          "name": "Get All Addresses",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/addresses",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "addresses"
+              ]
+            },
+            "description": "Retrieves a list of all addresses in the system."
+          },
+          "response": []
+        },
+        {
+          "name": "Get All Countries",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/addresses/countries",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "addresses",
+                "countries"
+              ]
+            },
+            "description": "Retrieves a list of all countries available in the system."
+          },
+          "response": []
+        },
+        {
+          "name": "Get All Base Countries",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/addresses/base/countries",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "addresses",
+                "base",
+                "countries"
+              ]
+            },
+            "description": "Retrieves a list of all base countries from the database."
+          },
+          "response": []
+        },
+        {
+          "name": "Get All Base States",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/addresses/base/states",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "addresses",
+                "base",
+                "states"
+              ]
+            },
+            "description": "Retrieves a list of all base states from the database."
+          },
+          "response": []
+        },
+        {
+          "name": "Get All Base Cities",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/addresses/base/cities",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "addresses",
+                "base",
+                "cities"
+              ]
+            },
+            "description": "Retrieves a list of all base cities from the database."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Base Cities by Province",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/addresses/base/provinces/{{provinceId}}/cities",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "addresses",
+                "base",
+                "provinces",
+                "{{provinceId}}",
+                "cities"
+              ]
+            },
+            "description": "Retrieves a list of all base cities for a specific province/state."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Base Cities by Country",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/addresses/base/countries/{{countryId}}/cities",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "addresses",
+                "base",
+                "countries",
+                "{{countryId}}",
+                "cities"
+              ]
+            },
+            "description": "Retrieves a list of all base cities for a specific country."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Base Provinces by Country",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/addresses/base/countries/{{countryId}}/provinces",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "addresses",
+                "base",
+                "countries",
+                "{{countryId}}",
+                "provinces"
+              ]
+            },
+            "description": "Retrieves a list of all base provinces/states for a specific country."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Provinces by Country",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/addresses/countries/{{countryId}}/provinces",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "addresses",
+                "countries",
+                "{{countryId}}",
+                "provinces"
+              ]
+            },
+            "description": "Retrieves a list of all provinces/states for a specific country."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Cities by Province",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/addresses/provinces/{{provinceId}}/cities",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "addresses",
+                "provinces",
+                "{{provinceId}}",
+                "cities"
+              ]
+            },
+            "description": "Retrieves a list of all cities for a specific province/state."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Cities by Country",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/addresses/countries/{{countryId}}/cities",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "addresses",
+                "countries",
+                "{{countryId}}",
+                "cities"
+              ]
+            },
+            "description": "Retrieves a list of all cities for a specific country."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Contacts",
+      "description": "Contacts management APIs",
+      "item": [
+        {
+          "name": "Get All Contacts",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/contacts?page=0&size=10&sortBy=createdAt&direction=desc",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "contacts"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "0",
+                  "description": "Page number (0-based)"
+                },
+                {
+                  "key": "size",
+                  "value": "10",
+                  "description": "Number of items per page"
+                },
+                {
+                  "key": "sortBy",
+                  "value": "createdAt",
+                  "description": "Sort field"
+                },
+                {
+                  "key": "direction",
+                  "value": "desc",
+                  "description": "Sort direction (asc/desc)"
+                }
+              ]
+            },
+            "description": "Retrieves a paginated list of all contacts in the system. Requires SALES_MANAGER or SALES_AGENT role."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Contact by ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/contacts/{{contactId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "contacts",
+                "{{contactId}}"
+              ]
+            },
+            "description": "Retrieves a specific contact by its ID. Requires SALES_MANAGER role or ownership of the contact."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Contacts by Dealer",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/contacts/dealer/{{dealerId}}?page=0&size=10&sortBy=createdAt&direction=desc",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "contacts",
+                "dealer",
+                "{{dealerId}}"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "0",
+                  "description": "Page number (0-based)"
+                },
+                {
+                  "key": "size",
+                  "value": "10",
+                  "description": "Number of items per page"
+                },
+                {
+                  "key": "sortBy",
+                  "value": "createdAt",
+                  "description": "Sort field"
+                },
+                {
+                  "key": "direction",
+                  "value": "desc",
+                  "description": "Sort direction (asc/desc)"
+                }
+              ]
+            },
+            "description": "Retrieves a paginated list of contacts for a specific dealer. Requires SALES_MANAGER or SALES_AGENT role."
+          },
+          "response": []
+        },
+        {
+          "name": "Create New Contact",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"firstName\": \"Contact\",\n    \"lastName\": \"Person\",\n    \"email\": \"contact@example.com\",\n    \"phone\": \"+1234567890\",\n    \"dealerId\": 1\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/contacts",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "contacts"
+              ]
+            },
+            "description": "Creates a new contact in the system. Requires SALES_MANAGER or SALES_AGENT role."
+          },
+          "response": []
+        },
+        {
+          "name": "Update Contact",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"firstName\": \"UpdatedContact\",\n    \"lastName\": \"Person\",\n    \"email\": \"updated.contact@example.com\",\n    \"phone\": \"+1987654321\",\n    \"dealerId\": 1\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/contacts/{{contactId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "contacts",
+                "{{contactId}}"
+              ]
+            },
+            "description": "Updates an existing contact. Requires SALES_MANAGER role or ownership of the contact."
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Contact",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/contacts/{{contactId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "contacts",
+                "{{contactId}}"
+              ]
+            },
+            "description": "Deletes a contact from the system. Requires SALES_MANAGER role or ownership of the contact."
+          },
+          "response": []
+        },
+        {
+          "name": "Convert to Dealer",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"name\": \"Converted Dealer Name\",\n    \"addressId\": 1,\n    \"contactPersonId\": 1\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/contacts/{{contactId}}/convert-to-dealer",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "contacts",
+                "{{contactId}}",
+                "convert-to-dealer"
+              ]
+            },
+            "description": "Converts a contact to a dealer. Requires SALES_MANAGER or SALES_AGENT role and appropriate access."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Dealers",
+      "description": "Dealers management APIs",
+      "item": [
+        {
+          "name": "Get All Dealers",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/dealers?page=0&size=10&sortBy=createdAt&direction=desc",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "dealers"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "0",
+                  "description": "Page number (0-based)"
+                },
+                {
+                  "key": "size",
+                  "value": "10",
+                  "description": "Number of items per page"
+                },
+                {
+                  "key": "sortBy",
+                  "value": "createdAt",
+                  "description": "Sort field"
+                },
+                {
+                  "key": "direction",
+                  "value": "desc",
+                  "description": "Sort direction (asc/desc)"
+                }
+              ]
+            },
+            "description": "Retrieves a paginated list of all dealers in the system. Requires SALES_MANAGER or SALES_AGENT role."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Dealer by ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/dealers/{{dealerId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "dealers",
+                "{{dealerId}}"
+              ]
+            },
+            "description": "Retrieves a specific dealer by its ID. Requires SALES_MANAGER role or ownership of the dealer."
+          },
+          "response": []
+        },
+        {
+          "name": "Create New Dealer",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"name\": \"New Dealer Co.\",\n    \"addressId\": 1,\n    \"contactPersonId\": 1\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/dealers",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "dealers"
+              ]
+            },
+            "description": "Creates a new dealer in the system. Requires SALES_MANAGER role."
+          },
+          "response": []
+        },
+        {
+          "name": "Update Dealer",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"name\": \"Updated Dealer Name\",\n    \"addressId\": 1,\n    \"contactPersonId\": 1\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/dealers/{{dealerId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "dealers",
+                "{{dealerId}}"
+              ]
+            },
+            "description": "Updates an existing dealer. Requires SALES_MANAGER role or ownership of the dealer."
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Dealer",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/dealers/{{dealerId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "dealers",
+                "{{dealerId}}"
+              ]
+            },
+            "description": "Deletes a dealer from the system. Requires SALES_MANAGER role or ownership of the dealer."
+          },
+          "response": []
+        },
+        {
+          "name": "Search Dealers",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/dealers/search?query=example&page=0&size=10&sortBy=createdAt&direction=desc",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "dealers",
+                "search"
+              ],
+              "query": [
+                {
+                  "key": "query",
+                  "value": "example",
+                  "description": "Search query"
+                },
+                {
+                  "key": "page",
+                  "value": "0",
+                  "description": "Page number (0-based)"
+                },
+                {
+                  "key": "size",
+                  "value": "10",
+                  "description": "Number of items per page"
+                },
+                {
+                  "key": "sortBy",
+                  "value": "createdAt",
+                  "description": "Sort field"
+                },
+                {
+                  "key": "direction",
+                  "value": "desc",
+                  "description": "Sort direction (asc/desc)"
+                }
+              ]
+            },
+            "description": "Searches for dealers based on a query string. Requires SALES_MANAGER or SALES_AGENT role."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Leads",
+      "description": "Leads management APIs",
+      "item": [
+        {
+          "name": "Get All Leads",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/leads?page=0&size=10&sortBy=createdAt&direction=desc",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "leads"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "0",
+                  "description": "Page number (0-based)"
+                },
+                {
+                  "key": "size",
+                  "value": "10",
+                  "description": "Number of items per page"
+                },
+                {
+                  "key": "sortBy",
+                  "value": "createdAt",
+                  "description": "Sort field"
+                },
+                {
+                  "key": "direction",
+                  "value": "desc",
+                  "description": "Sort direction (asc/desc)"
+                }
+              ]
+            },
+            "description": "Retrieves a paginated list of all leads in the system. Requires SALES_MANAGER or SALES_AGENT role."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Lead by ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/leads/{{leadId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "leads",
+                "{{leadId}}"
+              ]
+            },
+            "description": "Retrieves a specific lead by its ID. Requires SALES_MANAGER role or ownership of the lead."
+          },
+          "response": []
+        },
+        {
+          "name": "Create New Lead",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"name\": \"New Lead Name\",\n    \"email\": \"lead@example.com\",\n    \"phone\": \"+1122334455\",\n    \"status\": \"NEW\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/leads",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "leads"
+              ]
+            },
+            "description": "Creates a new lead in the system. Requires SALES_MANAGER or SALES_AGENT role."
+          },
+          "response": []
+        },
+        {
+          "name": "Update Lead",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"name\": \"Updated Lead Name\",\n    \"email\": \"updated.lead@example.com\",\n    \"phone\": \"+1554433221\",\n    \"status\": \"QUALIFIED\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/leads/{{leadId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "leads",
+                "{{leadId}}"
+              ]
+            },
+            "description": "Updates an existing lead. Requires SALES_MANAGER role or ownership of the lead."
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Lead",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/leads/{{leadId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "leads",
+                "{{leadId}}"
+              ]
+            },
+            "description": "Deletes a lead from the system. Requires SALES_MANAGER role or ownership of the lead."
+          },
+          "response": []
+        },
+        {
+          "name": "Convert Lead to Contact",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"firstName\": \"Converted\",\n    \"lastName\": \"FromLead\",\n    \"email\": \"converted.from.lead@example.com\",\n    \"phone\": \"+1112223333\",\n    \"dealerId\": 1\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/leads/{{leadId}}/convert-to-contact",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "leads",
+                "{{leadId}}",
+                "convert-to-contact"
+              ]
+            },
+            "description": "Converts a lead to a contact. Requires SALES_MANAGER or SALES_AGENT role."
+          },
+          "response": []
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080",
+      "type": "string",
+      "description": "The base URL of your API (e.g., http://localhost:8080)"
+    },
+    {
+      "key": "jwt_token",
+      "value": "YOUR_JWT_TOKEN_HERE",
+      "type": "string",
+      "description": "JWT token obtained from the /api/v1/users/login endpoint for authenticated requests."
+    },
+    {
+      "key": "userId",
+      "value": "1",
+      "type": "string",
+      "description": "Placeholder for User ID"
+    },
+    {
+      "key": "roleId",
+      "value": "1",
+      "type": "string",
+      "description": "Placeholder for Role ID"
+    },
+    {
+      "key": "countryId",
+      "value": "1",
+      "type": "string",
+      "description": "Placeholder for Country ID"
+    },
+    {
+      "key": "provinceId",
+      "value": "1",
+      "type": "string",
+      "description": "Placeholder for Province ID"
+    },
+    {
+      "key": "contactId",
+      "value": "1",
+      "type": "string",
+      "description": "Placeholder for Contact ID"
+    },
+    {
+      "key": "dealerId",
+      "value": "1",
+      "type": "string",
+      "description": "Placeholder for Dealer ID"
+    },
+    {
+      "key": "leadId",
+      "value": "1",
+      "type": "string",
+      "description": "Placeholder for Lead ID"
+    }
+  ]
+}

@@ -1,0 +1,1137 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "TreadX API Documentation",
+    "version": "1.0.0",
+    "description": "API documentation for TreadX application"
+  },
+  "servers": [
+    {
+      "url": "/api/v1",
+      "description": "API v1"
+    }
+  ],
+  "paths": {
+    "/users": {
+      "post": {
+        "tags": ["User Management"],
+        "summary": "Create new user",
+        "description": "Creates a new user in the system. Requires PLATFORM_ADMIN or SALES_MANAGER role.",
+        "security": [
+          {
+            "bearerAuth": ["PLATFORM_ADMIN", "SALES_MANAGER"]
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UserCreateRequestDTO"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "User created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserResponseDTO"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input data"
+          },
+          "403": {
+            "description": "Access denied - insufficient permissions"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    },
+    "/users/{id}": {
+      "delete": {
+        "tags": ["User Management"],
+        "summary": "Delete user",
+        "description": "Deletes a user from the system. Requires PLATFORM_ADMIN role.",
+        "security": [
+          {
+            "bearerAuth": ["PLATFORM_ADMIN"]
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "ID of the user to delete",
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "User deleted successfully"
+          },
+          "403": {
+            "description": "Access denied - insufficient permissions"
+          },
+          "404": {
+            "description": "User not found"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    },
+    "/roles": {
+      "get": {
+        "tags": ["Role Management"],
+        "summary": "Get all roles",
+        "description": "Retrieves a list of all roles in the system. Requires PLATFORM_ADMIN role.",
+        "security": [
+          {
+            "bearerAuth": ["PLATFORM_ADMIN"]
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfully retrieved all roles",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/RoleResponseDTO"
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Access denied - insufficient permissions"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    },
+    "/roles/{id}": {
+      "delete": {
+        "tags": ["Role Management"],
+        "summary": "Delete role",
+        "description": "Deletes a role from the system. Requires PLATFORM_ADMIN role.",
+        "security": [
+          {
+            "bearerAuth": ["PLATFORM_ADMIN"]
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "ID of the role",
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successfully deleted the role"
+          },
+          "404": {
+            "description": "Role not found"
+          },
+          "403": {
+            "description": "Access denied - insufficient permissions"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    },
+    "/roles/{id}/permissions": {
+      "get": {
+        "tags": ["Role Management"],
+        "summary": "Get role permissions",
+        "description": "Retrieves all permissions associated with a specific role. Requires PLATFORM_ADMIN role.",
+        "security": [
+          {
+            "bearerAuth": ["PLATFORM_ADMIN"]
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "ID of the role",
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfully retrieved role permissions",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Role not found"
+          },
+          "403": {
+            "description": "Access denied - insufficient permissions"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    },
+    "/leads": {
+      "get": {
+        "tags": ["Leads"],
+        "summary": "Get all leads",
+        "description": "Retrieves a paginated list of all leads in the system. Requires SALES_MANAGER or SALES_AGENT role.",
+        "security": [
+          {
+            "bearerAuth": ["SALES_MANAGER", "SALES_AGENT"]
+          }
+        ],
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "description": "Page number (0-based)",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 0
+            }
+          },
+          {
+            "name": "size",
+            "in": "query",
+            "description": "Number of items per page",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 10
+            }
+          },
+          {
+            "name": "sortBy",
+            "in": "query",
+            "description": "Sort field",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "createdAt"
+            }
+          },
+          {
+            "name": "direction",
+            "in": "query",
+            "description": "Sort direction (asc/desc)",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "desc"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfully retrieved leads",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Page"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Access denied - insufficient permissions"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      },
+      "post": {
+        "tags": ["Leads"],
+        "summary": "Create new lead",
+        "description": "Creates a new lead in the system. Requires SALES_MANAGER or SALES_AGENT role.",
+        "security": [
+          {
+            "bearerAuth": ["SALES_MANAGER", "SALES_AGENT"]
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LeadsRequestDTO"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successfully created the lead",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LeadsResponseDTO"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input data"
+          },
+          "403": {
+            "description": "Access denied - insufficient permissions"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    },
+    "/leads/{id}": {
+      "put": {
+        "tags": ["Leads"],
+        "summary": "Update lead",
+        "description": "Updates an existing lead. Requires SALES_MANAGER role or ownership of the lead.",
+        "security": [
+          {
+            "bearerAuth": ["SALES_MANAGER"]
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "ID of the lead",
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LeadsRequestDTO"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successfully updated the lead",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LeadsResponseDTO"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Lead not found"
+          },
+          "400": {
+            "description": "Invalid input data"
+          },
+          "403": {
+            "description": "Access denied - insufficient permissions"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      },
+      "delete": {
+        "tags": ["Leads"],
+        "summary": "Delete lead",
+        "description": "Deletes a lead from the system. Requires SALES_MANAGER role or ownership of the lead.",
+        "security": [
+          {
+            "bearerAuth": ["SALES_MANAGER"]
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "ID of the lead",
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successfully deleted the lead"
+          },
+          "404": {
+            "description": "Lead not found"
+          },
+          "403": {
+            "description": "Access denied - insufficient permissions"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    },
+    "/leads/{id}/convert-to-contact": {
+      "post": {
+        "tags": ["Leads"],
+        "summary": "Convert lead to contact",
+        "description": "Converts a lead to a contact. Requires SALES_MANAGER or SALES_AGENT role.",
+        "security": [
+          {
+            "bearerAuth": ["SALES_MANAGER", "SALES_AGENT"]
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "ID of the lead",
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DealerContactRequestDTO"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successfully converted lead to contact",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DealerContactResponseDTO"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Lead not found"
+          },
+          "400": {
+            "description": "Invalid conversion data"
+          },
+          "403": {
+            "description": "Access denied - insufficient permissions"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    },
+    "/dealers": {
+      "get": {
+        "tags": ["Dealers"],
+        "summary": "Get all dealers",
+        "description": "Retrieves a paginated list of all dealers in the system. Requires SALES_MANAGER or SALES_AGENT role.",
+        "security": [
+          {
+            "bearerAuth": ["SALES_MANAGER", "SALES_AGENT"]
+          }
+        ],
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "description": "Page number (0-based)",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 0
+            }
+          },
+          {
+            "name": "size",
+            "in": "query",
+            "description": "Number of items per page",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 10
+            }
+          },
+          {
+            "name": "sortBy",
+            "in": "query",
+            "description": "Sort field",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "createdAt"
+            }
+          },
+          {
+            "name": "direction",
+            "in": "query",
+            "description": "Sort direction (asc/desc)",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "desc"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfully retrieved dealers",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Page"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Access denied - insufficient permissions"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      },
+      "post": {
+        "tags": ["Dealers"],
+        "summary": "Create new dealer",
+        "description": "Creates a new dealer in the system. Requires SALES_MANAGER role.",
+        "security": [
+          {
+            "bearerAuth": ["SALES_MANAGER"]
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DealerRequestDTO"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successfully created the dealer",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DealerResponseDTO"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input data"
+          },
+          "403": {
+            "description": "Access denied - insufficient permissions"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    },
+    "/dealers/{id}": {
+      "delete": {
+        "tags": ["Dealers"],
+        "summary": "Delete dealer",
+        "description": "Deletes a dealer from the system. Requires SALES_MANAGER role or ownership of the dealer.",
+        "security": [
+          {
+            "bearerAuth": ["SALES_MANAGER"]
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "ID of the dealer",
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successfully deleted the dealer"
+          },
+          "404": {
+            "description": "Dealer not found"
+          },
+          "403": {
+            "description": "Access denied - insufficient permissions"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    },
+    "/contacts": {
+      "get": {
+        "tags": ["Contacts"],
+        "summary": "Get all contacts",
+        "description": "Retrieves a paginated list of all contacts in the system. Requires SALES_MANAGER or SALES_AGENT role.",
+        "security": [
+          {
+            "bearerAuth": ["SALES_MANAGER", "SALES_AGENT"]
+          }
+        ],
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "description": "Page number (0-based)",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 0
+            }
+          },
+          {
+            "name": "size",
+            "in": "query",
+            "description": "Number of items per page",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 10
+            }
+          },
+          {
+            "name": "sortBy",
+            "in": "query",
+            "description": "Sort field",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "createdAt"
+            }
+          },
+          {
+            "name": "direction",
+            "in": "query",
+            "description": "Sort direction (asc/desc)",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "desc"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfully retrieved contacts",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Page"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Access denied - insufficient permissions"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    },
+    "/contacts/{id}": {
+      "delete": {
+        "tags": ["Contacts"],
+        "summary": "Delete contact",
+        "description": "Deletes a contact from the system. Requires SALES_MANAGER role or ownership of the contact.",
+        "security": [
+          {
+            "bearerAuth": ["SALES_MANAGER"]
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "ID of the contact",
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successfully deleted the contact"
+          },
+          "404": {
+            "description": "Contact not found"
+          },
+          "403": {
+            "description": "Access denied - insufficient permissions"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    },
+    "/contacts/{id}/convert-to-dealer": {
+      "post": {
+        "tags": ["Contacts"],
+        "summary": "Convert contact to dealer",
+        "description": "Converts a contact to a dealer. Requires SALES_MANAGER or SALES_AGENT role.",
+        "security": [
+          {
+            "bearerAuth": ["SALES_MANAGER", "SALES_AGENT"]
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "ID of the contact",
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DealerRequestDTO"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successfully converted contact to dealer"
+          },
+          "404": {
+            "description": "Contact not found"
+          },
+          "403": {
+            "description": "Access denied - insufficient permissions"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    },
+    "/addresses": {
+      "get": {
+        "tags": ["Address Management"],
+        "summary": "Get all addresses",
+        "description": "Retrieves a list of all addresses in the system.",
+        "responses": {
+          "200": {
+            "description": "Successfully retrieved all addresses",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/AddressResponseDTO"
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      },
+      "post": {
+        "summary": "Create a new address",
+        "description": "Create a new address with the provided details",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddressRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Address created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Address"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request body"
+          }
+        }
+      }
+    },
+    "/addresses/{id}": {
+      "get": {
+        "summary": "Get address by ID",
+        "description": "Retrieve a specific address by its ID",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Address ID",
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfully retrieved address",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Address"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Address not found"
+          }
+        }
+      },
+      "put": {
+        "summary": "Update an existing address",
+        "description": "Update an existing address with the provided details",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Address ID",
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddressRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Address updated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Address"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Address not found"
+          },
+          "400": {
+            "description": "Invalid request body"
+          }
+        }
+      },
+      "delete": {
+        "summary": "Delete an address",
+        "description": "Delete an existing address by its ID",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Address ID",
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Address deleted successfully"
+          },
+          "404": {
+            "description": "Address not found"
+          }
+        }
+      }
+    },
+    "/addresses/countries": {
+      "get": {
+        "tags": ["Address Management"],
+        "summary": "Get all countries",
+        "description": "Retrieves a list of all countries available in the system.",
+        "responses": {
+          "200": {
+            "description": "Successfully retrieved all countries",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/SystemCountry"
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    },
+    "/addresses/base/countries/{countryId}/cities": {
+      "get": {
+        "tags": ["Address Management"],
+        "summary": "Get base cities by country",
+        "description": "Retrieves a list of all base cities for a specific country.",
+        "parameters": [
+          {
+            "name": "countryId",
+            "in": "path",
+            "required": true,
+            "description": "ID of the country",
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfully retrieved cities for the country",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/City"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Country not found"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    },
+    "/addresses/base/countries/{countryId}/provinces": {
+      "get": {
+        "tags": ["Address Management"],
+        "summary": "Get base provinces by country",
+        "description": "Retrieves a list of all base provinces/states for a specific country.",
+        "parameters": [
+          {
+            "name": "countryId",
+            "in": "path",
+            "required": true,
+            "description": "ID of the country",
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfully retrieved provinces for the country",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/State"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Country not found"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    },
+    "schemas": {
+      "Page": {
+        "type": "object",
+        "properties": {
+          "content": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "pageable": {
+            "type": "object",
+            "properties": {
+              "pageNumber": { "type": "integer" },
+              "pageSize": { "type": "integer" },
+              "sort": { "type": "object" }
+            }
+          },
+          "totalElements": { "type": "integer" },
+          "totalPages": { "type": "integer" },
+          "last": { "type": "boolean" },
+          "first": { "type": "boolean" },
+          "empty": { "type": "boolean" }
+        }
+      },
+      "Address": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "description": "Unique identifier for the address"
+          },
+          "street": {
+            "type": "string",
+            "description": "Street address"
+          },
+          "city": {
+            "type": "string",
+            "description": "City name"
+          },
+          "state": {
+            "type": "string",
+            "description": "State or province"
+          },
+          "country": {
+            "type": "string",
+            "description": "Country name"
+          },
+          "zipCode": {
+            "type": "string",
+            "description": "Postal/ZIP code"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Timestamp when the address was created"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Timestamp when the address was last updated"
+          }
+        },
+        "required": ["street", "city", "state", "country", "zipCode"]
+      },
+      "AddressRequest": {
+        "type": "object",
+        "properties": {
+          "street": {
+            "type": "string",
+            "description": "Street address"
+          },
+          "city": {
+            "type": "string",
+            "description": "City name"
+          },
+          "state": {
+            "type": "string",
+            "description": "State or province"
+          },
+          "country": {
+            "type": "string",
+            "description": "Country name"
+          },
+          "zipCode": {
+            "type": "string",
+            "description": "Postal/ZIP code"
+          }
+        },
+        "required": ["street", "city", "state", "country", "zipCode"]
+      }
+    }
+  }
+} 
