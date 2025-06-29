@@ -1,0 +1,19 @@
+package com.Teryaq.product.dto;
+
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+@Data
+@AllArgsConstructor
+@NoArgsConstructor
+@Builder
+public class MProductTranslationDTOResponse {
+
+    private String tradeName;
+    private String scientificName;
+    private String notes;
+    private Long languageId;
+    private String languageName;
+}
