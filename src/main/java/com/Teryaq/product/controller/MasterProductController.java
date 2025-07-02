@@ -1,7 +1,9 @@
 package com.Teryaq.product.controller;
 
 
-import com.Teryaq.product.entity.MasterProduct;
+import com.Teryaq.product.dto.MProductDTORequest;
+import com.Teryaq.product.dto.MProductDTOResponse;
+import com.Teryaq.product.dto.SearchDTORequest;
 import com.Teryaq.product.service.MasterProductService;
 import org.springframework.web.bind.annotation.*;
 
@@ -18,23 +20,29 @@ public class MasterProductController {
     }
 
     @GetMapping
-    public List<MasterProduct> getAllMasterProducts() {
-        return masterProductService.getMasterProduct();}
+    public List<MProductDTOResponse> getAllMasterProducts(@RequestParam String lang) {
+        return masterProductService.getMasterProduct(lang);}
 
     @GetMapping("{id}")
-    public MasterProduct getMasterProductById(@PathVariable Long id) {
-        return masterProductService.getByID(id);
+    public MProductDTOResponse getMasterProductById(@PathVariable Long id, @RequestParam String lang) {
+
+        return masterProductService.getByID(id, lang);
+    }
+
+    @PostMapping("/search")
+    public List<MProductDTOResponse> searchProducts(@RequestBody SearchDTORequest requestDTO) {
+        return masterProductService.search(requestDTO);
     }
 
     @PostMapping
-    public void createMasterProduct(@RequestBody MasterProduct masterProduct) {
-        masterProductService.insertMasterProduct(masterProduct);
+    public void createMasterProduct(@RequestBody MProductDTORequest masterProduct,@RequestParam String lang ) {
+        masterProductService.insertMasterProduct(masterProduct, lang);
     }
 
     @PutMapping("{id}")
-    public MasterProduct updateMasterProductById(@PathVariable Long id,
-                                                 @RequestBody MasterProduct masterProduct) {
-        return masterProductService.editMasterProduct(id, masterProduct);
+    public MProductDTOResponse updateMasterProductById(@PathVariable Long id,
+                                                 @RequestBody MProductDTORequest masterProduct, @RequestParam String lang) {
+        return masterProductService.editMasterProduct(id, masterProduct, lang);
     }
 
     @DeleteMapping("{id}")
@@ -42,3 +50,5 @@ public class MasterProductController {
         masterProductService.deleteMasterProduct(id);
     }
 }
+
+

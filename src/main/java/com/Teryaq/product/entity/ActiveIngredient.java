@@ -1,5 +1,6 @@
 package com.Teryaq.product.entity;
 
+
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -8,15 +9,16 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.LocalDateTime;
+import java.util.HashSet;
 import java.util.List;
-
+import java.util.Set;
 
 @Entity
 @Data
-@Table(name = "types")
+@Table(name = "active_Ingredients")
 @NoArgsConstructor
 @AllArgsConstructor
-public class Type {
+public class ActiveIngredient {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -32,10 +34,11 @@ public class Type {
     @UpdateTimestamp
     private LocalDateTime updatedAt;
 
-    @OneToMany(mappedBy = "type")
-    private List<MasterProduct> product;
+    @ManyToMany(mappedBy = "activeIngredients")
+    private Set<MasterProduct> products = new HashSet<>();
 
-    @OneToMany(mappedBy = "type")
-    private List<TypeTranslation> translations;
+    @OneToMany(mappedBy = "activeIngredient")
+    private List<ActiveIngredientTranslation> translations;
 
 }
+

@@ -1,8 +1,6 @@
 package com.Teryaq.language;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -14,9 +12,14 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class Language {
     @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+    @Column(unique = true)
     String code;
     String name;
 
-
+    public Language(String code, String name) {
+        this.code = code;
+        this.name = name;
+    }
 }

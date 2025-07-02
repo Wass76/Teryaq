@@ -1,18 +1,18 @@
 package com.Teryaq.product.entity;
 
-
 import com.Teryaq.language.Language;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+
 @Entity
 @Data
-@Table(name = "Category_Translation")
+@Table(name = "form_translation")
 @NoArgsConstructor
 @AllArgsConstructor
-public class CategoryTranslation {
+public class FormTranslation {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -22,8 +22,8 @@ public class CategoryTranslation {
     String name;
 
     @ManyToOne
-    @JoinColumn(name = "category_id")
-    private Category category;
+    @JoinColumn(name = "form_id")
+    private Form form;
 
     @ManyToOne
     @JoinColumn(name = "language_id")

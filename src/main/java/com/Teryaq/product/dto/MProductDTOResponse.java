@@ -18,13 +18,10 @@ public class MProductDTOResponse {
     private Long id;
     private String tradeName;
     private String scientificName;
-    private String form;
     private String concentration;
     private String size;
-    private String manufacturer;
     private float refPurchasePrice;
     private float refSellingPrice;
-    private String activeIngredients;
     private String notes;
     private float tax;
     private String barcode;
@@ -35,8 +32,11 @@ public class MProductDTOResponse {
     @Builder.Default
     private Boolean requiresPrescription = false;
 
-    private String typeName;
-    private Set<String> categoryNames;
+    private String type;
+    private String form;
+    private String manufacturer;
+    private Set<String> categories;
+    private Set<String> activeIngredients;
 
     private List<MProductTranslationDTOResponse> translations;
 }

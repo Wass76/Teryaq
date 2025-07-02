@@ -1,43 +1,70 @@
 package com.Teryaq.product.service;
 
-import com.Teryaq.product.entity.Category;
+import com.Teryaq.language.LanguageRepo;
+import com.Teryaq.product.dto.MProductDTORequest;
+import com.Teryaq.product.dto.MProductDTOResponse;
+import com.Teryaq.product.dto.SearchDTORequest;
 import com.Teryaq.product.entity.MasterProduct;
+import com.Teryaq.product.mapper.MasterProductMapper;
 import com.Teryaq.product.repo.MasterProductRepo;
-import com.Teryaq.utils.exception.ResourceNotFoundException;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
 @Transactional
 public class MasterProductService {
 
-    MasterProductRepo masterProductRepo;
-    public List<MasterProduct> getMasterProduct() {return masterProductRepo.findAll();}
+    private final MasterProductRepo masterProductRepo;
+    private final MasterProductMapper masterProductMapper;
+    private final LanguageRepo languageRepo;
 
-    public MasterProduct getByID(long id) {return masterProductRepo.findById(id)
-            .orElseThrow(()->new EntityNotFoundException("Master Product With Id" + id + "not found"));}
 
-    public void insertMasterProduct(MasterProduct masterProduct) {masterProductRepo.save(masterProduct);}
+    public List<MProductDTOResponse> getMasterProduct(String langCode) {
+        return masterProductRepo.findAll().stream()
+                .map(product -> masterProductMapper.toResponse(product, langCode))
+                .toList();
+    }
 
-    public MasterProduct editMasterProduct(Long id, MasterProduct masterProduct) {
-        return masterProductRepo.findById(id).map(mProduct->{
-            mProduct.setTradeName(masterProduct.getTradeName());
-            mProduct.setScientificName(masterProduct.getScientificName());
-            mProduct.setActiveIngredients(masterProduct.getActiveIngredients());
-            mProduct.setForm(masterProduct.getForm());
-            mProduct.setBarcode(masterProduct.getBarcode());
-            mProduct.setCategories(masterProduct.getCategories());
-            mProduct.setConcentration(masterProduct.getConcentration());
-            mProduct.setManufacturer(masterProduct.getManufacturer());
-            mProduct.setNotes(masterProduct.getNotes());
-           return masterProductRepo.save(mProduct);
-        }).orElseThrow(()-> new EntityNotFoundException("Master Product With Id" + id + "not found"));
+    public MProductDTOResponse getByID(long id, String langCode) {
+        MasterProduct product = masterProductRepo.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Master Product with ID " + id + " not found"));
+        return masterProductMapper.toResponse(product, langCode);
+    }
+
+
+    public List<MProductDTOResponse> search(SearchDTORequest requestDTO) {
+        List<MasterProduct> products = masterProductRepo.search(
+                requestDTO.getKeyword(),
+                requestDTO.getLanguageCode()
+        );
+
+        return products.stream()
+                .map(product -> masterProductMapper
+                        .toResponse(product, requestDTO.getLanguageCode()))
+                .toList();
+    }
+
+    public MProductDTOResponse insertMasterProduct(MProductDTORequest requestDTO, String langCode) {
+        MasterProduct product = masterProductMapper.toEntity(requestDTO);
+        product.setDataSource("master");
+        MasterProduct saved = masterProductRepo.save(product);
+        return masterProductMapper.toResponse(saved, langCode);
+    }
+
+
+    public MProductDTOResponse editMasterProduct(Long id, MProductDTORequest requestDTO, String langCode) {
+        return masterProductRepo.findById(id).map(existing -> {
+            MasterProduct updated = masterProductMapper.toEntity(requestDTO);
+            updated.setId(existing.getId());
+            updated.setDataSource(existing.getDataSource());
+            MasterProduct saved = masterProductRepo.save(updated);
+            return masterProductMapper.toResponse(saved, langCode);
+        }).orElseThrow(() -> new EntityNotFoundException("Master Product with ID " + id + " not found"));
     }
 
     public void deleteMasterProduct(Long id) {
@@ -45,4 +72,12 @@ public class MasterProductService {
             throw new EntityNotFoundException("Master Product with ID " + id + " not found!") ;
         }
         masterProductRepo.deleteById(id);}
+
+
+    private Long getLanguageIdByCode(String langCode) {
+        return languageRepo.findByCode(langCode)
+                .orElseThrow(() -> new EntityNotFoundException("Language with code " + langCode + " not found"))
+                .getId();
+    }
+
 }

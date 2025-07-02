@@ -1,9 +1,9 @@
 package com.Teryaq.product.controller;
 
 
-import com.Teryaq.product.entity.Type;
+import com.Teryaq.product.dto.TypeDTORequest;
+import com.Teryaq.product.dto.TypeDTOResponse;
 import com.Teryaq.product.service.TypeService;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -19,23 +19,23 @@ public class TypeController {
     }
 
     @GetMapping
-    public List<Type> getAll() {
-        return typeService.getTypes();
+    public List<TypeDTOResponse> getAll(@RequestParam String lang) {
+        return typeService.getTypes(lang);
     }
 
     @GetMapping("{id}")
-    public Type getById(@PathVariable Long id) {
-        return typeService.getByID(id);
+    public TypeDTOResponse getById(@PathVariable Long id,  @RequestParam String lang) {
+        return typeService.getByID(id, lang);
     }
 
 
     @PostMapping
-    public void createType(@RequestBody Type type) {
+    public void createType(@RequestBody TypeDTORequest type) {
         typeService.insertType(type);
     }
 
     @PutMapping("{id}")
-    public Type updateType(@PathVariable Long id, @RequestBody Type type) {
+    public TypeDTOResponse updateType(@PathVariable Long id, @RequestBody TypeDTORequest type) {
         return typeService.editType(id, type);
     }
 

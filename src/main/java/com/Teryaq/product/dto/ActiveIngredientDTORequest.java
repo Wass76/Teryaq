@@ -13,7 +13,7 @@ import java.util.Map;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-public class CategoryDTORequest {
+public class ActiveIngredientDTORequest {
 
 
     private Map<String, String> translations;

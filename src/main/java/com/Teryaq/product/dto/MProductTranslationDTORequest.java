@@ -21,6 +21,6 @@ public class MProductTranslationDTORequest {
 
     private String notes;
 
-    @Builder.Default
-    private Long languageId = 1L;
+
+    private Long languageId ;
 }

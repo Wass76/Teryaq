@@ -13,10 +13,10 @@ import java.util.List;
 
 @Entity
 @Data
-@Table(name = "types")
+@Table(name = "forms")
 @NoArgsConstructor
 @AllArgsConstructor
-public class Type {
+public class Form {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -32,10 +32,10 @@ public class Type {
     @UpdateTimestamp
     private LocalDateTime updatedAt;
 
-    @OneToMany(mappedBy = "type")
+    @OneToMany(mappedBy = "form")
     private List<MasterProduct> product;
 
-    @OneToMany(mappedBy = "type")
-    private List<TypeTranslation> translations;
+    @OneToMany(mappedBy = "form")
+    private List<FormTranslation> translations;
 
 }

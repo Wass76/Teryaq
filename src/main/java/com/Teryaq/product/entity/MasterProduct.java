@@ -4,7 +4,10 @@ import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Set;
 
@@ -22,18 +25,24 @@ public class MasterProduct {
     private Long id;
     String tradeName;
     String scientificName;
-    String form;
     String concentration;
     String size;
-    String manufacturer;
     float refPurchasePrice;
     float refSellingPrice;
-    String activeIngredients;
     String notes;
     float tax;
+
+    @Column(nullable = false, unique = true)
     String barcode;
     String dataSource;
     Boolean requiresPrescription;
+
+    @CreationTimestamp
+    @Column(updatable = false)
+    private LocalDateTime createdAt;
+
+    @UpdateTimestamp
+    private LocalDateTime updatedAt;
 
     @ManyToMany
     @JoinTable(
@@ -43,9 +52,26 @@ public class MasterProduct {
     )
     private Set<Category> categories;
 
+    @ManyToMany
+    @JoinTable(
+            name = "product_active_Ingredient",
+            joinColumns = @JoinColumn(name = "product_id"),
+            inverseJoinColumns = @JoinColumn(name = "active_ingredient_id")
+    )
+    private Set<ActiveIngredient> activeIngredients;
+
     @ManyToOne
     @JoinColumn(name = "type_id")
     private Type type;
+
+    @ManyToOne
+    @JoinColumn(name = "form_id")
+    private Form form;
+
+    @ManyToOne
+    @JoinColumn(name = "manufacturer_id")
+    private Manufacturer manufacturer;
+
 
     @OneToMany(mappedBy = "product")
     private List<MasterProductTranslation> translations;

@@ -9,10 +9,10 @@ import lombok.NoArgsConstructor;
 
 @Entity
 @Data
-@Table(name = "Category_Translation")
+@Table(name = "Manufacturer_Translation")
 @NoArgsConstructor
 @AllArgsConstructor
-public class CategoryTranslation {
+public class ManufacturerTranslation {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -22,8 +22,8 @@ public class CategoryTranslation {
     String name;
 
     @ManyToOne
-    @JoinColumn(name = "category_id")
-    private Category category;
+    @JoinColumn(name = "manufacturers_id")
+    private Manufacturer manufacturer;
 
     @ManyToOne
     @JoinColumn(name = "language_id")

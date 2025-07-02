@@ -1,8 +1,11 @@
 package com.Teryaq.product.controller;
 
 
-import com.Teryaq.product.entity.Category;
+import com.Teryaq.product.dto.CategoryDTORequest;
+import com.Teryaq.product.dto.CategoryDTOResponse;
 import com.Teryaq.product.service.CategoryService;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -18,17 +21,19 @@ public class CategoryController {
     }
 
     @GetMapping
-    public List<Category> getCategories() {return categoryService.getCategories();}
+    public List<CategoryDTOResponse> getCategories(@RequestParam String lang) {
+        return categoryService.getCategories(lang);}
 
     @GetMapping("{id}")
-    public Category getById(@PathVariable Long id) {return categoryService.getByID(id);}
+    public CategoryDTOResponse getById(@PathVariable Long id, @RequestParam String lang) {return categoryService.getByID(id, lang);}
 
     @PostMapping
-    public void createCategory(@RequestBody Category category) {
-        categoryService.insertCategory(category);}
+    public ResponseEntity<CategoryDTOResponse> createCategory(@RequestBody CategoryDTORequest dto) {
+        CategoryDTOResponse response = categoryService.insertCategory(dto);
+        return new ResponseEntity<>(response, HttpStatus.CREATED);}
 
     @PutMapping("{id}")
-    public Category updateCategory(@PathVariable Long id, @RequestBody Category category) {
+    public CategoryDTOResponse updateCategory(@PathVariable Long id, @RequestBody CategoryDTORequest category) {
         return categoryService.editCategory(id, category);
     }
 
