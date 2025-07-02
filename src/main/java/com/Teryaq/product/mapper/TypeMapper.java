@@ -34,11 +34,11 @@ public class TypeMapper {
         return type;
     }
 
-//    public Type toEntity(TypeDTORequest dto) {
-//        if (dto == null) return null;
-//
-//        Type type = new Type();
-//        type.setName(dto.getName());
-//        return type;
-//    }
+    public Type toEntity(TypeDTORequest dto) {
+        if (dto == null) return null;
+
+        Type type = new Type();
+        type.setName(dto.getName());
+        return type;
+    }
 }

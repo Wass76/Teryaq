@@ -15,5 +15,8 @@ import java.util.Map;
 @Builder
 public class ManufacturerDTORequest {
 
-    private Map<String, String> translations;
+//    private Map<String, String> translations;
+
+    private String name;
+    private String languageCode;
 }

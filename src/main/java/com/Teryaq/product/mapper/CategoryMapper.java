@@ -32,12 +32,12 @@ public class CategoryMapper {
         return category;
     }
 
-//    public Category toEntity(CategoryDTORequest dto) {
-//        if (dto == null) return null;
-//
-//        Category category = new Category();
-//        category.setName(dto.getName());
-//        return category;
-//    }
+    public Category toEntity(CategoryDTORequest dto) {
+        if (dto == null) return null;
+
+        Category category = new Category();
+        category.setName(dto.getName());
+        return category;
+    }
 
 }

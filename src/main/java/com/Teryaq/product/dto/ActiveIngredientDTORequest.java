@@ -16,5 +16,8 @@ import java.util.Map;
 public class ActiveIngredientDTORequest {
 
 
-    private Map<String, String> translations;
+//    private Map<String, String> translations;
+
+    private String name;
+    private String languageCode;
 }
