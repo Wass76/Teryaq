@@ -1,14 +1,12 @@
 package com.Teryaq.product.dto;
 
-import io.swagger.v3.oas.annotations.media.Schema;
-import io.vavr.collection.List;
-import io.vavr.collection.Set;
-import jakarta.persistence.Column;
 import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+
+import java.util.Set;
 
 @Data
 @AllArgsConstructor
@@ -38,7 +36,6 @@ public class MProductDTORequest {
     private String notes;
     private float tax;
 
-    @Column(nullable = false, unique = true)
     @NotBlank(message = "Barcode is required")
     private String barcode;
 
@@ -49,11 +46,9 @@ public class MProductDTORequest {
     private Long formId;
     private Long manufacturerId;
 
-    @Schema(description = "List of category IDs")
-    private List<Long> categoryIds;
+    private Set<Long> categoryIds;
 
-    @Schema(description = "List of category IDs")
-    private List<Long> activeIngredientIds;
+    private Set<Long> activeIngredientIds;
 
-    private List<MProductTranslationDTORequest> translations;
+    private Set<MProductTranslationDTORequest> translations;
 }

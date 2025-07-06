@@ -27,19 +27,19 @@ public class LanguageController {
         return languageService.gitById(id);
     }
 
-    @PostMapping
-    public void addLanguage(@RequestBody Language language) {
-         languageService.createLanguage(language);
-    }
+//    @PostMapping
+//    public void addLanguage(@RequestBody Language language) {
+//         languageService.createLanguage(language);
+//    }
+//
+//    @PutMapping("{id}")
+//    public Language updateLanguage(@PathVariable Long id, @RequestBody Language language) {
+//        return languageService.editLanguage(id, language);
+//    }
 
-    @PutMapping("{id}")
-    public Language updateLanguage(@PathVariable Long id, @RequestBody Language language) {
-        return languageService.editLanguage(id, language);
-    }
-
-    @DeleteMapping("{id}")
-    public void deleteLanguage(@PathVariable Long id) {
-         languageService.deleteLanguage(id);
-    }
+//    @DeleteMapping("{id}")
+//    public void deleteLanguage(@PathVariable Long id) {
+//         languageService.deleteLanguage(id);
+//    }
 
 }

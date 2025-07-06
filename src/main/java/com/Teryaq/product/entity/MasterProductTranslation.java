@@ -17,9 +17,9 @@ public class MasterProductTranslation {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    String tradeName;
-    String scientificName;
-    String notes;
+    private String tradeName;
+    private String scientificName;
+    private String notes;
 
     @ManyToOne
     @JoinColumn(name = "product_id")

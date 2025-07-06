@@ -1,13 +1,12 @@
 package com.Teryaq.product.dto;
 
 
-import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.util.Map;
+import java.util.Set;
 
 @Data
 @AllArgsConstructor
@@ -16,8 +15,9 @@ import java.util.Map;
 public class FormDTORequest {
 
 
-//    private Map<String, String> translations;
-
     private String name;
     private String languageCode;
+
+    private Set<FormTranslationDTORequest> translations;
+
 }

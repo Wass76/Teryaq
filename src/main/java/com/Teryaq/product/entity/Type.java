@@ -8,7 +8,7 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.LocalDateTime;
-import java.util.List;
+import java.util.Set;
 
 
 @Entity
@@ -23,7 +23,7 @@ public class Type {
     private Long id;
 
     @Column(nullable = false, unique = true)
-    String name;
+    private String name;
 
     @CreationTimestamp
     @Column(updatable = false)
@@ -33,9 +33,9 @@ public class Type {
     private LocalDateTime updatedAt;
 
     @OneToMany(mappedBy = "type")
-    private List<MasterProduct> product;
+    private Set<MasterProduct> product;
 
     @OneToMany(mappedBy = "type")
-    private List<TypeTranslation> translations;
+    private Set<TypeTranslation> translations;
 
 }

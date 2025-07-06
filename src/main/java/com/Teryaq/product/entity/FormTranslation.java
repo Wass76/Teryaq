@@ -19,7 +19,7 @@ public class FormTranslation {
     private Long id;
 
     @Column(nullable = false, unique = true)
-    String name;
+    private String name;
 
     @ManyToOne
     @JoinColumn(name = "form_id")

@@ -19,7 +19,7 @@ public class TypeTranslation {
     private Long id;
 
     @Column(nullable = false, unique = true)
-    String name;
+    private String name;
 
     @ManyToOne
     @JoinColumn(name = "type_id")

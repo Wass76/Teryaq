@@ -2,11 +2,11 @@ package com.Teryaq.product.controller;
 
 
 import com.Teryaq.product.dto.TypeDTORequest;
-import com.Teryaq.product.dto.TypeDTOResponse;
 import com.Teryaq.product.service.TypeService;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 @RestController
 @RequestMapping("api/v1/types")
@@ -19,29 +19,36 @@ public class TypeController {
     }
 
     @GetMapping
-    public List<TypeDTOResponse> getAll(@RequestParam String lang) {
-        return typeService.getTypes(lang);
+    public  ResponseEntity<?> getAll(@RequestParam String lang) {
+        return ResponseEntity.ok(typeService.getTypes(lang));
     }
 
     @GetMapping("{id}")
-    public TypeDTOResponse getById(@PathVariable Long id,  @RequestParam String lang) {
-        return typeService.getByID(id, lang);
+    public  ResponseEntity<?> getById(@PathVariable Long id,  @RequestParam String lang) {
+        return ResponseEntity.ok(typeService.getByID(id, lang));
     }
 
-
+    
     @PostMapping
-    public void createType(@RequestBody TypeDTORequest type) {
-        typeService.insertType(type);
+    @PreAuthorize("hasRole('PLATFORM_ADMIN')")
+    public ResponseEntity<?> createType(@RequestBody TypeDTORequest type,
+                                        @RequestParam String lang) {
+        return ResponseEntity.ok(typeService.insertType(type, lang));
     }
 
     @PutMapping("{id}")
-    public TypeDTOResponse updateType(@PathVariable Long id, @RequestBody TypeDTORequest type) {
-        return typeService.editType(id, type);
+    @PreAuthorize("hasRole('PLATFORM_ADMIN')")
+    public  ResponseEntity<?> updateType(@PathVariable Long id,
+                                         @RequestBody TypeDTORequest type,
+                                         @RequestParam String lang) {
+        return ResponseEntity.ok(typeService.editType(id, type, lang));
     }
 
     @DeleteMapping("{id}")
-    public void deleteType(@PathVariable Long id) {
+    @PreAuthorize("hasRole('PLATFORM_ADMIN')")
+    public  ResponseEntity<Void> deleteType(@PathVariable Long id) {
         typeService.deleteType(id);
+        return new ResponseEntity<>(HttpStatus.NO_CONTENT);
     }
 
 

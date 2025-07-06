@@ -25,15 +25,6 @@ public class FormMapper {
              .build();
  }
 
-
-    public Form toEntity(FormDTOResponse dto) {
-        if (dto == null) return null;
-
-        Form form = new Form();
-        form.setName(dto.getName());
-        return form;
-    }
-
     public Form toEntity(FormDTORequest dto) {
         if (dto == null) return null;
 

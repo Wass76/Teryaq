@@ -8,13 +8,16 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.LocalDateTime;
-import java.util.List;
 import java.util.Set;
 
 
 @Data
 @Entity
-@Table(name = "master_product")
+@Table(
+        name = "master_product",
+        indexes = {
+                @Index(columnList = "barcode")
+        })
 @NoArgsConstructor
 @AllArgsConstructor
 public class MasterProduct {
@@ -23,19 +26,19 @@ public class MasterProduct {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    String tradeName;
-    String scientificName;
-    String concentration;
-    String size;
-    float refPurchasePrice;
-    float refSellingPrice;
-    String notes;
-    float tax;
+    private String tradeName;
+    private String scientificName;
+    private String concentration;
+    private String size;
+    private float refPurchasePrice;
+    private float refSellingPrice;
+    private String notes;
+    private float tax;
 
-    @Column(nullable = false, unique = true)
-    String barcode;
-    String dataSource;
-    Boolean requiresPrescription;
+    @Column(nullable = false, unique = true , name = "barcode")
+    private String barcode;
+    private String dataSource;
+    private Boolean requiresPrescription;
 
     @CreationTimestamp
     @Column(updatable = false)
@@ -52,14 +55,6 @@ public class MasterProduct {
     )
     private Set<Category> categories;
 
-    @ManyToMany
-    @JoinTable(
-            name = "product_active_Ingredient",
-            joinColumns = @JoinColumn(name = "product_id"),
-            inverseJoinColumns = @JoinColumn(name = "active_ingredient_id")
-    )
-    private Set<ActiveIngredient> activeIngredients;
-
     @ManyToOne
     @JoinColumn(name = "type_id")
     private Type type;
@@ -74,7 +69,7 @@ public class MasterProduct {
 
 
     @OneToMany(mappedBy = "product")
-    private List<MasterProductTranslation> translations;
+    private Set<MasterProductTranslation> translations;
 
 
 

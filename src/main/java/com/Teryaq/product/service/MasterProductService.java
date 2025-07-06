@@ -1,18 +1,19 @@
 package com.Teryaq.product.service;
 
-import com.Teryaq.language.LanguageRepo;
 import com.Teryaq.product.dto.MProductDTORequest;
 import com.Teryaq.product.dto.MProductDTOResponse;
 import com.Teryaq.product.dto.SearchDTORequest;
 import com.Teryaq.product.entity.MasterProduct;
 import com.Teryaq.product.mapper.MasterProductMapper;
 import com.Teryaq.product.repo.MasterProductRepo;
+import com.Teryaq.utils.exception.ConflictException;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -21,13 +22,12 @@ public class MasterProductService {
 
     private final MasterProductRepo masterProductRepo;
     private final MasterProductMapper masterProductMapper;
-    private final LanguageRepo languageRepo;
 
 
-    public List<MProductDTOResponse> getMasterProduct(String langCode) {
-        return masterProductRepo.findAll().stream()
-                .map(product -> masterProductMapper.toResponse(product, langCode))
-                .toList();
+    public Page<MProductDTOResponse> getMasterProduct(String langCode , Pageable pageable) {
+        return masterProductRepo.findAll(pageable).map(
+                product -> masterProductMapper.toResponse(product, langCode)
+        );
     }
 
     public MProductDTOResponse getByID(long id, String langCode) {
@@ -37,19 +37,19 @@ public class MasterProductService {
     }
 
 
-    public List<MProductDTOResponse> search(SearchDTORequest requestDTO) {
-        List<MasterProduct> products = masterProductRepo.search(
+    public Page<MProductDTOResponse> search(SearchDTORequest requestDTO , Pageable pageable) {
+        Page<MasterProduct> products = masterProductRepo.search(
                 requestDTO.getKeyword(),
-                requestDTO.getLanguageCode()
+                requestDTO.getLanguageCode(),
+                pageable
         );
-
-        return products.stream()
-                .map(product -> masterProductMapper
-                        .toResponse(product, requestDTO.getLanguageCode()))
-                .toList();
+        return products.map(product -> masterProductMapper.toResponse(product, requestDTO.getLanguageCode()));
     }
 
     public MProductDTOResponse insertMasterProduct(MProductDTORequest requestDTO, String langCode) {
+        if(masterProductRepo.findByBarcode(requestDTO.getBarcode()).isPresent()) {
+            throw new ConflictException("Barcode already exists");
+        }
         MasterProduct product = masterProductMapper.toEntity(requestDTO);
         product.setDataSource("master");
         MasterProduct saved = masterProductRepo.save(product);
@@ -59,7 +59,7 @@ public class MasterProductService {
 
     public MProductDTOResponse editMasterProduct(Long id, MProductDTORequest requestDTO, String langCode) {
         return masterProductRepo.findById(id).map(existing -> {
-            MasterProduct updated = masterProductMapper.toEntity(requestDTO);
+            MasterProduct updated = masterProductMapper.updateRequestToEntity(requestDTO);
             updated.setId(existing.getId());
             updated.setDataSource(existing.getDataSource());
             MasterProduct saved = masterProductRepo.save(updated);
@@ -74,10 +74,5 @@ public class MasterProductService {
         masterProductRepo.deleteById(id);}
 
 
-    private Long getLanguageIdByCode(String langCode) {
-        return languageRepo.findByCode(langCode)
-                .orElseThrow(() -> new EntityNotFoundException("Language with code " + langCode + " not found"))
-                .getId();
-    }
 
 }

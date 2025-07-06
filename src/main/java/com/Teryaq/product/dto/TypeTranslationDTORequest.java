@@ -1,6 +1,5 @@
 package com.Teryaq.product.dto;
 
-
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -8,10 +7,11 @@ import lombok.NoArgsConstructor;
 
 @Data
 @AllArgsConstructor
-@NoArgsConstructor
+@NoArgsConstructor  
 @Builder
-public class ActiveIngredientDTOResponse {
+public class TypeTranslationDTORequest {
 
-    private Long id;
     private String name;
+    private String languageCode;
+    
 }

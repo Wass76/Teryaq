@@ -1,23 +1,17 @@
 package com.Teryaq.product.dto;
 
-
-import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.util.Map;
-
 @Data
 @AllArgsConstructor
-@NoArgsConstructor
+@NoArgsConstructor  
 @Builder
-public class ActiveIngredientDTORequest {
-
-
-//    private Map<String, String> translations;
+public class ManufacturerTranslationDTORequest {
 
     private String name;
     private String languageCode;
+
 }

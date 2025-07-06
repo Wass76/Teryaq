@@ -19,7 +19,7 @@ public class ManufacturerTranslation {
     private Long id;
 
     @Column(nullable = false, unique = true)
-    String name;
+    private String name;
 
     @ManyToOne
     @JoinColumn(name = "manufacturers_id")

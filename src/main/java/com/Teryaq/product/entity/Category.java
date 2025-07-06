@@ -10,7 +10,6 @@ import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.LocalDateTime;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 
 @Entity
@@ -25,7 +24,7 @@ public class Category {
     private Long id;
 
     @Column(nullable = false, unique = true)
-    String name;
+    private String name;
 
     @CreationTimestamp
     @Column(updatable = false)
@@ -38,7 +37,7 @@ public class Category {
     private Set<MasterProduct> products = new HashSet<>();
 
     @OneToMany(mappedBy = "category")
-    private List<CategoryTranslation> translations;
+    private Set<CategoryTranslation> translations;
 
 }
 

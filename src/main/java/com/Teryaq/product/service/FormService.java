@@ -1,11 +1,9 @@
 package com.Teryaq.product.service;
 
 
-import com.Teryaq.language.LanguageRepo;
 import com.Teryaq.product.dto.FormDTORequest;
 import com.Teryaq.product.dto.FormDTOResponse;
 import com.Teryaq.product.entity.Form;
-import com.Teryaq.product.entity.FormTranslation;
 import com.Teryaq.product.mapper.FormMapper;
 import com.Teryaq.product.repo.FormRepo;
 import jakarta.persistence.EntityNotFoundException;
@@ -18,12 +16,10 @@ public class FormService {
 
     private final FormRepo formRepo;
     private final FormMapper formMapper;
-    private final LanguageRepo languageRepo;
 
-    public FormService(FormRepo formRepo, FormMapper formMapper, LanguageRepo languageRepo) {
+    public FormService(FormRepo formRepo, FormMapper formMapper) {
         this.formRepo = formRepo;
         this.formMapper = formMapper;
-        this.languageRepo = languageRepo;
     }
 
     public List<FormDTOResponse> getForms(String langCode) {
@@ -39,37 +35,22 @@ public class FormService {
         return formMapper.toResponse(form, langCode);
     }
 
-    public FormDTOResponse insertForm(FormDTORequest dto) {
+    public FormDTOResponse insertForm(FormDTORequest dto, String langCode) {
         if (formRepo.existsByName(dto.getName())) {
-            throw new RuntimeException("Form already exists");
+            throw new RuntimeException("Category already exists");
         }
-
-        Form form = new Form();
-        form = formRepo.save(form);
-
-        FormTranslation translation = new FormTranslation();
-        translation.setName(dto.getName());
-        translation.setLanguage(languageRepo.findByCode(dto.getLanguageCode())
-                .orElseThrow(() -> new EntityNotFoundException("Language not found")));
-        translation.setForm(form);
-        form.getTranslations().add(translation);
-
-        form = formRepo.save(form);
-
-        return formMapper.toResponse(form, dto.getLanguageCode());
+        Form form = formMapper.toEntity(dto);
+        Form saved = formRepo.save(form);
+        return formMapper.toResponse(saved, langCode);
     }
 
-    public FormDTOResponse editForm(Long id, FormDTORequest dto) {
-        Form form = formRepo.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Form with ID " + id + " not found"));
-
-        FormTranslation translation = form.getTranslations().stream()
-                .filter(t -> t.getLanguage().getCode().equalsIgnoreCase(dto.getLanguageCode()))
-                .findFirst()
-                .orElseThrow(() -> new EntityNotFoundException("Translation not found for this language"));
-
-        translation.setName(dto.getName());
-        return formMapper.toResponse(form, dto.getLanguageCode());
+    public FormDTOResponse editForm(Long id, FormDTORequest dto, String langCode) {
+        return formRepo.findById(id).map(existing -> {
+            Form updated = formMapper.toEntity(dto);
+            updated.setId(existing.getId());
+            Form saved = formRepo.save(updated);
+            return formMapper.toResponse(saved, langCode);
+        }).orElseThrow(() -> new EntityNotFoundException("Category with ID " + id + " not found"));
     }
 
     public void deleteForm(Long id) {

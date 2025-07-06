@@ -9,8 +9,6 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.LocalDateTime;
-import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 
 @Entity
@@ -25,7 +23,7 @@ public class Manufacturer {
     private Long id;
 
     @Column(nullable = false, unique = true)
-    String name;
+    private String name;
 
     @CreationTimestamp
     @Column(updatable = false)
@@ -35,10 +33,10 @@ public class Manufacturer {
     private LocalDateTime updatedAt;
 
     @OneToMany(mappedBy = "manufacturer")
-    private List<MasterProduct> product;
+    private Set<MasterProduct> product;
 
     @OneToMany(mappedBy = "manufacturer")
-    private List<ManufacturerTranslation> translations;
+    private Set<ManufacturerTranslation> translations;
 
 }
 

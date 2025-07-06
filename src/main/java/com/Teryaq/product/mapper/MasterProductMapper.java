@@ -2,12 +2,14 @@ package com.Teryaq.product.mapper;
 
 import com.Teryaq.product.dto.MProductDTORequest;
 import com.Teryaq.product.dto.MProductDTOResponse;
+import com.Teryaq.product.dto.MProductTranslationDTOResponse;
 import com.Teryaq.product.entity.*;
 import com.Teryaq.product.repo.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 import java.util.HashSet;
+import java.util.List;
 import java.util.stream.Collectors;
 
 @Component
@@ -15,10 +17,10 @@ import java.util.stream.Collectors;
 public class MasterProductMapper {
 
     private final CategoryRepo categoryRepo;
-    private final ActiveIngredientRepo activeIngredientRepo;
     private final TypeRepo typeRepo;
     private final FormRepo formRepo;
     private final ManufacturerRepo manufacturerRepo;
+    private final MasterProductTranslationMapper translationMapper;
 
     public MasterProduct toEntity(MProductDTORequest dto) {
         MasterProduct product = new MasterProduct();
@@ -36,10 +38,6 @@ public class MasterProductMapper {
 
         if (dto.getCategoryIds() != null) {
             product.setCategories(new HashSet<>(categoryRepo.findAllById(dto.getCategoryIds())));
-        }
-
-        if (dto.getActiveIngredientIds() != null) {
-            product.setActiveIngredients(new HashSet<>(activeIngredientRepo.findAllById(dto.getActiveIngredientIds())));
         }
 
         if (dto.getTypeId() != null)
@@ -62,6 +60,13 @@ public class MasterProductMapper {
                 .orElse(null)
                 : null;
 
+        List<MProductTranslationDTOResponse> allTranslations = null;
+        if (product.getTranslations() != null) {
+            allTranslations = product.getTranslations().stream()
+                    .map(translationMapper::toResponse)
+                    .collect(Collectors.toList());
+        }
+
         return MProductDTOResponse.builder()
                 .id(product.getId())
                 .tradeName(translation != null ? translation.getTradeName() : product.getTradeName())
@@ -75,6 +80,7 @@ public class MasterProductMapper {
                 .barcode(product.getBarcode())
                 .dataSource(product.getDataSource())
                 .requiresPrescription(product.getRequiresPrescription())
+                .translations(allTranslations)
 
                 .categories(
                         product.getCategories().stream()
@@ -85,19 +91,6 @@ public class MasterProductMapper {
                                             .findFirst()
                                             .map(CategoryTranslation::getName)
                                             .orElse(category.getName());
-                                })
-                                .collect(Collectors.toSet())
-                )
-
-                .activeIngredients(
-                        product.getActiveIngredients().stream()
-                                .map(active -> {
-                                    if (active.getTranslations() == null) return active.getName();
-                                    return active.getTranslations().stream()
-                                            .filter(t -> languageCode.equalsIgnoreCase(t.getLanguage().getCode()))
-                                            .findFirst()
-                                            .map(ActiveIngredientTranslation::getName)
-                                            .orElse(active.getName());
                                 })
                                 .collect(Collectors.toSet())
                 )
@@ -135,5 +128,56 @@ public class MasterProductMapper {
                 .build();
     }
 
+    public MasterProduct updateRequestToEntity(MProductDTORequest dto) {
+        MasterProduct product = new MasterProduct();
+
+        if(dto.getTradeName() != null){
+            product.setTradeName(dto.getTradeName());
+        }
+
+        if (dto.getScientificName()!= null){
+            product.setScientificName(dto.getScientificName());
+        }
+        if (dto.getScientificName()!= null){
+            product.setConcentration(dto.getConcentration());
+        }
+        if (dto.getScientificName()!= null){
+            product.setSize(dto.getSize());
+        }
+        if (dto.getScientificName()!= null){
+            product.setRefPurchasePrice(dto.getRefPurchasePrice());
+        }
+        if (dto.getScientificName()!= null){
+            product.setRefSellingPrice(dto.getRefSellingPrice());
+        }
+
+        if (dto.getScientificName()!= null){
+            product.setNotes(dto.getNotes());
+        }
+        if (dto.getScientificName()!= null){
+            product.setTax(dto.getTax());
+        }
+        if (dto.getScientificName()!= null){
+            product.setBarcode(dto.getBarcode());
+        }
+        if (dto.getScientificName()!= null){
+            product.setRequiresPrescription(dto.getRequiresPrescription());
+        }
+
+        if (dto.getCategoryIds() != null) {
+            product.setCategories(new HashSet<>(categoryRepo.findAllById(dto.getCategoryIds())));
+        }
+
+        if (dto.getTypeId() != null)
+            product.setType(typeRepo.findById(dto.getTypeId()).orElse(null));
+
+        if (dto.getFormId() != null)
+            product.setForm(formRepo.findById(dto.getFormId()).orElse(null));
+
+        if (dto.getManufacturerId() != null)
+            product.setManufacturer(manufacturerRepo.findById(dto.getManufacturerId()).orElse(null));
+
+        return product;
+    }
 
 }

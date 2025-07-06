@@ -24,14 +24,6 @@ public class ManufacturerMapper {
                 .build();
     }
 
-    public Manufacturer toEntity(ManufacturerDTOResponse dto) {
-        if (dto == null) return null;
-
-        Manufacturer manufacturer = new Manufacturer();
-        manufacturer.setName(dto.getName());
-        return manufacturer;
-    }
-
     public Manufacturer toEntity(ManufacturerDTORequest dto) {
         if (dto == null) return null;
 
