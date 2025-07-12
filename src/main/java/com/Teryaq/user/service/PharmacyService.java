@@ -3,13 +3,11 @@ package com.Teryaq.user.service;
 import com.Teryaq.user.Enum.PharmacyType;
 import com.Teryaq.user.Enum.UserStatus;
 import com.Teryaq.user.config.RoleConstants;
-import com.Teryaq.user.dto.EmployeeCreateRequestDTO;
 import com.Teryaq.user.dto.PharmacyCreateRequestDTO;
 import com.Teryaq.user.entity.Employee;
 import com.Teryaq.user.entity.Pharmacy;
 import com.Teryaq.user.entity.Role;
 import com.Teryaq.user.entity.User;
-import com.Teryaq.user.mapper.EmployeeMapper;
 import com.Teryaq.user.mapper.PharmacyMapper;
 import com.Teryaq.user.repository.EmployeeRepository;
 import com.Teryaq.user.repository.PharmacyRepository;
@@ -37,8 +35,8 @@ import java.util.HashSet;
 import com.Teryaq.user.dto.PharmacyResponseDTO;
 import org.springframework.beans.factory.annotation.Autowired;
 import java.util.List;
+import java.util.logging.Logger;
 import java.util.stream.Collectors;
-import com.Teryaq.user.dto.EmployeeResponseDTO;
 
 @Service
 public class PharmacyService {
@@ -62,12 +60,21 @@ public class PharmacyService {
     private UserRepository userRepository;
     @Autowired
     private UserService userService;
+    
+    @Autowired
+    private EmployeeService employeeService;
+
+    Logger logger = Logger.getLogger(PharmacyService.class.getName());
 
     @Transactional
     public PharmacyResponseDTO createPharmacy(PharmacyCreateRequestDTO dto) {
+        logger.info("Starting pharmacy creation for: " + dto.getPharmacyName());
+        
         if (pharmacyRepository.existsByLicenseNumber(dto.getLicenseNumber())) {
+            logger.warning("Pharmacy with license number " + dto.getLicenseNumber() + " already exists");
             throw new IllegalArgumentException("Pharmacy with this license number already exists");
         }
+        
         // Create and save pharmacy
         Pharmacy pharmacy = new Pharmacy();
         pharmacy.setName(dto.getPharmacyName());
@@ -75,6 +82,7 @@ public class PharmacyService {
         pharmacy.setPhoneNumber(dto.getPhoneNumber());
         pharmacy.setType(PharmacyType.MAIN);
         pharmacy = pharmacyRepository.save(pharmacy);
+        logger.info("Pharmacy saved with ID: " + pharmacy.getId());
 
         // Create manager as Employee
         Role managerRole = roleRepository.findByName(RoleConstants.PHARMACY_MANAGER).orElseThrow();
@@ -84,6 +92,7 @@ public class PharmacyService {
         String cleanLicenseNumber = dto.getLicenseNumber().replaceAll("\\s+", "");
         String cleanPharmacyName = dto.getPharmacyName().replaceAll("\\s+", "");
         String managerEmail = "manager." + cleanLicenseNumber + "@" + cleanPharmacyName + ".com";
+        logger.info("Generated manager email: " + managerEmail);
 
         manager.setEmail(managerEmail);
         manager.setPassword(passwordEncoder.encode(dto.getManagerPassword()));
@@ -93,6 +102,9 @@ public class PharmacyService {
         manager.setPharmacy(pharmacy);
         manager.setStatus(UserStatus.ACTIVE);
         employeeRepository.save(manager);
+        logger.info("Manager created with ID: " + manager.getId());
+        
+        logger.info("Pharmacy creation completed successfully");
         return PharmacyMapper.toResponseDTO(pharmacy, manager);
     }
 
@@ -119,26 +131,7 @@ public class PharmacyService {
         return PharmacyMapper.toResponseDTO(pharmacy, manager);
     }
 
-    @Transactional
-    public EmployeeResponseDTO addEmployee(EmployeeCreateRequestDTO dto) {
-        Employee manager = (Employee) userService.getCurrentUser();
-        Pharmacy pharmacy = manager.getPharmacy();
-        // Generate email: firstName.lastName@pharmacyName.com
-        String cleanFirstName = dto.getFirstName().replaceAll("\\s+", "").toLowerCase();
-        String cleanLastName = dto.getLastName().replaceAll("\\s+", "").toLowerCase();
-        String cleanPharmacyName = pharmacy.getName().replaceAll("\\s+", "").toLowerCase();
-        String email = cleanFirstName + "." + cleanLastName + "@" + cleanPharmacyName + ".com";
-        Employee employee = EmployeeMapper.toEntity(dto);
-        employee.setEmail(email);
-        employee.setPharmacy(pharmacy);
-        employee.setPassword(passwordEncoder.encode(dto.getPassword()));
-        Role role = roleRepository.findById(dto.getRoleId()).orElseThrow(
-                () -> new ResourceNotFoundException("Invalid role id: " + dto.getRoleId())
-        );
-        employee.setRole(role);
-        employeeRepository.save(employee);
-        return EmployeeMapper.toResponseDTO(employee);
-    }
+
 
     public UserAuthenticationResponse adminLogin(AuthenticationRequest request, HttpServletRequest httpServletRequest) {
         String userIp = httpServletRequest.getRemoteAddr();
@@ -226,41 +219,5 @@ public class PharmacyService {
                 .collect(Collectors.toList());
     }
 
-    public List<EmployeeResponseDTO> getAllEmployeesInPharmacy() {
-        Employee manager = (Employee) userService.getCurrentUser();
-        Long pharmacyId = manager.getPharmacy().getId();
-        return employeeRepository.findByPharmacy_Id(pharmacyId)
-                .stream()
-                .map(EmployeeMapper::toResponseDTO)
-                .collect(java.util.stream.Collectors.toList());
-    }
 
-    public EmployeeResponseDTO updateEmployeeInPharmacy(Long employeeId, EmployeeCreateRequestDTO dto) {
-        Employee manager = (Employee) userService.getCurrentUser();
-        Employee employee = employeeRepository.findById(employeeId)
-                .orElseThrow(() -> new ResourceNotFoundException("Employee not found"));
-        if (!employee.getPharmacy().getId().equals(manager.getPharmacy().getId())) {
-            throw new AccessDeniedException("You can only update employees in your own pharmacy");
-        }
-        // Update only allowed fields
-        if (dto.getFirstName() != null) employee.setFirstName(dto.getFirstName());
-        if (dto.getLastName() != null) employee.setLastName(dto.getLastName());
-        if (dto.getPhoneNumber() != null) employee.setPhoneNumber(dto.getPhoneNumber());
-        if (dto.getStatus() != null) employee.setStatus(dto.getStatus());
-        if (dto.getDateOfHire() != null) employee.setDateOfHire(dto.getDateOfHire());
-        if (dto.getWorkStart() != null) employee.setWorkStart(dto.getWorkStart());
-        if (dto.getWorkEnd() != null) employee.setWorkEnd(dto.getWorkEnd());
-        employeeRepository.save(employee);
-        return EmployeeMapper.toResponseDTO(employee);
-    }
-
-    public void deleteEmployeeInPharmacy(Long employeeId) {
-        Employee manager = (Employee) userService.getCurrentUser();
-        Employee employee = employeeRepository.findById(employeeId)
-                .orElseThrow(() -> new ResourceNotFoundException("Employee not found"));
-        if (!employee.getPharmacy().getId().equals(manager.getPharmacy().getId())) {
-            throw new AccessDeniedException("You can only delete employees in your own pharmacy");
-        }
-        employeeRepository.delete(employee);
-    }
 } 

@@ -1,12 +1,8 @@
 package com.Teryaq.user.controller;
 
 import com.Teryaq.user.dto.AuthenticationRequest;
-import com.Teryaq.user.dto.EmployeeCreateRequestDTO;
-import com.Teryaq.user.dto.EmployeeResponseDTO;
 import com.Teryaq.user.dto.PharmacyResponseDTO;
 import com.Teryaq.user.dto.UserAuthenticationResponse;
-import com.Teryaq.user.entity.Employee;
-import com.Teryaq.user.entity.Pharmacy;
 import com.Teryaq.user.service.PharmacyService;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
@@ -46,36 +42,10 @@ public class PharmacyController {
         return ResponseEntity.ok(pharmacy);
     }
 
-    @PostMapping("/employees")
-    @PreAuthorize("hasRole('PHARMACY_MANAGER')")
-    public ResponseEntity<?> addEmployee(@RequestBody EmployeeCreateRequestDTO dto) {
-        EmployeeResponseDTO employee = pharmacyService.addEmployee(dto);
-        return ResponseEntity.ok(employee);
-    }
-
     @GetMapping("/all")
     @PreAuthorize("hasRole('PLATFORM_ADMIN')")
     public ResponseEntity<List<PharmacyResponseDTO>> getAllPharmacies() {
         List<PharmacyResponseDTO> pharmacies = pharmacyService.getAllPharmacies();
         return ResponseEntity.ok(pharmacies);
-    }
-
-    @GetMapping("/employees")
-    @PreAuthorize("hasRole('PHARMACY_MANAGER')")
-    public ResponseEntity<List<EmployeeResponseDTO>> getAllEmployeesInPharmacy() {
-        return ResponseEntity.ok(pharmacyService.getAllEmployeesInPharmacy());
-    }
-
-    @PutMapping("/employees/{employeeId}")
-    @PreAuthorize("hasRole('PHARMACY_MANAGER')")
-    public ResponseEntity<EmployeeResponseDTO> updateEmployeeInPharmacy(@PathVariable Long employeeId, @RequestBody EmployeeCreateRequestDTO dto) {
-        return ResponseEntity.ok(pharmacyService.updateEmployeeInPharmacy(employeeId, dto));
-    }
-
-    @DeleteMapping("/employees/{employeeId}")
-    @PreAuthorize("hasRole('PHARMACY_MANAGER')")
-    public ResponseEntity<Void> deleteEmployeeInPharmacy(@PathVariable Long employeeId) {
-        pharmacyService.deleteEmployeeInPharmacy(employeeId);
-        return ResponseEntity.noContent().build();
     }
 } 

@@ -2,7 +2,12 @@ package com.Teryaq.user.mapper;
 
 import com.Teryaq.user.dto.EmployeeCreateRequestDTO;
 import com.Teryaq.user.dto.EmployeeResponseDTO;
+import com.Teryaq.user.dto.EmployeeWorkingHoursDTO;
 import com.Teryaq.user.entity.Employee;
+import com.Teryaq.user.entity.EmployeeWorkingHours;
+
+import java.util.List;
+import java.util.stream.Collectors;
 
 public class EmployeeMapper {
     public static Employee toEntity(EmployeeCreateRequestDTO dto) {
@@ -14,8 +19,7 @@ public class EmployeeMapper {
         employee.setPhoneNumber(dto.getPhoneNumber());
         employee.setStatus(dto.getStatus());
         employee.setDateOfHire(dto.getDateOfHire());
-        employee.setWorkStart(dto.getWorkStart());
-        employee.setWorkEnd(dto.getWorkEnd());
+        // Don't set working hours here - will be handled in service after employee is saved
         // email and pharmacy will be set in service
         return employee;
     }
@@ -30,10 +34,28 @@ public class EmployeeMapper {
         dto.setPhoneNumber(entity.getPhoneNumber());
         dto.setStatus(entity.getStatus());
         dto.setDateOfHire(entity.getDateOfHire());
-        dto.setWorkStart(entity.getWorkStart());
-        dto.setWorkEnd(entity.getWorkEnd());
         dto.setRoleName(entity.getRole() != null ? entity.getRole().getName() : null);
         dto.setPharmacyId(entity.getPharmacy() != null ? entity.getPharmacy().getId() : null);
+        
+        // Set working hours if available
+        if (entity.getEmployeeWorkingHoursList() != null) {
+            dto.setWorkingHours(EmployeeWorkingHoursMapper.toDTOList(entity.getEmployeeWorkingHoursList()));
+        }
+        
         return dto;
+    }
+    
+    public static List<EmployeeWorkingHours> createWorkingHoursFromDTO(Employee employee, List<EmployeeWorkingHoursDTO> workingHoursDTOs) {
+        if (workingHoursDTOs == null || workingHoursDTOs.isEmpty()) {
+            return null;
+        }
+        
+        return workingHoursDTOs.stream()
+                .map(dto -> {
+                    EmployeeWorkingHours workingHours = EmployeeWorkingHoursMapper.toEntity(dto);
+                    workingHours.setEmployee(employee);
+                    return workingHours;
+                })
+                .collect(Collectors.toList());
     }
 } 

@@ -8,6 +8,7 @@ import lombok.experimental.SuperBuilder;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.util.List;
 
 @Entity
 @Data
@@ -24,11 +25,8 @@ public class Employee extends User {
     @Column
     private LocalDate dateOfHire;
 
-    @Column
-    private LocalTime workStart;
-
-    @Column
-    private LocalTime workEnd;
+    @OneToMany(mappedBy = "employee", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<EmployeeWorkingHours> employeeWorkingHoursList;
 
     @Column
     private String pharmacyName; // For now, just a string. Can be a relation later.
@@ -39,4 +37,4 @@ public class Employee extends User {
         return "employee_id_seq";
     }
 
-} 
+}

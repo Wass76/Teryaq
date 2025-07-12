@@ -1,9 +1,11 @@
 package com.Teryaq.user.dto;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.Teryaq.user.Enum.UserStatus;
 import lombok.Data;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.util.List;
 
 @Data
 public class EmployeeResponseDTO {
@@ -13,9 +15,9 @@ public class EmployeeResponseDTO {
     private String email;
     private String phoneNumber;
     private UserStatus status;
+    @JsonFormat(pattern = "yyyy-MM-dd")
     private LocalDate dateOfHire;
-    private LocalTime workStart;
-    private LocalTime workEnd;
     private String roleName;
     private Long pharmacyId;
+    private List<EmployeeWorkingHoursDTO> workingHours; // New flexible working hours
 } 

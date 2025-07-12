@@ -19,6 +19,7 @@ import java.util.stream.Collectors;
 @SuperBuilder(builderMethodName = "builder")
 @NoArgsConstructor
 @AllArgsConstructor
+@Inheritance(strategy = InheritanceType.TABLE_PER_CLASS)
 public class User extends BaseUser {
 
     private String position;
