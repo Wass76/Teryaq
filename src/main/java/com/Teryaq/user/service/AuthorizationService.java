@@ -5,7 +5,6 @@ package com.Teryaq.user.service;
 //import com.Teryaq.dealers.repository.LeadsRepository;
 import com.Teryaq.user.entity.User;
 import com.Teryaq.user.repository.UserRepository;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 @Service

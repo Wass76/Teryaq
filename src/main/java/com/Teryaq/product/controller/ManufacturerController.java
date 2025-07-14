@@ -30,7 +30,7 @@ public class ManufacturerController {
         return ResponseEntity.ok(manufacturerService.getByID(id, lang));}
 
     @PostMapping
-    @PreAuthorize("hasRole('PLATFORM_ADMIN')")
+    @PreAuthorize("hasRole('PLATFORM_ADMIN') || hasRole('PHARMACY_MANAGER')")
     public ResponseEntity<?> createManufacturer(@RequestBody ManufacturerDTORequest dto,
                                                 @RequestParam String lang) {
         ManufacturerDTOResponse response = manufacturerService.insertManufacturer(dto, lang);

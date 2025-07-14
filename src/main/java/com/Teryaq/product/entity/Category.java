@@ -4,8 +4,12 @@ package com.Teryaq.product.entity;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
+import lombok.ToString;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.Fetch;
+import org.hibernate.annotations.FetchMode;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.LocalDateTime;
@@ -23,7 +27,7 @@ public class Category {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false, unique = true)
+    @Column(nullable = false)
     private String name;
 
     @CreationTimestamp
@@ -34,10 +38,14 @@ public class Category {
     private LocalDateTime updatedAt;
 
     @ManyToMany(mappedBy = "categories")
+    @EqualsAndHashCode.Exclude
+    @ToString.Exclude
     private Set<MasterProduct> products = new HashSet<>();
 
-    @OneToMany(mappedBy = "category")
-    private Set<CategoryTranslation> translations;
+    @OneToMany(mappedBy = "category", fetch = FetchType.EAGER, cascade = CascadeType.ALL, orphanRemoval = true)
+    @Fetch(FetchMode.SUBSELECT)
+    private Set<CategoryTranslation> translations = new HashSet<>();
+
 
 }
 

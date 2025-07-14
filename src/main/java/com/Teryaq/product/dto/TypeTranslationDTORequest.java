@@ -11,7 +11,6 @@ import lombok.NoArgsConstructor;
 @Builder
 public class TypeTranslationDTORequest {
 
-    private String name;
-    private String languageCode;
-    
+     private String languageCode;
+     private String name;
 }

@@ -1,4 +1,4 @@
-package com.Teryaq.product.dto;
+package com.Teryaq.product.aPharmacyProduct.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -12,7 +12,7 @@ import java.util.Set;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-public class MProductDTOResponse {
+public class PharmacyProductDTOResponse {
 
     private Long id;
     private String tradeName;
@@ -23,14 +23,16 @@ public class MProductDTOResponse {
     private float refSellingPrice;
     private String notes;
     private float tax;
-    private String barcode;
+    private Set<String> barcodes;
 
     @Builder.Default
-    private String productType = "MASTER";
-    
+    private String productType = "PHARMACY";
 
     @Builder.Default
     private Boolean requiresPrescription = false;
+
+    private Long pharmacyId;
+    private String pharmacyName;
 
     private String type;
     private String form;
@@ -38,5 +40,5 @@ public class MProductDTOResponse {
     private Set<String> categories;
 
     @Builder.Default
-    private Set<MProductTranslationDTOResponse> translations = new HashSet<>();
+    private Set<PharmacyProductTranslationDTOResponse> translations = new HashSet<>();
 }

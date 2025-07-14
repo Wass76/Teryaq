@@ -16,8 +16,6 @@ public class DataSeed {
 
     private final LanguageRepo languageRepo;
 
-    private final ActiveIngredientRepo activeIngredientRepo;
-    private final ActiveIngredientTranslationRepo activeIngredientTranslationRepo;
 
     private final CategoryRepo categoryRepo;
     private final CategoryTranslationRepo categoryTranslationRepo;
@@ -34,7 +32,6 @@ public class DataSeed {
     @PostConstruct
     public void seedAll() {
         seedLanguages();
-        seedActiveIngredients();
         seedCategories();
         seedForms();
         seedTypes();
@@ -52,24 +49,6 @@ public class DataSeed {
         }
     }
 
-    private void seedActiveIngredients() {
-        if (activeIngredientRepo.count() == 0) {
-            Language ar = languageRepo.findByCode("ar").orElseThrow();
-            Language en = languageRepo.findByCode("en").orElseThrow();
-
-            ActiveIngredient ing1 = activeIngredientRepo.save(new ActiveIngredient(null, "paracetamol", null, null, null, null));
-            ActiveIngredient ing2 = activeIngredientRepo.save(new ActiveIngredient(null, "ibuprofen", null, null, null, null));
-
-            List<ActiveIngredientTranslation> translations = List.of(
-                    new ActiveIngredientTranslation(null, "باراسيتامول", ing1, ar),
-                    new ActiveIngredientTranslation(null, "Paracetamol", ing1, en),
-                    new ActiveIngredientTranslation(null, "إيبوبروفين", ing2, ar),
-                    new ActiveIngredientTranslation(null, "Ibuprofen", ing2, en)
-            );
-            activeIngredientTranslationRepo.saveAll(translations);
-            System.out.println("✅ Active Ingredients seeded");
-        }
-    }
 
     private void seedCategories() {
         if (categoryRepo.count() == 0) {
@@ -86,9 +65,7 @@ public class DataSeed {
 
             List<CategoryTranslation> translations = List.of(
                     new CategoryTranslation(null, "مسكنات", cat1, ar),
-                    new CategoryTranslation(null, "Painkillers", cat1, en),
-                    new CategoryTranslation(null, "مضادات حيوية", cat2, ar),
-                    new CategoryTranslation(null, "Antibiotics", cat2, en)
+                    new CategoryTranslation(null, "مضادات حيوية", cat2, ar)
             );
             categoryTranslationRepo.saveAll(translations);
             System.out.println("✅ Categories seeded");
@@ -106,8 +83,7 @@ public class DataSeed {
             form = formRepo.save(form);
 
             List<FormTranslation> translations = List.of(
-                    new FormTranslation(null, "حبوب", form, ar),
-                    new FormTranslation(null, "Tablet", form, en)
+                    new FormTranslation(null, "حبوب", form, ar)
             );
             formTranslationRepo.saveAll(translations);
             System.out.println("✅ Forms seeded");
@@ -124,8 +100,7 @@ public class DataSeed {
             type = typeRepo.save(type);
 
             List<TypeTranslation> translations = List.of(
-                    new TypeTranslation(null, "دواء جنيس", type, ar),
-                    new TypeTranslation(null, "Generic", type, en)
+                    new TypeTranslation(null, "دواء جنيس", type, ar)
             );
             typeTranslationRepo.saveAll(translations);
             System.out.println("✅ Types seeded");
@@ -142,8 +117,7 @@ public class DataSeed {
             m = manufacturerRepo.save(m);
 
             List<ManufacturerTranslation> translations = List.of(
-                    new ManufacturerTranslation(null, "ترياق فارما", m, ar),
-                    new ManufacturerTranslation(null, "Teryaq Pharma", m, en)
+                    new ManufacturerTranslation(null, "ترياق فارما", m, ar)
             );
             manufacturerTranslationRepo.saveAll(translations);
             System.out.println("✅ Manufacturers seeded");

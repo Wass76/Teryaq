@@ -5,15 +5,11 @@ import com.Teryaq.user.dto.EmployeeCreateRequestDTO;
 import com.Teryaq.user.dto.EmployeeResponseDTO;
 import com.Teryaq.user.dto.PharmacyResponseDTO;
 import com.Teryaq.user.dto.UserAuthenticationResponse;
-import com.Teryaq.user.entity.Employee;
-import com.Teryaq.user.entity.Pharmacy;
 import com.Teryaq.user.service.PharmacyService;
 import jakarta.servlet.http.HttpServletRequest;
-import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;

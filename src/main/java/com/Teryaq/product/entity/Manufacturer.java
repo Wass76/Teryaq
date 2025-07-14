@@ -4,11 +4,16 @@ package com.Teryaq.product.entity;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
+import lombok.ToString;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.Fetch;
+import org.hibernate.annotations.FetchMode;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.LocalDateTime;
+import java.util.HashSet;
 import java.util.Set;
 
 @Entity
@@ -22,7 +27,7 @@ public class Manufacturer {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false, unique = true)
+    @Column(nullable = false)
     private String name;
 
     @CreationTimestamp
@@ -33,10 +38,14 @@ public class Manufacturer {
     private LocalDateTime updatedAt;
 
     @OneToMany(mappedBy = "manufacturer")
+    @EqualsAndHashCode.Exclude
+    @ToString.Exclude
     private Set<MasterProduct> product;
 
-    @OneToMany(mappedBy = "manufacturer")
-    private Set<ManufacturerTranslation> translations;
+    @OneToMany(mappedBy = "manufacturer", fetch = FetchType.EAGER, cascade = CascadeType.ALL, orphanRemoval = true)
+    @Fetch(FetchMode.SUBSELECT)
+    private Set<ManufacturerTranslation> translations = new HashSet<>();
+
 
 }
 

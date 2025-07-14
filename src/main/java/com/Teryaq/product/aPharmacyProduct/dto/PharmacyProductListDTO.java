@@ -1,0 +1,25 @@
+package com.Teryaq.product.aPharmacyProduct.dto;
+
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+import java.util.Set;
+
+@Data
+@AllArgsConstructor
+@NoArgsConstructor
+@Builder
+public class PharmacyProductListDTO {
+    private String tradeName;
+    private String scientificName;
+    private String concentration;
+    private String size;
+    private Boolean requiresPrescription;
+    private Set<String> barcodes;
+    private String productType;
+        
+    private Long pharmacyId;
+    private String pharmacyName;
+} 

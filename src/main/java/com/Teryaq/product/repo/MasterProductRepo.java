@@ -11,15 +11,17 @@ import java.util.Optional;
 
 public interface MasterProductRepo extends JpaRepository<MasterProduct, Long> {
     @Query("""
-    SELECT  p FROM MasterProduct p
-    LEFT JOIN p.translations pt
-    WHERE (
-        pt.language.code = :languageCode AND (
-            LOWER(pt.tradeName) LIKE LOWER(CONCAT('%', :keyword, '%')) OR
-            LOWER(pt.scientificName) LIKE LOWER(CONCAT('%', :keyword, '%'))
-        )
-    )
-    OR LOWER(p.barcode) LIKE LOWER(CONCAT('%', :keyword, '%'))
+SELECT DISTINCT p FROM MasterProduct p
+LEFT JOIN p.translations pt
+WHERE (
+    LOWER(p.tradeName) LIKE LOWER(CONCAT('%', :keyword, '%')) OR
+    LOWER(p.scientificName) LIKE LOWER(CONCAT('%', :keyword, '%')) OR
+    LOWER(p.barcode) LIKE LOWER(CONCAT('%', :keyword, '%')) OR
+    (pt.language.code = :languageCode AND (
+        LOWER(pt.tradeName) LIKE LOWER(CONCAT('%', :keyword, '%')) OR
+        LOWER(pt.scientificName) LIKE LOWER(CONCAT('%', :keyword, '%'))
+    ))
+)
 """)
     Page<MasterProduct> search(
             @Param("keyword") String keyword,
@@ -29,4 +31,6 @@ public interface MasterProductRepo extends JpaRepository<MasterProduct, Long> {
 
     Optional<MasterProduct> findByBarcode(@Param("barcode") String barcode);
 
+    @Query("SELECT DISTINCT p FROM MasterProduct p LEFT JOIN FETCH p.translations tr LEFT JOIN FETCH tr.language WHERE p.id = :id")
+    Optional<MasterProduct> findByIdWithTranslations(@Param("id") Long id);
 }

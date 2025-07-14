@@ -9,7 +9,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 import java.util.HashSet;
-import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Component
@@ -60,13 +60,13 @@ public class MasterProductMapper {
                 .orElse(null)
                 : null;
 
-        List<MProductTranslationDTOResponse> allTranslations = null;
-        if (product.getTranslations() != null) {
-            allTranslations = product.getTranslations().stream()
-                    .map(translationMapper::toResponse)
-                    .collect(Collectors.toList());
-        }
+        Set<MProductTranslationDTOResponse> allTranslations = product.getTranslations() != null 
+            ? product.getTranslations().stream()
+                .map(translationMapper::toResponse)
+                .collect(Collectors.toSet())
+            : new HashSet<>();
 
+    
         return MProductDTOResponse.builder()
                 .id(product.getId())
                 .tradeName(translation != null ? translation.getTradeName() : product.getTradeName())
@@ -78,9 +78,8 @@ public class MasterProductMapper {
                 .notes(translation != null ? translation.getNotes() : product.getNotes())
                 .tax(product.getTax())
                 .barcode(product.getBarcode())
-                .dataSource(product.getDataSource())
+                .productType("MASTER")
                 .requiresPrescription(product.getRequiresPrescription())
-                .translations(allTranslations)
 
                 .categories(
                         product.getCategories().stream()
@@ -124,6 +123,7 @@ public class MasterProductMapper {
                                 .orElse(product.getManufacturer().getName())
                                 : null
                 )
+                .translations(allTranslations)
 
                 .build();
     }

@@ -1,27 +1,32 @@
-package com.Teryaq.product.entity;
+package com.Teryaq.product.aPharmacyProduct;
+
+import com.Teryaq.product.entity.Category;
+import com.Teryaq.product.entity.Form;
+import com.Teryaq.product.entity.Manufacturer;
+import com.Teryaq.product.entity.Type;
+import com.Teryaq.user.entity.Pharmacy;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.Fetch;
+import org.hibernate.annotations.FetchMode;
 import org.hibernate.annotations.UpdateTimestamp;
+import lombok.EqualsAndHashCode;
+import lombok.ToString;
 
 import java.time.LocalDateTime;
-import java.util.Set;
 import java.util.HashSet;
+import java.util.Set;
 
 @Data
 @Entity
-@Table(
-        name = "master_product",
-        indexes = {
-                @Index(columnList = "barcode")
-        })
+@Table(name = "pharmacy_product")
 @NoArgsConstructor
 @AllArgsConstructor
-public class MasterProduct {
-
+public class PharmacyProduct {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -35,20 +40,26 @@ public class MasterProduct {
     private String notes;
     private float tax;
 
-    @Column(nullable = false, unique = true , name = "barcode")
-    private String barcode;
     private Boolean requiresPrescription;
 
-    @CreationTimestamp
-    @Column(updatable = false)
+    @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
+    @Fetch(FetchMode.SUBSELECT)
+    @EqualsAndHashCode.Exclude
+    @ToString.Exclude
+    private Set<PharmacyProductBarcode> barcodes = new HashSet<>();
+
     private LocalDateTime createdAt;
 
     @UpdateTimestamp
     private LocalDateTime updatedAt;
 
+    @ManyToOne
+    @JoinColumn(name = "pharmacy_id", nullable = false)
+    private Pharmacy pharmacy;  
+
     @ManyToMany(cascade = {CascadeType.PERSIST, CascadeType.MERGE})
     @JoinTable(
-            name = "product_category",
+            name = "pharmacy_product_category",
             joinColumns = @JoinColumn(name = "product_id"),
             inverseJoinColumns = @JoinColumn(name = "category_id")
     )
@@ -66,10 +77,9 @@ public class MasterProduct {
     @JoinColumn(name = "manufacturer_id")
     private Manufacturer manufacturer;
 
-
-    @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true)
-    private Set<MasterProductTranslation> translations = new HashSet<>();
-
-
-
-}
+    @OneToMany(mappedBy = "product", fetch = FetchType.EAGER, cascade = CascadeType.ALL, orphanRemoval = true)
+    @Fetch(FetchMode.SUBSELECT)
+    @EqualsAndHashCode.Exclude
+@ToString.Exclude
+    private Set<PharmacyProductTranslation> translations = new HashSet<>();
+} 

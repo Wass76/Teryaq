@@ -1,6 +1,7 @@
-package com.Teryaq.product.dto;
+package com.Teryaq.product.aPharmacyProduct.dto;
 
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -12,35 +13,35 @@ import java.util.Set;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-public class MProductDTORequest {
-
+public class PharmacyProductDTORequest {
 
     @NotBlank(message = "Trade name is required")
     private String tradeName;
 
-    @NotBlank(message = "Scientific name is required")
     private String scientificName;
 
-    @NotBlank(message = "Concentration is required")
     private String concentration;
 
     @NotBlank(message = "size is required")
     private String size;
 
-    @NotBlank(message = "Purchase Price is required")
-    private float refPurchasePrice;
+    // @NotBlank(message = "Purchase Price is required")
+    // private float refPurchasePrice;
 
-    @NotBlank(message = "Selling Price is required")
-    private float refSellingPrice;
+    // @NotBlank(message = "Selling Price is required")
+    // private float refSellingPrice;
 
     private String notes;
     private float tax;
 
-    @NotBlank(message = "Barcode is required")
-    private String barcode;
+    @NotNull(message = "At least one barcode is required")
+    private Set<String> barcodes;
 
     @Builder.Default
     private Boolean requiresPrescription = false;
+
+    @NotNull(message = "Pharmacy ID is required")
+    private Long pharmacyId;
 
     private Long typeId;
     private Long formId;
@@ -48,6 +49,5 @@ public class MProductDTORequest {
 
     private Set<Long> categoryIds;
 
-
-    private Set<MProductTranslationDTORequest> translations;
+    private Set<PharmacyProductTranslationDTORequest> translations;
 }

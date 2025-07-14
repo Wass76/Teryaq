@@ -4,7 +4,6 @@ import com.Teryaq.user.dto.AuthenticationRequest;
 import com.Teryaq.user.dto.PharmacyCreateRequestDTO;
 import com.Teryaq.user.dto.PharmacyResponseDTO;
 import com.Teryaq.user.dto.UserAuthenticationResponse;
-import com.Teryaq.user.entity.Pharmacy;
 import com.Teryaq.user.service.PharmacyService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;

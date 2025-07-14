@@ -19,7 +19,8 @@ public class TypeController {
     }
 
     @GetMapping
-    public  ResponseEntity<?> getAll(@RequestParam String lang) {
+    public  ResponseEntity<?> getAll(@RequestParam(name = "lang", defaultValue = "en") String lang) {
+        System.out.println("Received langCode: " + lang);
         return ResponseEntity.ok(typeService.getTypes(lang));
     }
 
@@ -32,7 +33,7 @@ public class TypeController {
     @PostMapping
     @PreAuthorize("hasRole('PLATFORM_ADMIN')")
     public ResponseEntity<?> createType(@RequestBody TypeDTORequest type,
-                                        @RequestParam String lang) {
+                                        @RequestParam(name = "lang", defaultValue = "en") String lang) {
         return ResponseEntity.ok(typeService.insertType(type, lang));
     }
 
@@ -40,7 +41,7 @@ public class TypeController {
     @PreAuthorize("hasRole('PLATFORM_ADMIN')")
     public  ResponseEntity<?> updateType(@PathVariable Long id,
                                          @RequestBody TypeDTORequest type,
-                                         @RequestParam String lang) {
+                                         @RequestParam(name = "lang", defaultValue = "en") String lang) {
         return ResponseEntity.ok(typeService.editType(id, type, lang));
     }
 

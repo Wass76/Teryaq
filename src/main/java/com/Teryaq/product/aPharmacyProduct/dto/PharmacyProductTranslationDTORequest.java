@@ -1,5 +1,4 @@
-package com.Teryaq.product.dto;
-
+package com.Teryaq.product.aPharmacyProduct.dto;
 
 import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
@@ -11,7 +10,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-public class MProductTranslationDTORequest {
+public class PharmacyProductTranslationDTORequest {
 
     @NotBlank(message = "Trade name is required")
     private String tradeName;
@@ -21,7 +20,5 @@ public class MProductTranslationDTORequest {
 
     private String notes;
 
-
-    private Long languageId ;
-    private String languageCode;
-}
+    private String languageCode ;
+} 
