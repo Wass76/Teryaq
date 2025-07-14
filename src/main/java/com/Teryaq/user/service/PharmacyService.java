@@ -14,7 +14,6 @@ import com.Teryaq.user.repository.PharmacyRepository;
 import com.Teryaq.user.repository.RoleRepository;
 import com.Teryaq.user.repository.UserRepository;
 import com.Teryaq.utils.exception.ResourceNotFoundException;
-import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;

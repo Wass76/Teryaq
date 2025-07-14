@@ -2,7 +2,6 @@ package com.Teryaq.user.service;
 
 import com.Teryaq.user.entity.User;
 import com.Teryaq.user.repository.UserRepository;
-import com.Teryaq.utils.exception.ResourceNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
