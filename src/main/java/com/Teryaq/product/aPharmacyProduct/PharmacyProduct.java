@@ -6,6 +6,8 @@ import com.Teryaq.product.entity.Manufacturer;
 import com.Teryaq.product.entity.Type;
 import com.Teryaq.user.entity.Pharmacy;
 
+import com.Teryaq.utils.entity.AuditedEntity;
+import com.Teryaq.utils.entity.BaseEntity;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -26,11 +28,8 @@ import java.util.Set;
 @Table(name = "pharmacy_product")
 @NoArgsConstructor
 @AllArgsConstructor
-public class PharmacyProduct {
+public class PharmacyProduct extends AuditedEntity {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
     private String tradeName;
     private String scientificName;
     private String concentration;
@@ -42,16 +41,11 @@ public class PharmacyProduct {
 
     private Boolean requiresPrescription;
 
-    @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
-    @Fetch(FetchMode.SUBSELECT)
-    @EqualsAndHashCode.Exclude
-    @ToString.Exclude
+    @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+//    @Fetch(FetchMode.SUBSELECT)
+//    @EqualsAndHashCode.Exclude
+//    @ToString.Exclude
     private Set<PharmacyProductBarcode> barcodes = new HashSet<>();
-
-    private LocalDateTime createdAt;
-
-    @UpdateTimestamp
-    private LocalDateTime updatedAt;
 
     @ManyToOne
     @JoinColumn(name = "pharmacy_id", nullable = false)
@@ -78,8 +72,13 @@ public class PharmacyProduct {
     private Manufacturer manufacturer;
 
     @OneToMany(mappedBy = "product", fetch = FetchType.EAGER, cascade = CascadeType.ALL, orphanRemoval = true)
-    @Fetch(FetchMode.SUBSELECT)
-    @EqualsAndHashCode.Exclude
-@ToString.Exclude
+//    @Fetch(FetchMode.SUBSELECT)
+//    @EqualsAndHashCode.Exclude
+//@ToString.Exclude
     private Set<PharmacyProductTranslation> translations = new HashSet<>();
-} 
+
+    @Override
+    protected String getSequenceName() {
+        return "pharmacy_product_id_seq";
+    }
+}

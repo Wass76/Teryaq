@@ -29,10 +29,10 @@ public class PharmacyProductBarcode {
     @Column(nullable = false, unique = true)
     private String barcode;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "product_id", nullable = false)
-    @EqualsAndHashCode.Exclude
-    @ToString.Exclude
+//    @EqualsAndHashCode.Exclude
+//    @ToString.Exclude
     private PharmacyProduct product;
 
     @CreationTimestamp
