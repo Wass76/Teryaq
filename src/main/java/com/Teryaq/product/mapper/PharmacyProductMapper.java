@@ -4,7 +4,7 @@ import com.Teryaq.product.repo.CategoryRepo;
 import com.Teryaq.product.dto.PharmacyProductDTORequest;
 import com.Teryaq.product.dto.PharmacyProductDTOResponse;
 import com.Teryaq.product.dto.PharmacyProductListDTO;
-import com.Teryaq.product.dto.PharmacyProductTranslationDTOResponse;
+//import com.Teryaq.product.dto.PharmacyProductTranslationDTOResponse;
 import com.Teryaq.product.entity.Category;
 import com.Teryaq.product.entity.PharmacyProduct;
 import com.Teryaq.product.entity.PharmacyProductBarcode;
@@ -29,7 +29,7 @@ public class PharmacyProductMapper {
     private final FormRepo formRepo;
     private final ManufacturerRepo manufacturerRepo;
     private final PharmacyRepository pharmacyRepository;
-    private final PharmacyProductTranslationMapper translationMapper;
+   // private final PharmacyProductTranslationMapper translationMapper;
 
     public PharmacyProduct toEntity(PharmacyProductDTORequest dto) {
         PharmacyProduct product = new PharmacyProduct();
@@ -90,11 +90,11 @@ public class PharmacyProductMapper {
                 .orElse(null)
                 : null;
 
-        Set<PharmacyProductTranslationDTOResponse> allTranslations = product.getTranslations() != null 
-            ? product.getTranslations().stream()
-                .map(translationMapper::toResponse)
-                .collect(Collectors.toSet())
-            : new HashSet<>();
+        // Set<PharmacyProductTranslationDTOResponse> allTranslations = product.getTranslations() != null 
+        //     ? product.getTranslations().stream()
+        //         .map(translationMapper::toResponse)
+        //         .collect(Collectors.toSet())
+        //     : new HashSet<>();
 
         return PharmacyProductDTOResponse.builder()
                 .id(product.getId())

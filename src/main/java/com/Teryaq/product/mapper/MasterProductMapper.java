@@ -2,14 +2,14 @@ package com.Teryaq.product.mapper;
 
 import com.Teryaq.product.dto.MProductDTORequest;
 import com.Teryaq.product.dto.MProductDTOResponse;
-import com.Teryaq.product.dto.MProductTranslationDTOResponse;
+//import com.Teryaq.product.dto.MProductTranslationDTOResponse;
 import com.Teryaq.product.entity.*;
 import com.Teryaq.product.repo.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 import java.util.HashSet;
-import java.util.Set;
+//import java.util.Set;
 import java.util.stream.Collectors;
 
 @Component
@@ -20,7 +20,7 @@ public class MasterProductMapper {
     private final TypeRepo typeRepo;
     private final FormRepo formRepo;
     private final ManufacturerRepo manufacturerRepo;
-    private final MasterProductTranslationMapper translationMapper;
+   // private final MasterProductTranslationMapper translationMapper;
 
     public MasterProduct toEntity(MProductDTORequest dto) {
         MasterProduct product = new MasterProduct();
@@ -60,11 +60,11 @@ public class MasterProductMapper {
                 .orElse(null)
                 : null;
 
-        Set<MProductTranslationDTOResponse> allTranslations = product.getTranslations() != null 
-            ? product.getTranslations().stream()
-                .map(translationMapper::toResponse)
-                .collect(Collectors.toSet())
-            : new HashSet<>();
+        // Set<MProductTranslationDTOResponse> allTranslations = product.getTranslations() != null 
+        //     ? product.getTranslations().stream()
+        //         .map(translationMapper::toResponse)
+        //         .collect(Collectors.toSet())
+        //     : new HashSet<>();
 
     
         return MProductDTOResponse.builder()

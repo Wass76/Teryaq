@@ -2,7 +2,6 @@ package com.Teryaq.product.controller;
 
 
 import com.Teryaq.product.dto.MProductDTORequest;
-import com.Teryaq.product.dto.SearchDTORequest;
 import com.Teryaq.product.service.MasterProductService;
 import io.swagger.v3.oas.annotations.Parameter;
 import org.springframework.data.domain.PageRequest;

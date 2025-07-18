@@ -9,7 +9,6 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -70,14 +69,12 @@ public class PharmacyProductController {
     }
 
     @PostMapping
-    //@PreAuthorize("hasRole('PHARMACY_MANAGER')")
     public ResponseEntity<?> createPharmacyProduct(@RequestBody PharmacyProductDTORequest pharmacyProduct, 
                                                    @RequestParam(name = "lang", defaultValue = "en") String lang ) {
        return ResponseEntity.ok( pharmacyProductService.insertPharmacyProduct(pharmacyProduct, lang));
     }
 
     @PutMapping("{id}")
-    //@PreAuthorize("hasRole('PHARMACY_MANAGER')")
     public  ResponseEntity<?> updatePharmacyProductById(@PathVariable Long id,
                                                         @RequestBody PharmacyProductDTORequest pharmacyProduct, 
                                                         @RequestParam(name = "lang", defaultValue = "en") String lang) {
@@ -85,7 +82,6 @@ public class PharmacyProductController {
     }
 
     @DeleteMapping("{id}")
-    //@PreAuthorize("hasRole('PHARMACY_MANAGER')")
     public  ResponseEntity<Void> deletePharmacyProductById(@PathVariable Long id) {
         pharmacyProductService.deletePharmacyProduct(id);
         return new ResponseEntity<>(HttpStatus.NO_CONTENT);
