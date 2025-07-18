@@ -22,18 +22,18 @@ public class FormController {
     }
 
     @GetMapping 
-    public  ResponseEntity<?> geForms(@RequestParam String lang) {
+    public  ResponseEntity<?> geForms(@RequestParam(name = "lang", defaultValue = "en") String lang) {
         return ResponseEntity.ok(formService.getForms(lang));}
 
     @GetMapping("{id}")
     public  ResponseEntity<?> getById(@PathVariable Long id,
-                                      @RequestParam String lang) {
+                                      @RequestParam(name = "lang", defaultValue = "en") String lang) {
         return ResponseEntity.ok(formService.getByID(id, lang));}
 
     @PostMapping
     @PreAuthorize("hasRole('PLATFORM_ADMIN')")
     public ResponseEntity<?> createForm(@RequestBody FormDTORequest dto,
-                                        @RequestParam String lang) {
+                                        @RequestParam(name = "lang", defaultValue = "en") String lang) {
         FormDTOResponse response = formService.insertForm(dto, lang);
         return new ResponseEntity<>(response, HttpStatus.CREATED);}
 
@@ -41,7 +41,7 @@ public class FormController {
     @PreAuthorize("hasRole('PLATFORM_ADMIN')")
     public  ResponseEntity<?> updateForm(@PathVariable Long id,
                                          @RequestBody FormDTORequest Form,
-                                         @RequestParam String lang) {
+                                         @RequestParam(name = "lang", defaultValue = "en") String lang) {
         return ResponseEntity.ok(formService.editForm(id, Form, lang));
     }   
 

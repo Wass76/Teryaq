@@ -25,7 +25,8 @@ public class TypeController {
     }
 
     @GetMapping("{id}")
-    public  ResponseEntity<?> getById(@PathVariable Long id,  @RequestParam String lang) {
+    public  ResponseEntity<?> getById(@PathVariable Long id,  
+                                      @RequestParam(name = "lang", defaultValue = "en") String lang) {
         return ResponseEntity.ok(typeService.getByID(id, lang));
     }
 

@@ -2,11 +2,13 @@ package com.Teryaq.product.entity;
 
 
 import com.Teryaq.language.Language;
+import com.Teryaq.utils.entity.AuditedEntity;
+
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 import lombok.EqualsAndHashCode;
+import lombok.NoArgsConstructor;
 import lombok.ToString;
 
 @Entity
@@ -14,22 +16,23 @@ import lombok.ToString;
 @Table(name = "Category_Translation")
 @NoArgsConstructor
 @AllArgsConstructor
-public class CategoryTranslation {
-
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+public class CategoryTranslation extends AuditedEntity{
 
     @Column(nullable = false)
     private String name;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "category_id")
     @EqualsAndHashCode.Exclude
     @ToString.Exclude
     private Category category;
 
-    @ManyToOne(fetch = FetchType.EAGER)
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "language_id")
     private Language language;
+
+    @Override
+    protected String getSequenceName() {
+        return "category_translation_id_seq";
+    }
 }

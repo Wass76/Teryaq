@@ -1,4 +1,4 @@
-package com.Teryaq.product.aPharmacyProduct.dto;
+package com.Teryaq.product.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -39,6 +39,6 @@ public class PharmacyProductDTOResponse {
     private String manufacturer;
     private Set<String> categories;
 
-    @Builder.Default
-    private Set<PharmacyProductTranslationDTOResponse> translations = new HashSet<>();
+    // @Builder.Default
+    // private Set<PharmacyProductTranslationDTOResponse> translations = new HashSet<>();
 }

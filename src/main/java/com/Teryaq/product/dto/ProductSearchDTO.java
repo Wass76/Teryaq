@@ -9,7 +9,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-public class UnifiedProductSearchDTO {
+public class ProductSearchDTO {
     private Long id;
     private String tradeName;
     private String scientificName;

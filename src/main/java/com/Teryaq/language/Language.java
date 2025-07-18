@@ -1,5 +1,7 @@
 package com.Teryaq.language;
 
+import com.Teryaq.utils.entity.AuditedEntity;
+
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -10,7 +12,7 @@ import lombok.NoArgsConstructor;
 @Table(name = "languages")
 @NoArgsConstructor
 @AllArgsConstructor
-public class Language {
+public class Language extends AuditedEntity{
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;

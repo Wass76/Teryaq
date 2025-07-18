@@ -1,25 +1,13 @@
-package com.Teryaq.product.aPharmacyProduct;
+package com.Teryaq.product.entity;
 
-import com.Teryaq.product.entity.Category;
-import com.Teryaq.product.entity.Form;
-import com.Teryaq.product.entity.Manufacturer;
-import com.Teryaq.product.entity.Type;
 import com.Teryaq.user.entity.Pharmacy;
 
 import com.Teryaq.utils.entity.AuditedEntity;
-import com.Teryaq.utils.entity.BaseEntity;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.Fetch;
-import org.hibernate.annotations.FetchMode;
-import org.hibernate.annotations.UpdateTimestamp;
-import lombok.EqualsAndHashCode;
-import lombok.ToString;
 
-import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -40,12 +28,6 @@ public class PharmacyProduct extends AuditedEntity {
     private float tax;
 
     private Boolean requiresPrescription;
-
-    @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
-//    @Fetch(FetchMode.SUBSELECT)
-//    @EqualsAndHashCode.Exclude
-//    @ToString.Exclude
-    private Set<PharmacyProductBarcode> barcodes = new HashSet<>();
 
     @ManyToOne
     @JoinColumn(name = "pharmacy_id", nullable = false)
@@ -71,7 +53,13 @@ public class PharmacyProduct extends AuditedEntity {
     @JoinColumn(name = "manufacturer_id")
     private Manufacturer manufacturer;
 
-    @OneToMany(mappedBy = "product", fetch = FetchType.EAGER, cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+//    @Fetch(FetchMode.SUBSELECT)
+//    @EqualsAndHashCode.Exclude
+//    @ToString.Exclude
+    private Set<PharmacyProductBarcode> barcodes = new HashSet<>();
+
+    @OneToMany(mappedBy = "product", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
 //    @Fetch(FetchMode.SUBSELECT)
 //    @EqualsAndHashCode.Exclude
 //@ToString.Exclude

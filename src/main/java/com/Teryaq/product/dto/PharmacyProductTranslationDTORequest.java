@@ -1,4 +1,4 @@
-package com.Teryaq.product.aPharmacyProduct.dto;
+package com.Teryaq.product.dto;
 
 import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;

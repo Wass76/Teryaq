@@ -74,7 +74,7 @@ public class ManufacturerService {
             .map(t -> {
                 Language lang = languageRepo.findByCode(t.getLanguageCode())
                         .orElseThrow(() -> new EntityNotFoundException("Language not found: " + t.getLanguageCode()));
-                return new ManufacturerTranslation(null, t.getName(), savedManufacturer, lang);
+                return new ManufacturerTranslation(t.getName(), savedManufacturer, lang);
             })
             .collect(Collectors.toList());
 
@@ -101,7 +101,7 @@ public class ManufacturerService {
                         .map(t -> {
                             Language lang = languageRepo.findByCode(t.getLanguageCode())
                                     .orElseThrow(() -> new EntityNotFoundException("Language not found: " + t.getLanguageCode()));
-                            return new ManufacturerTranslation(null, t.getName(), saved, lang);
+                            return new ManufacturerTranslation(t.getName(), saved, lang);
                         })
                         .toList();
 

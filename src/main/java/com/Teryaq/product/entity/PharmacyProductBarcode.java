@@ -1,15 +1,16 @@
-package com.Teryaq.product.aPharmacyProduct;
+package com.Teryaq.product.entity;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.NoArgsConstructor;
-import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.UpdateTimestamp;
 import lombok.EqualsAndHashCode;
+import lombok.NoArgsConstructor;
 import lombok.ToString;
 
-import java.time.LocalDateTime;
+import com.Teryaq.utils.entity.AuditedEntity;
+
+// import lombok.EqualsAndHashCode;
+// import lombok.ToString;
 
 @Data
 @Entity
@@ -20,25 +21,19 @@ import java.time.LocalDateTime;
         })
 @NoArgsConstructor
 @AllArgsConstructor
-public class PharmacyProductBarcode {
-
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+public class PharmacyProductBarcode extends AuditedEntity {
 
     @Column(nullable = false, unique = true)
     private String barcode;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "product_id", nullable = false)
-//    @EqualsAndHashCode.Exclude
-//    @ToString.Exclude
+   @EqualsAndHashCode.Exclude
+   @ToString.Exclude
     private PharmacyProduct product;
 
-    @CreationTimestamp
-    @Column(updatable = false)
-    private LocalDateTime createdAt;
-
-    @UpdateTimestamp
-    private LocalDateTime updatedAt;
+    @Override
+    protected String getSequenceName() {
+        return "pharmacy_product_barcode_id_seq";
+    }
 } 

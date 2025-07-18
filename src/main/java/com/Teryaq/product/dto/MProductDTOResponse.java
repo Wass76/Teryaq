@@ -37,6 +37,6 @@ public class MProductDTOResponse {
     private String manufacturer;
     private Set<String> categories;
 
-    @Builder.Default
-    private Set<MProductTranslationDTOResponse> translations = new HashSet<>();
+    // @Builder.Default
+    // private Set<MProductTranslationDTOResponse> translations = new HashSet<>();
 }

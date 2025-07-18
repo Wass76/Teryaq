@@ -71,7 +71,7 @@ public class FormService {
             .map(t -> {
                 Language lang = languageRepo.findByCode(t.getLanguageCode())
                         .orElseThrow(() -> new EntityNotFoundException("Language not found: " + t.getLanguageCode()));
-                return new FormTranslation(null, t.getName(), savedForm, lang);
+                return new FormTranslation(t.getName(), savedForm, lang);
             })
             .collect(Collectors.toList());
 
@@ -97,7 +97,7 @@ public class FormService {
                         .map(t -> {
                             Language lang = languageRepo.findByCode(t.getLanguageCode())
                                     .orElseThrow(() -> new EntityNotFoundException("Language not found: " + t.getLanguageCode()));
-                            return new FormTranslation(null, t.getName(), saved, lang);
+                            return new FormTranslation(t.getName(), saved, lang);
                         })
                         .toList();
 

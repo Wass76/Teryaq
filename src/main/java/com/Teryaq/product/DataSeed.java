@@ -53,7 +53,7 @@ public class DataSeed {
     private void seedCategories() {
         if (categoryRepo.count() == 0) {
             Language ar = languageRepo.findByCode("ar").orElseThrow();
-            Language en = languageRepo.findByCode("en").orElseThrow();
+            // Language en = languageRepo.findByCode("en").orElseThrow();
 
             Category cat1 = new Category();
             cat1.setName("Painkillers");
@@ -64,8 +64,8 @@ public class DataSeed {
             cat2 = categoryRepo.save(cat2);
 
             List<CategoryTranslation> translations = List.of(
-                    new CategoryTranslation(null, "مسكنات", cat1, ar),
-                    new CategoryTranslation(null, "مضادات حيوية", cat2, ar)
+                    new CategoryTranslation("مسكنات", cat1, ar),
+                    new CategoryTranslation( "مضادات حيوية", cat2, ar)
             );
             categoryTranslationRepo.saveAll(translations);
             System.out.println("✅ Categories seeded");
@@ -76,14 +76,13 @@ public class DataSeed {
     private void seedForms() {
         if (formRepo.count() == 0) {
             Language ar = languageRepo.findByCode("ar").orElseThrow();
-            Language en = languageRepo.findByCode("en").orElseThrow();
 
             Form form = new Form();
             form.setName("Tablet");
             form = formRepo.save(form);
 
             List<FormTranslation> translations = List.of(
-                    new FormTranslation(null, "حبوب", form, ar)
+                    new FormTranslation("حبوب", form, ar)
             );
             formTranslationRepo.saveAll(translations);
             System.out.println("✅ Forms seeded");
@@ -93,14 +92,13 @@ public class DataSeed {
     private void seedTypes() {
         if (typeRepo.count() == 0) {
             Language ar = languageRepo.findByCode("ar").orElseThrow();
-            Language en = languageRepo.findByCode("en").orElseThrow();
 
             Type type = new Type();
             type.setName("Generic");
             type = typeRepo.save(type);
 
             List<TypeTranslation> translations = List.of(
-                    new TypeTranslation(null, "دواء جنيس", type, ar)
+                    new TypeTranslation( "دواء جنيس", type, ar)
             );
             typeTranslationRepo.saveAll(translations);
             System.out.println("✅ Types seeded");
@@ -110,14 +108,13 @@ public class DataSeed {
     private void seedManufacturers() {
         if (manufacturerRepo.count() == 0) {
             Language ar = languageRepo.findByCode("ar").orElseThrow();
-            Language en = languageRepo.findByCode("en").orElseThrow();
 
             Manufacturer m = new Manufacturer();
             m.setName("Teryaq Pharma");
             m = manufacturerRepo.save(m);
 
             List<ManufacturerTranslation> translations = List.of(
-                    new ManufacturerTranslation(null, "ترياق فارما", m, ar)
+                    new ManufacturerTranslation("ترياق فارما", m, ar)
             );
             manufacturerTranslationRepo.saveAll(translations);
             System.out.println("✅ Manufacturers seeded");

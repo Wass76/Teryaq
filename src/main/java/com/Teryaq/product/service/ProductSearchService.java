@@ -1,10 +1,11 @@
 package com.Teryaq.product.service;
 
-import com.Teryaq.product.aPharmacyProduct.PharmacyProductRepo;
-import com.Teryaq.product.dto.UnifiedProductSearchDTO;
+import com.Teryaq.product.dto.ProductSearchDTO;
 import com.Teryaq.product.entity.MasterProduct;
-import com.Teryaq.product.aPharmacyProduct.PharmacyProduct;
+import com.Teryaq.product.entity.PharmacyProduct;
 import com.Teryaq.product.repo.MasterProductRepo;
+import com.Teryaq.product.repo.PharmacyProductRepo;
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -15,14 +16,14 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
-public class UnifiedProductSearchService {
+public class ProductSearchService {
 
     private final MasterProductRepo masterProductRepo;
     private final PharmacyProductRepo pharmacyProductRepo;
 
 
-    public List<UnifiedProductSearchDTO> searchProducts(String keyword, String languageCode) {
-        List<UnifiedProductSearchDTO> results = new java.util.ArrayList<>();
+    public List<ProductSearchDTO> searchProducts(String keyword, String languageCode) {
+        List<ProductSearchDTO> results = new java.util.ArrayList<>();
 
         // البحث في منتجات الماستر باستخدام الـ repository المحسن
         Page<MasterProduct> masterProductsPage = masterProductRepo.search(keyword, languageCode, PageRequest.of(0, 1000));
@@ -45,13 +46,13 @@ public class UnifiedProductSearchService {
         return results;
     }
 
-    public List<UnifiedProductSearchDTO> getAllProducts(String languageCode) {
+    public List<ProductSearchDTO> getAllProducts(String languageCode) {
         return searchProducts("", languageCode);
     }
 
 
 
-    private UnifiedProductSearchDTO convertMasterProductToUnifiedDTO(MasterProduct product, String languageCode) {
+    private ProductSearchDTO convertMasterProductToUnifiedDTO(MasterProduct product, String languageCode) {
         // الحصول على الترجمة
         String translatedTradeName = product.getTranslations() != null
                 ? product.getTranslations().stream()
@@ -80,7 +81,7 @@ public class UnifiedProductSearchService {
                 .orElse(product.getNotes())
                 : product.getNotes();
 
-        return UnifiedProductSearchDTO.builder()
+        return ProductSearchDTO.builder()
                 .id(product.getId())
                 .tradeName(translatedTradeName)
                 .scientificName(translatedScientificName)
@@ -117,7 +118,7 @@ public class UnifiedProductSearchService {
                 .build();
     }
 
-    private UnifiedProductSearchDTO convertPharmacyProductToUnifiedDTO(PharmacyProduct product, String languageCode) {
+    private ProductSearchDTO convertPharmacyProductToUnifiedDTO(PharmacyProduct product, String languageCode) {
         // الحصول على الترجمة
         String translatedTradeName = product.getTranslations() != null
                 ? product.getTranslations().stream()
@@ -146,7 +147,7 @@ public class UnifiedProductSearchService {
                 .orElse(product.getNotes())
                 : product.getNotes();
 
-        return UnifiedProductSearchDTO.builder()
+        return ProductSearchDTO.builder()
                 .id(product.getId())
                 .tradeName(translatedTradeName)
                 .scientificName(translatedScientificName)

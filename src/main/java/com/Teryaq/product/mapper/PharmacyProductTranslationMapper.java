@@ -1,7 +1,8 @@
-package com.Teryaq.product.aPharmacyProduct;
+package com.Teryaq.product.mapper;
 
-import com.Teryaq.product.aPharmacyProduct.dto.PharmacyProductTranslationDTORequest;
-import com.Teryaq.product.aPharmacyProduct.dto.PharmacyProductTranslationDTOResponse;
+import com.Teryaq.product.dto.PharmacyProductTranslationDTORequest;
+import com.Teryaq.product.dto.PharmacyProductTranslationDTOResponse;
+import com.Teryaq.product.entity.PharmacyProductTranslation;
 
 import org.springframework.stereotype.Component;
 

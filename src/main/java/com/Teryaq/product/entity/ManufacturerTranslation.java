@@ -2,6 +2,7 @@ package com.Teryaq.product.entity;
 
 
 import com.Teryaq.language.Language;
+import com.Teryaq.utils.entity.AuditedEntity;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -14,22 +15,23 @@ import lombok.ToString;
 @Table(name = "Manufacturer_Translation")
 @NoArgsConstructor
 @AllArgsConstructor
-public class ManufacturerTranslation {
-
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+public class ManufacturerTranslation extends AuditedEntity {
 
     @Column(nullable = false)
     private String name;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "manufacturers_id")
     @EqualsAndHashCode.Exclude
     @ToString.Exclude
     private Manufacturer manufacturer;
 
-    @ManyToOne(fetch = FetchType.EAGER)
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "language_id")
     private Language language;
+
+    @Override
+    protected String getSequenceName() {
+        return "manufacturer_translation_id_seq";
+    }
 }

@@ -8,7 +8,7 @@ import com.Teryaq.product.entity.MasterProductTranslation;
 import com.Teryaq.product.mapper.MasterProductMapper;
 import com.Teryaq.product.repo.MasterProductRepo;
 import com.Teryaq.product.repo.MasterProductTranslationRepo;
-import com.Teryaq.product.aPharmacyProduct.PharmacyProductRepo;
+import com.Teryaq.product.repo.PharmacyProductRepo;
 import com.Teryaq.utils.exception.ConflictException;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;

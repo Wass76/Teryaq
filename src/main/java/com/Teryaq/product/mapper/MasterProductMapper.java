@@ -82,17 +82,17 @@ public class MasterProductMapper {
                 .requiresPrescription(product.getRequiresPrescription())
 
                 .categories(
-                        product.getCategories().stream()
-                                .map(category -> {
-                                    if (category.getTranslations() == null) return category.getName();
-                                    return category.getTranslations().stream()
-                                            .filter(t -> languageCode.equalsIgnoreCase(t.getLanguage().getCode()))
-                                            .findFirst()
-                                            .map(CategoryTranslation::getName)
-                                            .orElse(category.getName());
-                                })
-                                .collect(Collectors.toSet())
-                )
+                    product.getCategories() != null ? product.getCategories().stream()
+                            .map(category -> {
+                                if (category.getTranslations() == null) return category.getName();
+                                return category.getTranslations().stream()
+                                        .filter(t -> languageCode.equalsIgnoreCase(t.getLanguage().getCode()))
+                                        .findFirst()
+                                        .map(com.Teryaq.product.entity.CategoryTranslation::getName)
+                                        .orElse(category.getName());
+                            })
+                            .collect(Collectors.toSet()) : new HashSet<>()
+            )
 
                 .type(
                         product.getType() != null
@@ -123,7 +123,7 @@ public class MasterProductMapper {
                                 .orElse(product.getManufacturer().getName())
                                 : null
                 )
-                .translations(allTranslations)
+              //  .translations(allTranslations)
 
                 .build();
     }

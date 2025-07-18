@@ -1,13 +1,11 @@
 package com.Teryaq.product.entity;
 
+import com.Teryaq.utils.entity.AuditedEntity;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.UpdateTimestamp;
 
-import java.time.LocalDateTime;
 import java.util.Set;
 import java.util.HashSet;
 
@@ -20,12 +18,9 @@ import java.util.HashSet;
         })
 @NoArgsConstructor
 @AllArgsConstructor
-public class MasterProduct {
+public class MasterProduct extends AuditedEntity {
 
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
     private String tradeName;
     private String scientificName;
     private String concentration;
@@ -39,14 +34,7 @@ public class MasterProduct {
     private String barcode;
     private Boolean requiresPrescription;
 
-    @CreationTimestamp
-    @Column(updatable = false)
-    private LocalDateTime createdAt;
-
-    @UpdateTimestamp
-    private LocalDateTime updatedAt;
-
-    @ManyToMany(cascade = {CascadeType.PERSIST, CascadeType.MERGE})
+    @ManyToMany(cascade = {CascadeType.PERSIST, CascadeType.MERGE}, fetch = FetchType.LAZY)
     @JoinTable(
             name = "product_category",
             joinColumns = @JoinColumn(name = "product_id"),
@@ -70,6 +58,10 @@ public class MasterProduct {
     @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<MasterProductTranslation> translations = new HashSet<>();
 
+    @Override
+    protected String getSequenceName() {
+        return "master_product_id_seq";
+    }
 
 
 }

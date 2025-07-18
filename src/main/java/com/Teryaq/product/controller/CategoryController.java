@@ -22,17 +22,18 @@ public class CategoryController {
     }
 
     @GetMapping
-    public  ResponseEntity<?> getCategories(@RequestParam String lang) {
+    public  ResponseEntity<?> getCategories(@RequestParam(name = "lang", defaultValue = "en") String lang) {
         return ResponseEntity.ok(categoryService.getCategories(lang));}
 
     @GetMapping("{id}")
-    public  ResponseEntity<?> getById(@PathVariable Long id, @RequestParam String lang) {
+    public  ResponseEntity<?> getById(@PathVariable Long id, 
+                                      @RequestParam(name = "lang", defaultValue = "en") String lang) {
         return ResponseEntity.ok(categoryService.getByID(id, lang));}
 
     @PostMapping
     @PreAuthorize("hasRole('PLATFORM_ADMIN')")
     public ResponseEntity<?> createCategory(@RequestBody CategoryDTORequest dto,
-                                            @RequestParam String lang) {
+                                            @RequestParam(name = "lang", defaultValue = "en") String lang) {
         CategoryDTOResponse response = categoryService.insertCategory(dto, lang);
         return new ResponseEntity<>(response, HttpStatus.CREATED);}
 
@@ -40,7 +41,7 @@ public class CategoryController {
     @PreAuthorize("hasRole('PLATFORM_ADMIN')")
     public  ResponseEntity<?> updateCategory(@PathVariable Long id,
                                              @RequestBody CategoryDTORequest category,
-                                             @RequestParam String lang) {
+                                             @RequestParam(name = "lang", defaultValue = "en") String lang) {
         return ResponseEntity.ok(categoryService.editCategory(id, category, lang));
     }
 

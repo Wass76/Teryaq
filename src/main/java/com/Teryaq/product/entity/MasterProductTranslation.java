@@ -2,6 +2,7 @@ package com.Teryaq.product.entity;
 
 
 import com.Teryaq.language.Language;
+import com.Teryaq.utils.entity.AuditedEntity;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -14,15 +15,12 @@ import lombok.ToString;
 @Table(name = "master_product_translation")
 @NoArgsConstructor
 @AllArgsConstructor
-public class MasterProductTranslation {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+public class MasterProductTranslation extends AuditedEntity {
     private String tradeName;
     private String scientificName;
     private String notes;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "product_id")
     @EqualsAndHashCode.Exclude
     @ToString.Exclude
@@ -32,4 +30,8 @@ public class MasterProductTranslation {
     @JoinColumn(name = "language_id")
     private Language language;
 
+    @Override
+    protected String getSequenceName() {
+        return "master_product_translation_id_seq";
+    }
 }

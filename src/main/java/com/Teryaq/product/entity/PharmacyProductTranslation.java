@@ -9,20 +9,22 @@ import lombok.NoArgsConstructor;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
 
+
 @Entity
 @Data
-@Table(name = "form_translation")
+@Table(name = "pharmacy_product_translation")
 @NoArgsConstructor
 @AllArgsConstructor
-public class FormTranslation extends AuditedEntity {
-    @Column(nullable = false)
-    private String name;
+public class PharmacyProductTranslation extends AuditedEntity {
+    private String tradeName;
+    private String scientificName;
+    private String notes;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "form_id")
+    @JoinColumn(name = "product_id")
     @EqualsAndHashCode.Exclude
     @ToString.Exclude
-    private Form form;
+    private PharmacyProduct product;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "language_id")
@@ -30,6 +32,6 @@ public class FormTranslation extends AuditedEntity {
 
     @Override
     protected String getSequenceName() {
-        return "form_translation_id_seq";
+        return "pharmacy_product_translation_id_seq";
     }
-}
+} 

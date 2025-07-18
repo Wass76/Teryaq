@@ -1,8 +1,15 @@
-package com.Teryaq.product.aPharmacyProduct;
+package com.Teryaq.product.service;
 
-import com.Teryaq.product.aPharmacyProduct.dto.PharmacyProductDTORequest;
-import com.Teryaq.product.aPharmacyProduct.dto.PharmacyProductDTOResponse;
-import com.Teryaq.product.aPharmacyProduct.dto.PharmacyProductListDTO;
+import com.Teryaq.product.dto.PharmacyProductDTORequest;
+import com.Teryaq.product.dto.PharmacyProductDTOResponse;
+import com.Teryaq.product.dto.PharmacyProductListDTO;
+import com.Teryaq.product.entity.PharmacyProduct;
+import com.Teryaq.product.entity.PharmacyProductTranslation;
+import com.Teryaq.product.mapper.PharmacyProductMapper;
+import com.Teryaq.product.repo.PharmacyProductBarcodeRepo;
+import com.Teryaq.product.repo.PharmacyProductRepo;
+import com.Teryaq.product.repo.PharmacyProductTranslationRepo;
+import com.Teryaq.product.repo.MasterProductRepo;
 import com.Teryaq.user.repository.PharmacyRepository;
 import com.Teryaq.utils.exception.ConflictException;
 import com.Teryaq.language.Language;
@@ -30,16 +37,17 @@ public class PharmacyProductService {
     private final PharmacyRepository pharmacyRepository;
     private final LanguageRepo languageRepo;
     private final PharmacyProductTranslationRepo pharmacyProductTranslationRepo;
+    private final MasterProductRepo masterProductRepo;
 
     public Page<PharmacyProductListDTO> getPharmacyProduct(String langCode , Pageable pageable) {
         return pharmacyProductRepo.findAll(pageable).map(
-                product -> pharmacyProductMapper.toListDTO(product)
+                product -> pharmacyProductMapper.toListDTO(product, langCode)
         );
     }
 
     public Page<PharmacyProductListDTO> getPharmacyProductByPharmacyId(Long pharmacyId, String langCode, Pageable pageable) {
         return pharmacyProductRepo.findByPharmacyId(pharmacyId, pageable).map(
-                product -> pharmacyProductMapper.toListDTO(product)
+                product -> pharmacyProductMapper.toListDTO(product, langCode)
         );
     }
 
@@ -66,6 +74,10 @@ public class PharmacyProductService {
                 if (pharmacyProductRepo.existsByBarcode(barcode)) {
                     throw new ConflictException("Barcode " + barcode + " already exists");
                 }
+                // تحقق من عدم وجود الباركود في الماستر
+                if (masterProductRepo.findByBarcode(barcode).isPresent()) {
+                    throw new ConflictException("Barcode " + barcode + " already exists in master products");
+                }
             }
         }
         
@@ -87,7 +99,7 @@ public class PharmacyProductService {
                 .map(t -> {
                     Language lang = languageRepo.findByCode(t.getLanguageCode())
                             .orElseThrow(() -> new EntityNotFoundException("Language not found: " + t.getLanguageCode()));
-                    return new PharmacyProductTranslation(null, t.getTradeName(), t.getScientificName(), t.getNotes(), saved, lang);
+                    return new PharmacyProductTranslation(t.getTradeName(), t.getScientificName(), t.getNotes(), saved, lang);
                 })
                 .collect(Collectors.toList());
 
@@ -112,6 +124,10 @@ public class PharmacyProductService {
                             throw new ConflictException("Barcode " + barcode + " already exists");
                         }
                     }
+                    // تحقق من عدم وجود الباركود في الماستر
+                    if (masterProductRepo.findByBarcode(barcode).isPresent()) {
+                        throw new ConflictException("Barcode " + barcode + " already exists in master products");
+                    }
                 }
             }
             
@@ -135,7 +151,7 @@ public class PharmacyProductService {
                     .map(t -> {
                         Language lang = languageRepo.findByCode(t.getLanguageCode())
                                 .orElseThrow(() -> new EntityNotFoundException("Language not found: " + t.getLanguageCode()));
-                        return new PharmacyProductTranslation(null, t.getTradeName(), t.getScientificName(), t.getNotes(), saved, lang);
+                        return new PharmacyProductTranslation(t.getTradeName(), t.getScientificName(), t.getNotes(), saved, lang);
                     })
                     .collect(Collectors.toList());
 

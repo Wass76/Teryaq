@@ -73,7 +73,7 @@ public class TypeService {
                 .map(t -> {
                     Language lang = languageRepo.findByCode(t.getLanguageCode())
                             .orElseThrow(() -> new EntityNotFoundException("Language not found: " + t.getLanguageCode()));
-                    return new TypeTranslation(null, t.getName(), savedType, lang);
+                    return new TypeTranslation(t.getName(), savedType, lang);
                 })
                 .collect(Collectors.toList());
     
@@ -103,7 +103,7 @@ public class TypeService {
                     .map(t -> {
                         Language lang = languageRepo.findByCode(t.getLanguageCode())
                                 .orElseThrow(() -> new EntityNotFoundException("Language not found: " + t.getLanguageCode()));
-                        return new TypeTranslation(null, t.getName(), saved, lang);
+                        return new TypeTranslation(t.getName(), saved, lang);
                     })
                     .toList();
 

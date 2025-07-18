@@ -31,6 +31,6 @@ WHERE (
 
     Optional<MasterProduct> findByBarcode(@Param("barcode") String barcode);
 
-    @Query("SELECT DISTINCT p FROM MasterProduct p LEFT JOIN FETCH p.translations tr LEFT JOIN FETCH tr.language WHERE p.id = :id")
+    @Query("SELECT DISTINCT p FROM MasterProduct p LEFT JOIN FETCH p.translations tr LEFT JOIN FETCH tr.language LEFT JOIN FETCH p.categories WHERE p.id = :id")
     Optional<MasterProduct> findByIdWithTranslations(@Param("id") Long id);
 }

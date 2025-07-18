@@ -1,11 +1,14 @@
-package com.Teryaq.product.aPharmacyProduct;
+package com.Teryaq.product.mapper;
 
-import com.Teryaq.product.aPharmacyProduct.dto.PharmacyProductDTORequest;
-import com.Teryaq.product.aPharmacyProduct.dto.PharmacyProductDTOResponse;
-import com.Teryaq.product.aPharmacyProduct.dto.PharmacyProductTranslationDTOResponse;
-import com.Teryaq.product.aPharmacyProduct.dto.PharmacyProductListDTO;
 import com.Teryaq.product.repo.CategoryRepo;
+import com.Teryaq.product.dto.PharmacyProductDTORequest;
+import com.Teryaq.product.dto.PharmacyProductDTOResponse;
+import com.Teryaq.product.dto.PharmacyProductListDTO;
+import com.Teryaq.product.dto.PharmacyProductTranslationDTOResponse;
 import com.Teryaq.product.entity.Category;
+import com.Teryaq.product.entity.PharmacyProduct;
+import com.Teryaq.product.entity.PharmacyProductBarcode;
+import com.Teryaq.product.entity.PharmacyProductTranslation;
 import com.Teryaq.product.repo.TypeRepo;
 import com.Teryaq.product.repo.FormRepo;
 import com.Teryaq.product.repo.ManufacturerRepo;
@@ -156,7 +159,7 @@ public class PharmacyProductMapper {
                                 .orElse(product.getManufacturer().getName())
                                 : null
                 )
-                .translations(allTranslations)
+              //  .translations(allTranslations)
 
                 .build();
     }
@@ -224,10 +227,18 @@ public class PharmacyProductMapper {
         }
     }
 
-    public PharmacyProductListDTO toListDTO(PharmacyProduct product) {
+    public PharmacyProductListDTO toListDTO(PharmacyProduct product, String languageCode) {
+        String sanitizedLangCode = languageCode == null ? "en" : languageCode.trim().toLowerCase();
+        PharmacyProductTranslation translation = product.getTranslations() != null
+                ? product.getTranslations().stream()
+                .filter(t -> t.getLanguage() != null && t.getLanguage().getCode() != null)
+                .filter(t -> t.getLanguage().getCode().trim().equalsIgnoreCase(sanitizedLangCode))
+                .findFirst()
+                .orElse(null)
+                : null;
         return PharmacyProductListDTO.builder()
-                .tradeName(product.getTradeName())
-                .scientificName(product.getScientificName())
+                .tradeName(translation != null ? translation.getTradeName() : product.getTradeName())
+                .scientificName(translation != null ? translation.getScientificName() : product.getScientificName())
                 .concentration(product.getConcentration())
                 .size(product.getSize())
                 .requiresPrescription(product.getRequiresPrescription())

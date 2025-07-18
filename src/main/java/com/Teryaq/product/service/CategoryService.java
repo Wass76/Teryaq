@@ -70,7 +70,7 @@ public class CategoryService {
             .map(t -> {
                 Language lang = languageRepo.findByCode(t.getLanguageCode())
                         .orElseThrow(() -> new EntityNotFoundException("Language not found: " + t.getLanguageCode()));
-                return new CategoryTranslation(null, t.getName(), savedCategory, lang);
+                return new CategoryTranslation(t.getName(), savedCategory, lang);
             })
             .collect(Collectors.toList());
 
@@ -96,7 +96,7 @@ public class CategoryService {
                         .map(t -> {
                             Language lang = languageRepo.findByCode(t.getLanguageCode())
                                     .orElseThrow(() -> new EntityNotFoundException("Language not found: " + t.getLanguageCode()));
-                            return new CategoryTranslation(null, t.getName(), saved, lang);
+                            return new CategoryTranslation(t.getName(), saved, lang);
                         })
                         .toList();
 
