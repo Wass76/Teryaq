@@ -19,7 +19,7 @@ public class ApplicationAuditingAware implements AuditorAware<Long> {
         if(authentication == null ||
         ! authentication.isAuthenticated() ||
          authentication instanceof AnonymousAuthenticationToken){
-            return Optional.empty();
+            return Optional.of(1L);
         }
         User dealerPrincipal = (User) authentication.getPrincipal();
         return Optional.ofNullable(dealerPrincipal.getId());

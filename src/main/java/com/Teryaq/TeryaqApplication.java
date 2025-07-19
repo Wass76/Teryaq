@@ -9,7 +9,7 @@ import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 
 @SpringBootApplication
-@EnableJpaAuditing(auditorAwareRef = "auditorAware2")
+@EnableJpaAuditing(auditorAwareRef = "auditorAware")
 @EnableAspectJAutoProxy
 @EnableCaching
 @EnableAsync
