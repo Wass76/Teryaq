@@ -236,6 +236,13 @@ public class EmployeeService {
             employee.setDateOfHire(dto.getDateOfHire());
             logger.info("Updated dateOfHire to: " + dto.getDateOfHire());
         }
+        if(dto.getRoleId() != null) {
+            Role role = roleRepository.findById(dto.getRoleId()).orElseThrow(
+                    () -> new ResourceNotFoundException("Invalid role id: " + dto.getRoleId())
+            );
+            employee.setRole(role);
+        }
+
     }
     
     private void updateEmployeeWorkingHours(Employee employee, List<EmployeeWorkingHoursDTO> workingHoursDTOs) {
