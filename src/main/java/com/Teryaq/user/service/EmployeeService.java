@@ -94,7 +94,7 @@ public class EmployeeService {
         logger.info("Employee update completed successfully");
         return EmployeeMapper.toResponseDTO(employee);
     }
-    
+    @Transactional
     public void deleteEmployeeInPharmacy(Long employeeId, Long managerPharmacyId) {
         logger.info("Starting to delete employee with ID: " + employeeId);
         
