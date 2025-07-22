@@ -18,6 +18,7 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.authentication.logout.LogoutHandler;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;
+import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 import static org.springframework.security.config.http.SessionCreationPolicy.STATELESS;
 
@@ -29,7 +30,7 @@ import static org.springframework.security.config.http.SessionCreationPolicy.STA
         securedEnabled = true,
         jsr250Enabled = true
 )
-public class SecurityConfiguration {
+public class SecurityConfiguration extends Exception implements WebMvcConfigurer {
 
     private final JwtAuthenticationFilter jwtAuthFilter;
 
