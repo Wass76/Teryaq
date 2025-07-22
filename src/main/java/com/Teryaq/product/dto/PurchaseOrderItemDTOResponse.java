@@ -1,0 +1,12 @@
+package com.Teryaq.product.dto;
+
+import lombok.Data;
+
+@Data
+public class PurchaseOrderItemDTOResponse {
+    private Long id;
+    private String productName;
+    private Integer quantity;
+    private Double price;
+    private String barcode;
+} 

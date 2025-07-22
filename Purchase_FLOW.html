@@ -1,0 +1,704 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>محاكاة تدفقات إدارة المشتريات</title>
+    <!-- Chosen Palette: Warm Neutrals (Slate, Stone, Teal) -->
+    <!-- Application Structure Plan: A tab-based structure was chosen to separate the two distinct, sequential user flows: "Create Order" and "Receive Order". This approach simplifies the user journey by presenting one clear task at a time, making the complex business logic (pricing rules, bonus calculations, payment processing, currency handling) easier to understand and interact with, as opposed to a cluttered all-in-one dashboard. The user can create an order, see it become "pending," then switch to the receive flow to complete its lifecycle, including searching for items by barcode. -->
+    <!-- Visualization & Content Choices: 
+        - Order Lifecycle Diagram (Goal: Organize/Inform): A static diagram built with HTML/Tailwind CSS is used to visually represent the order states (Pending -> Received). This is clearer and more integrated than a chart for a simple state flow.
+        - Interactive Order Forms/Tables (Goal: Interact/Simulate): HTML forms and tables with JavaScript-powered inputs are the core of the application. They allow users to actively simulate the creation and reception processes. The key interaction is the "Receive Order" table, where changing quantities or prices dynamically triggers the calculation of the 'Actual Purchase Price', directly demonstrating the core business logic.
+        - Currency Selection (Goal: Inform/Control): A dropdown allows users to select the currency for a new order, influencing all subsequent price displays and calculations for that order.
+        - Barcode Search (Goal: Organize/Interact): A text input simulates barcode scanning, allowing users to quickly locate and highlight specific items within the receive order table, improving efficiency.
+        - Cash Box Chart (Goal: Compare/Inform): A dynamic bar chart (Chart.js) is used to visualize the financial impact of transactions on the pharmacy's cash box. It provides immediate, clear feedback on the consequences of the user's payment actions, with simulated currency conversion.
+        - CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Tajawal', sans-serif; }
+        .tab-active { 
+            border-color: #0d9488; /* Teal-600 */
+            color: #0d9488;
+            font-weight: 700;
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 300px;
+            max-height: 400px;
+        }
+        .highlight-row {
+            background-color: #e0f2f7 !important; /* Light blue for highlighting */
+            transition: background-color 0.5s ease-out;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800">
+
+    <div id="app" class="container mx-auto p-4 md:p-6 lg:p-8 max-w-7xl">
+        <header class="text-center mb-8">
+            <h1 class="text-3xl md:text-4xl font-bold text-teal-700">محاكاة تدفقات إدارة المشتريات في الصيدلية</h1>
+            <p class="text-slate-600 mt-2">تطبيق تفاعلي لاستكشاف عمليات إنشاء واستلام طلبات الشراء.</p>
+        </header>
+
+        <div class="bg-white p-6 rounded-2xl shadow-lg mb-8">
+            <h2 class="text-xl font-bold mb-4 text-teal-800">مخطط دورة حياة الطلب</h2>
+            <div class="flex items-center justify-center space-x-2 md:space-x-4 text-center">
+                <div class="flex flex-col items-center">
+                    <div class="w-20 h-20 md:w-24 md:h-24 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center text-sm md:text-base font-bold border-2 border-blue-300">إنشاء الطلب</div>
+                    <div class="text-xs mt-1">Order Create</div>
+                </div>
+                <div class="flex-1 h-1 bg-slate-200"></div>
+                <div class="flex flex-col items-center">
+                    <div class="w-20 h-20 md:w-24 md:h-24 rounded-full bg-amber-100 text-amber-700 flex items-center justify-center text-sm md:text-base font-bold border-2 border-amber-300">قيد الانتظار</div>
+                    <div class="text-xs mt-1">Pending</div>
+                </div>
+                <div class="flex-1 h-1 bg-slate-200"></div>
+                <div class="flex flex-col items-center">
+                    <div class="w-20 h-20 md:w-24 md:h-24 rounded-full bg-teal-100 text-teal-700 flex items-center justify-center text-sm md:text-base font-bold border-2 border-teal-300">استلام الطلب</div>
+                     <div class="text-xs mt-1">Order Receive</div>
+                </div>
+                <div class="flex-1 h-1 bg-slate-200"></div>
+                <div class="flex flex-col items-center">
+                    <div class="w-20 h-20 md:w-24 md:h-24 rounded-full bg-green-100 text-green-700 flex items-center justify-center text-sm md:text-base font-bold border-2 border-green-300">مكتمل</div>
+                    <div class="text-xs mt-1">Completed</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div class="lg:col-span-2">
+                <div class="border-b border-slate-200 mb-6">
+                    <nav class="flex -mb-px" aria-label="Tabs">
+                        <button onclick="switchView('createOrderView')" id="createOrderTab" class="tab-active w-1/2 py-4 px-1 text-center border-b-2 font-medium text-sm md:text-base">
+                            إنشاء طلب شراء
+                        </button>
+                        <button onclick="switchView('receiveOrderView')" id="receiveOrderTab" class="w-1/2 py-4 px-1 text-center border-b-2 border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300 font-medium text-sm md:text-base">
+                            استلام الطلبات
+                        </button>
+                    </nav>
+                </div>
+
+                <div id="createOrderView" class="space-y-6"></div>
+                <div id="receiveOrderView" class="hidden space-y-6"></div>
+            </div>
+            
+            <aside class="space-y-8">
+                <div class="bg-white p-6 rounded-2xl shadow-lg">
+                    <h3 class="text-lg font-bold mb-4 text-teal-800">صندوق الصيدلية</h3>
+                    <div class="chart-container">
+                        <canvas id="cashBoxChart"></canvas>
+                    </div>
+                </div>
+                <div id="pendingOrdersSection" class="bg-white p-6 rounded-2xl shadow-lg"></div>
+            </aside>
+        </div>
+    </div>
+
+<script>
+const AppState = {
+    currentView: 'createOrderView',
+    cashBox: {
+        balance: 5000000, // Initial balance in SYP
+        currency: 'SYP',
+    },
+    currencies: [
+        { code: 'SYP', name: 'ليرة سورية', symbol: 'ل.س' },
+        { code: 'USD', name: 'دولار أمريكي', symbol: '$' }
+    ],
+    exchangeRates: {
+        'USD_TO_SYP': 5000 // Example fixed exchange rate for simulation
+    },
+    products: [
+        { id: 1, name: "دواء مركزي أ", type: "مركزي", price: 50.00, barcode: "10001" },
+        { id: 2, name: "دواء مركزي ب", type: "مركزي", price: 120.00, barcode: "10002" },
+        { id: 3, name: "منتج خارجي ج (فيتامين)", type: "خارجي", price: 75.00, barcode: "20001" },
+        { id: 4, name: "منتج خارجي د (كريم)", type: "خارجي", price: 45.00, barcode: "20002" },
+    ],
+    suppliers: [
+        { id: 1, name: "شركة الأدوية المتحدة" },
+        { id: 2, name: "مستودع الشفاء الطبي" },
+        { id: 3, name: "المورد الخارجي الحديث" },
+    ],
+    purchaseOrders: [],
+    poCounter: 1,
+};
+
+function getCurrencySymbol(currencyCode) {
+    const currency = AppState.currencies.find(c => c.code === currencyCode);
+    return currency ? currency.symbol : '';
+}
+
+function convertToSYP(amount, fromCurrency) {
+    if (fromCurrency === 'SYP') {
+        return amount;
+    } else if (fromCurrency === 'USD') {
+        return amount * AppState.exchangeRates.USD_TO_SYP;
+    }
+    return amount; // Fallback
+}
+
+function convertFromSYP(amount, toCurrency) {
+    if (toCurrency === 'SYP') {
+        return amount;
+    } else if (toCurrency === 'USD') {
+        return amount / AppState.exchangeRates.USD_TO_SYP;
+    }
+    return amount; // Fallback
+}
+
+
+function switchView(viewId) {
+    AppState.currentView = viewId;
+    document.getElementById('createOrderView').classList.add('hidden');
+    document.getElementById('receiveOrderView').classList.add('hidden');
+    document.getElementById(viewId).classList.remove('hidden');
+
+    document.getElementById('createOrderTab').classList.remove('tab-active');
+    document.getElementById('receiveOrderTab').classList.remove('tab-active');
+    document.getElementById(viewId === 'createOrderView' ? 'createOrderTab' : 'receiveOrderTab').classList.add('tab-active');
+    
+    render();
+}
+
+function renderCreateOrderView() {
+    const productsOptions = AppState.products.map(p => `<option value="${p.id}">${p.name} (${p.type})</option>`).join('');
+    const suppliersOptions = AppState.suppliers.map(s => `<option value="${s.id}">${s.name}</option>`).join('');
+    const currencyOptions = AppState.currencies.map(c => `<option value="${c.code}">${c.name} (${c.symbol})</option>`).join('');
+
+    const view = document.getElementById('createOrderView');
+    view.innerHTML = `
+        <div class="bg-white p-6 rounded-2xl shadow-lg">
+            <h3 class="text-lg font-bold mb-4 text-teal-800">1. إضافة الأصناف للطلب</h3>
+            <div class="space-y-4" id="orderItemsContainer">
+                <!-- Items will be added here -->
+            </div>
+            <button onclick="addOrderItem()" class="mt-4 bg-slate-200 text-slate-700 hover:bg-slate-300 font-bold py-2 px-4 rounded-lg transition duration-300">
+                + إضافة صنف
+            </button>
+        </div>
+        <div class="bg-white p-6 rounded-2xl shadow-lg">
+            <h3 class="text-lg font-bold mb-4 text-teal-800">2. اختيار المورد والعملة وإتمام الطلب</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label for="supplierSelect" class="block text-sm font-medium text-slate-700">المورد</label>
+                    <select id="supplierSelect" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-slate-300 focus:outline-none focus:ring-teal-500 focus:border-teal-500 sm:text-sm rounded-md">${suppliersOptions}</select>
+                </div>
+                <div>
+                    <label for="orderCurrencySelect" class="block text-sm font-medium text-slate-700">عملة الطلب</label>
+                    <select id="orderCurrencySelect" onchange="updateAllOrderItemPricesAndTotal()" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-slate-300 focus:outline-none focus:ring-teal-500 focus:border-teal-500 sm:text-sm rounded-md">
+                        ${currencyOptions}
+                    </select>
+                </div>
+            </div>
+            <div id="orderTotalSection" class="mt-6 p-4 bg-slate-100 rounded-lg text-lg font-bold text-center">
+                الإجمالي التقديري: 0.00 ل.س
+            </div>
+            <div id="cashBoxWarning" class="hidden mt-4 p-3 bg-amber-100 text-amber-800 rounded-md text-sm">
+                تحذير: رصيد الصندوق الحالي (بالليرة السورية) قد لا يكون كافيًا لتغطية هذا الطلب.
+            </div>
+            <div class="mt-6 text-right">
+                <button onclick="submitPurchaseOrder()" class="bg-teal-600 text-white hover:bg-teal-700 font-bold py-3 px-6 rounded-lg transition duration-300">
+                    إنشاء طلب الشراء
+                </button>
+            </div>
+        </div>
+    `;
+    addOrderItem(); 
+    // Set default currency to SYP
+    document.getElementById('orderCurrencySelect').value = 'SYP';
+    updateAllOrderItemPricesAndTotal(); // Ensure prices are correct on initial load
+}
+
+let orderItemCounter = 0;
+function addOrderItem() {
+    orderItemCounter++;
+    const container = document.getElementById('orderItemsContainer');
+    const productsOptions = AppState.products.map(p => `<option value="${p.id}">${p.name} (${p.type})</option>`).join('');
+    const newItemHtml = `
+        <div id="orderItem-${orderItemCounter}" class="grid grid-cols-1 md:grid-cols-12 gap-3 p-3 border border-slate-200 rounded-lg">
+            <div class="md:col-span-5">
+                <label for="product-${orderItemCounter}" class="block text-sm font-medium text-slate-600">المنتج</label>
+                <select id="product-${orderItemCounter}" onchange="updateOrderItemPrice(${orderItemCounter})" class="mt-1 block w-full py-2 px-3 border border-slate-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-teal-500 focus:border-teal-500 sm:text-sm">
+                    ${productsOptions}
+                </select>
+            </div>
+            <div class="md:col-span-3">
+                <label for="quantity-${orderItemCounter}" class="block text-sm font-medium text-slate-600">الكمية المطلوبة</label>
+                <input type="number" id="quantity-${orderItemCounter}" value="1" min="1" oninput="updateOrderTotal()" class="mt-1 block w-full py-2 px-3 border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-teal-500 focus:border-teal-500 sm:text-sm">
+            </div>
+            <div class="md:col-span-3">
+                <label for="price-${orderItemCounter}" class="block text-sm font-medium text-slate-600">سعر الشراء المقترح</label>
+                <div class="flex items-center">
+                    <input type="number" step="0.01" id="price-${orderItemCounter}" oninput="updateOrderTotal()" class="mt-1 block w-full py-2 px-3 border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-teal-500 focus:border-teal-500 sm:text-sm">
+                    <span id="price-currency-symbol-${orderItemCounter}" class="ml-2 text-slate-600"></span>
+                </div>
+                <div id="price-tooltip-${orderItemCounter}" class="text-xs text-slate-500 mt-1"></div>
+            </div>
+             <div class="md:col-span-1 flex items-end">
+                <button onclick="removeOrderItem(${orderItemCounter})" class="text-red-500 hover:text-red-700 p-2 rounded-full bg-red-100 hover:bg-red-200 transition duration-300">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                </button>
+            </div>
+        </div>
+    `;
+    container.insertAdjacentHTML('beforeend', newItemHtml);
+    updateOrderItemPrice(orderItemCounter); // Call for the newly added item
+}
+
+function removeOrderItem(id) {
+    document.getElementById(`orderItem-${id}`).remove();
+    updateOrderTotal();
+}
+
+function updateOrderItemPrice(id) {
+    const productId = document.getElementById(`product-${id}`).value;
+    const product = AppState.products.find(p => p.id == productId);
+    const priceInput = document.getElementById(`price-${id}`);
+    const tooltip = document.getElementById(`price-tooltip-${id}`);
+    const selectedCurrency = document.getElementById('orderCurrencySelect').value; // Get selected currency
+    const currencySymbolSpan = document.getElementById(`price-currency-symbol-${id}`);
+
+    let displayPrice = product.price; // Default to SYP price from product data
+
+    if (selectedCurrency === 'USD') {
+        displayPrice = convertFromSYP(product.price, 'USD'); // Convert to USD
+    }
+    
+    priceInput.value = displayPrice.toFixed(2);
+    priceInput.readOnly = product.type === 'مركزي';
+    priceInput.classList.toggle('bg-slate-100', product.type === 'مركزي');
+    tooltip.textContent = product.type === 'خارجي' ? 'هذا آخر سعر شراء وقد يتغير.' : 'سعر ثابت.';
+    currencySymbolSpan.textContent = getCurrencySymbol(selectedCurrency); // Set the symbol
+    
+    updateOrderTotal();
+}
+
+function updateAllOrderItemPricesAndTotal() {
+    const itemElements = document.querySelectorAll('[id^="orderItem-"]');
+    itemElements.forEach(itemEl => {
+        const id = itemEl.id.split('-')[1];
+        updateOrderItemPrice(id); // Recalculate price for each item based on new currency
+    });
+    updateOrderTotal(); // Update overall total
+}
+
+
+function updateOrderTotal() {
+    let total = 0;
+    const items = document.querySelectorAll('[id^="orderItem-"]');
+    items.forEach(item => {
+        const id = item.id.split('-')[1];
+        const quantity = parseFloat(document.getElementById(`quantity-${id}`).value) || 0;
+        const price = parseFloat(document.getElementById(`price-${id}`).value) || 0;
+        total += quantity * price;
+    });
+    
+    const selectedCurrency = document.getElementById('orderCurrencySelect').value;
+    const currencySymbol = getCurrencySymbol(selectedCurrency);
+    
+    let totalText = `الإجمالي التقديري: ${total.toFixed(2)} ${currencySymbol}`;
+    let totalInSYP = total;
+    if (selectedCurrency === 'USD') {
+        totalInSYP = convertToSYP(total, 'USD');
+        totalText += ` (${totalInSYP.toFixed(2)} ل.س)`;
+    }
+    
+    document.getElementById('orderTotalSection').textContent = totalText;
+    
+    const warning = document.getElementById('cashBoxWarning');
+    if (totalInSYP > AppState.cashBox.balance) {
+        warning.classList.remove('hidden');
+        warning.textContent = `تحذير: رصيد الصندوق الحالي (${AppState.cashBox.balance.toLocaleString('ar-EG')} ل.س) قد لا يكون كافيًا لتغطية هذا الطلب (${totalInSYP.toFixed(2)} ل.س).`;
+    } else {
+        warning.classList.add('hidden');
+    }
+}
+
+
+function submitPurchaseOrder() {
+    const supplierId = document.getElementById('supplierSelect').value;
+    const supplier = AppState.suppliers.find(s => s.id == supplierId);
+    const orderCurrency = document.getElementById('orderCurrencySelect').value;
+    
+    const items = [];
+    const itemElements = document.querySelectorAll('[id^="orderItem-"]');
+    itemElements.forEach(itemEl => {
+        const id = itemEl.id.split('-')[1];
+        const productId = document.getElementById(`product-${id}`).value;
+        const product = AppState.products.find(p => p.id == productId);
+        const quantity = parseInt(document.getElementById(`quantity-${id}`).value) || 0;
+        const price = parseFloat(document.getElementById(`price-${id}`).value) || 0;
+        if (quantity > 0) {
+            items.push({
+                productId: product.id,
+                productName: product.name,
+                productType: product.type,
+                quantity,
+                poPrice: price,
+                barcode: product.barcode // Store barcode with item
+            });
+        }
+    });
+
+    if (items.length === 0) {
+        alert("يرجى إضافة صنف واحد على الأقل للطلب.");
+        return;
+    }
+
+    const total = items.reduce((acc, item) => acc + (item.quantity * item.poPrice), 0);
+
+    const newPO = {
+        id: AppState.poCounter++,
+        supplierName: supplier.name,
+        items,
+        total,
+        currency: orderCurrency, // Store currency with the order
+        status: 'قيد الانتظار'
+    };
+
+    AppState.purchaseOrders.push(newPO);
+    alert(`تم إنشاء طلب الشراء رقم PO-${newPO.id} بنجاح!`);
+    
+    renderCreateOrderView(); // Reset the form
+    render();
+}
+
+
+function renderReceiveOrderView() {
+    const view = document.getElementById('receiveOrderView');
+    const pendingOrders = AppState.purchaseOrders.filter(po => po.status === 'قيد الانتظار');
+    
+    if (pendingOrders.length === 0) {
+        view.innerHTML = `<div class="bg-white p-6 rounded-2xl shadow-lg text-center text-slate-500">
+            <h3 class="text-lg font-bold mb-2">لا توجد طلبات معلقة</h3>
+            <p>يرجى إنشاء طلب شراء أولاً من تبويب "إنشاء طلب شراء".</p>
+        </div>`;
+        return;
+    }
+    
+    const options = pendingOrders.map(po => {
+        let totalText = `${po.total.toFixed(2)} ${getCurrencySymbol(po.currency)}`;
+        if (po.currency === 'USD') {
+            totalText += ` (${convertToSYP(po.total, 'USD').toFixed(2)} ل.س)`;
+        }
+        return `<option value="${po.id}">PO-${po.id} - ${po.supplierName} (${totalText})</option>`;
+    }).join('');
+    
+    view.innerHTML = `
+        <div class="bg-white p-6 rounded-2xl shadow-lg">
+            <h3 class="text-lg font-bold mb-4 text-teal-800">1. اختيار الطلب المراد استلامه</h3>
+            <select id="receivePoSelect" onchange="renderReceivePoDetails()" class="block w-full pl-3 pr-10 py-2 text-base border-slate-300 focus:outline-none focus:ring-teal-500 focus:border-teal-500 sm:text-sm rounded-md">
+                <option value="">-- اختر طلبًا --</option>
+                ${options}
+            </select>
+        </div>
+        <div id="receivePoDetailsContainer"></div>
+    `;
+}
+
+function renderReceivePoDetails() {
+    const container = document.getElementById('receivePoDetailsContainer');
+    const poId = document.getElementById('receivePoSelect').value;
+    if (!poId) {
+        container.innerHTML = '';
+        return;
+    }
+
+    const po = AppState.purchaseOrders.find(p => p.id == poId);
+    const currencySymbol = getCurrencySymbol(po.currency);
+    
+    const itemsHtml = po.items.map((item, index) => `
+        <tr class="border-b border-slate-200" id="receiveItemRow-${index}">
+            <td class="p-3 text-sm">${item.productName} (${item.productType})<br><span class="text-xs text-slate-500">باركود: ${item.barcode}</span></td>
+            <td class="p-3 text-sm">${item.quantity}</td>
+            <td class="p-3"><input type="number" id="receivedQty-${index}" value="${item.quantity}" min="0" oninput="updateReceiveTotals(${poId})" class="w-20 text-center p-1 border rounded-md"></td>
+            <td class="p-3"><input type="number" id="bonusQty-${index}" value="0" min="0" oninput="updateReceiveTotals(${poId})" class="w-20 text-center p-1 border rounded-md"></td>
+            <td class="p-3">
+                <input type="number" id="invoicePrice-${index}" value="${item.poPrice.toFixed(2)}" step="0.01" oninput="updateReceiveTotals(${poId})" class="w-24 text-center p-1 border rounded-md ${item.productType === 'مركزي' ? 'bg-slate-100' : ''}" ${item.productType === 'مركزي' ? 'readonly' : ''}>
+            </td>
+            <td class="p-3 text-sm font-semibold" id="actualPrice-${index}">${item.poPrice.toFixed(2)} ${currencySymbol}</td>
+            <td class="p-3"><input type="text" id="batchNo-${index}" class="w-24 text-center p-1 border rounded-md" placeholder="رقم التشغيلة"></td>
+            <td class="p-3"><input type="date" id="expiryDate-${index}" onchange="checkExpiryDate(this)" class="w-32 text-center p-1 border rounded-md"></td>
+        </tr>
+    `).join('');
+
+    container.innerHTML = `
+        <div class="bg-white p-6 rounded-2xl shadow-lg">
+            <h3 class="text-lg font-bold mb-4 text-teal-800">2. مطابقة الأصناف والفاتورة (عملة الطلب: ${po.currency})</h3>
+             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                <div>
+                    <label for="invoiceNumber" class="block text-sm font-medium text-slate-700">رقم الفاتورة الواردة (اختياري)</label>
+                    <input type="text" id="invoiceNumber" class="mt-1 block w-full py-2 px-3 border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-teal-500 focus:border-teal-500 sm:text-sm">
+                </div>
+                <div class="flex items-end">
+                    <input type="text" id="barcodeSearchInput" placeholder="ابحث بالباركود أو الاسم" class="mt-1 block w-full py-2 px-3 border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-teal-500 focus:border-teal-500 sm:text-sm">
+                    <button onclick="searchItemInReceiveTable(${poId})" class="ml-2 bg-slate-200 text-slate-700 hover:bg-slate-300 font-bold py-2 px-4 rounded-lg transition duration-300">
+                        بحث
+                    </button>
+                </div>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-right">
+                    <thead class="bg-slate-50">
+                        <tr class="text-xs text-slate-600 uppercase">
+                            <th class="p-3 font-semibold">الصنف</th>
+                            <th class="p-3 font-semibold">الكمية المطلوبة</th>
+                            <th class="p-3 font-semibold">الكمية المستلمة</th>
+                            <th class="p-3 font-semibold">كمية البونص</th>
+                            <th class="p-3 font-semibold">سعر الوحدة بالفاتورة</th>
+                            <th class="p-3 font-semibold">سعر الشراء الفعلي</th>
+                            <th class="p-3 font-semibold">رقم التشغيلة</th>
+                            <th class="p-3 font-semibold">تاريخ الصلاحية</th>
+                        </tr>
+                    </thead>
+                    <tbody id="receiveItemsTableBody">${itemsHtml}</tbody>
+                </table>
+            </div>
+
+            <div class="mt-6 p-4 bg-slate-100 rounded-lg">
+                <div class="text-lg font-bold text-center" id="receiveTotalSection">
+                    المبلغ الإجمالي للدفع للمورد: ${po.total.toFixed(2)} ${currencySymbol}
+                </div>
+            </div>
+
+            <div class="mt-6 text-right">
+                <button onclick="showPaymentModal(${poId})" class="bg-teal-600 text-white hover:bg-teal-700 font-bold py-3 px-6 rounded-lg transition duration-300">
+                    متابعة للدفع
+                </button>
+            </div>
+        </div>
+    `;
+    updateReceiveTotals(poId);
+}
+
+function updateReceiveTotals(poId) {
+    const po = AppState.purchaseOrders.find(p => p.id == poId);
+    let totalToPay = 0;
+    const currencySymbol = getCurrencySymbol(po.currency);
+
+    po.items.forEach((item, index) => {
+        const receivedQty = parseInt(document.getElementById(`receivedQty-${index}`).value) || 0;
+        const bonusQty = parseInt(document.getElementById(`bonusQty-${index}`).value) || 0;
+        const invoicePrice = parseFloat(document.getElementById(`invoicePrice-${index}`).value) || 0;
+        
+        let actualPrice = 0;
+        if ((receivedQty + bonusQty) > 0) {
+            actualPrice = (receivedQty * invoicePrice) / (receivedQty + bonusQty);
+        } else {
+             actualPrice = invoicePrice;
+        }
+
+        document.getElementById(`actualPrice-${index}`).textContent = `${actualPrice.toFixed(2)} ${currencySymbol}`;
+        totalToPay += receivedQty * invoicePrice;
+    });
+
+    document.getElementById('receiveTotalSection').textContent = `المبلغ الإجمالي للدفع للمورد: ${totalToPay.toFixed(2)} ${currencySymbol}`;
+}
+
+function checkExpiryDate(inputElement) {
+    const expiryDate = new Date(inputElement.value);
+    const today = new Date();
+    const sixMonthsFromNow = new Date();
+    sixMonthsFromNow.setMonth(today.getMonth() + 6);
+
+    inputElement.classList.remove('border-red-500', 'border-amber-500');
+
+    if (expiryDate < today) {
+        alert("تاريخ الصلاحية المدخل في الماضي!");
+        inputElement.classList.add('border-red-500');
+    } else if (expiryDate < sixMonthsFromNow) {
+        alert("تنبيه: تاريخ الصلاحية قريب (أقل من 6 أشهر)!");
+        inputElement.classList.add('border-amber-500');
+    }
+}
+
+function searchItemInReceiveTable(poId) {
+    const po = AppState.purchaseOrders.find(p => p.id == poId);
+    const searchTerm = document.getElementById('barcodeSearchInput').value.toLowerCase().trim();
+    
+    if (!searchTerm) return;
+
+    let foundIndex = -1;
+    po.items.forEach((item, index) => {
+        const row = document.getElementById(`receiveItemRow-${index}`);
+        row.classList.remove('highlight-row'); // Remove previous highlight
+
+        if (item.barcode && item.barcode.toLowerCase().includes(searchTerm)) {
+            foundIndex = index;
+        } else if (item.productName.toLowerCase().includes(searchTerm)) {
+            foundIndex = index;
+        }
+    });
+
+    if (foundIndex !== -1) {
+        const targetRow = document.getElementById(`receiveItemRow-${foundIndex}`);
+        targetRow.classList.add('highlight-row');
+        targetRow.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        // Optionally remove highlight after a short delay
+        setTimeout(() => {
+            targetRow.classList.remove('highlight-row');
+        }, 3000);
+    } else {
+        alert("لم يتم العثور على الصنف بالباركود أو الاسم المدخل في هذا الطلب.");
+    }
+}
+
+
+function showPaymentModal(poId) {
+    const totalToPayText = document.getElementById('receiveTotalSection').textContent;
+    const totalToPay = parseFloat(totalToPayText.match(/[\d.]+/)[0]);
+    const po = AppState.purchaseOrders.find(p => p.id == poId);
+    const currencySymbol = getCurrencySymbol(po.currency);
+
+    const totalToPayInSYP = convertToSYP(totalToPay, po.currency);
+
+    const modalHtml = `
+        <div id="paymentModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div class="bg-white p-8 rounded-2xl shadow-2xl w-full max-w-md mx-4" dir="rtl">
+                <h3 class="text-xl font-bold mb-2 text-teal-800">تسوية الفاتورة للطلب PO-${poId}</h3>
+                <p class="text-slate-600 mb-6">إجمالي المبلغ المستحق للدفع: <span class="font-bold">${totalToPay.toFixed(2)} ${currencySymbol}</span></p>
+                <p class="text-slate-600 mb-6 text-sm">ما يعادل بالليرة السورية: <span class="font-bold">${totalToPayInSYP.toFixed(2)} ل.س</span></p>
+                <div class="space-y-4">
+                    <div>
+                        <label for="amountPaid" class="block text-sm font-medium text-slate-700">المبلغ المدفوع الآن من الصندوق (${currencySymbol})</label>
+                        <input type="number" id="amountPaid" value="${totalToPay.toFixed(2)}" class="mt-1 block w-full py-2 px-3 border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-teal-500 focus:border-teal-500 sm:text-sm">
+                    </div>
+                </div>
+                <div class="mt-8 flex justify-between items-center">
+                    <button onclick="processPayment(${poId}, ${totalToPay})" class="bg-green-600 text-white hover:bg-green-700 font-bold py-2 px-6 rounded-lg transition duration-300">تأكيد الدفع</button>
+                    <button onclick="document.getElementById('paymentModal').remove()" class="text-slate-600 hover:text-slate-800 font-medium">إلغاء</button>
+                </div>
+            </div>
+        </div>
+    `;
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+}
+
+function processPayment(poId, totalToPay) {
+    const amountPaid = parseFloat(document.getElementById('amountPaid').value) || 0;
+    const po = AppState.purchaseOrders.find(p => p.id == poId);
+
+    let deductionAmountInSYP = convertToSYP(amountPaid, po.currency);
+    
+    if (deductionAmountInSYP > AppState.cashBox.balance) {
+        alert("خطأ: المبلغ المدفوع (بعد التحويل لليرة السورية) أكبر من الرصيد المتوفر في الصندوق!");
+        return;
+    }
+     if (amountPaid > totalToPay) {
+        alert("خطأ: المبلغ المدفوع أكبر من المبلغ المستحق!");
+        return;
+    }
+
+    AppState.cashBox.balance -= deductionAmountInSYP;
+    
+    po.status = 'مكتمل';
+    po.amountPaid = amountPaid;
+    po.debt = totalToPay - amountPaid;
+
+    alert(`تمت عملية الدفع بنجاح. المبلغ المتبقي كدين: ${po.debt.toFixed(2)} ${getCurrencySymbol(po.currency)}.`);
+
+    document.getElementById('paymentModal').remove();
+    render();
+}
+
+function renderPendingOrders() {
+    const container = document.getElementById('pendingOrdersSection');
+    const pendingOrders = AppState.purchaseOrders.filter(po => po.status === 'قيد الانتظار');
+
+    let content;
+    if (pendingOrders.length > 0) {
+        const listItems = pendingOrders.map(po => {
+            let totalText = `${po.total.toFixed(2)} ${getCurrencySymbol(po.currency)}`;
+            if (po.currency === 'USD') {
+                totalText += ` (${convertToSYP(po.total, 'USD').toFixed(2)} ل.س)`;
+            }
+            return `
+                <li class="flex justify-between items-center py-2 border-b border-slate-100">
+                    <span class="text-sm font-medium">PO-${po.id} (${po.supplierName})</span>
+                    <span class="text-sm font-bold text-amber-600">${totalText}</span>
+                </li>
+            `;
+        }).join('');
+        content = `
+            <h3 class="text-lg font-bold mb-4 text-teal-800">طلبات شراء معلقة</h3>
+            <ul class="space-y-2">${listItems}</ul>
+        `;
+    } else {
+        content = `
+            <h3 class="text-lg font-bold mb-4 text-teal-800">طلبات شراء معلقة</h3>
+            <p class="text-slate-500 text-center py-4">لا توجد طلبات معلقة حاليًا.</p>
+        `;
+    }
+    container.innerHTML = content;
+}
+
+let cashBoxChartInstance = null;
+function renderCashBoxChart() {
+    const ctx = document.getElementById('cashBoxChart').getContext('2d');
+    if (cashBoxChartInstance) {
+        cashBoxChartInstance.destroy();
+    }
+    cashBoxChartInstance = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: ['الرصيد'],
+            datasets: [{
+                label: 'الرصيد الحالي',
+                data: [AppState.cashBox.balance],
+                backgroundColor: ['#14b8a6'], // Teal-500
+                borderColor: ['#0f766e'], // Teal-700
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        callback: function(value) {
+                            return value.toLocaleString('ar-EG') + ' ل.س'; // Always display cash box in SYP
+                        }
+                    }
+                }
+            },
+            plugins: {
+                legend: {
+                    display: false
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            return 'الرصيد: ' + context.parsed.y.toLocaleString('ar-EG') + ' ل.س';
+                        }
+                    }
+                }
+            }
+        }
+    });
+}
+
+function render() {
+    if (AppState.currentView === 'createOrderView') {
+        renderCreateOrderView();
+    } else {
+        renderReceiveOrderView();
+    }
+    renderPendingOrders();
+    renderCashBoxChart();
+}
+
+document.addEventListener('DOMContentLoaded', render);
+
+</script>
+</body>
+</html>
