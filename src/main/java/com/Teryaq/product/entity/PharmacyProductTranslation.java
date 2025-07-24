@@ -12,6 +12,7 @@ import lombok.ToString;
 
 @Entity
 @Data
+@EqualsAndHashCode(callSuper=false)
 @Table(name = "pharmacy_product_translation")
 @NoArgsConstructor
 @AllArgsConstructor

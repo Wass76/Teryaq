@@ -5,6 +5,7 @@ import com.Teryaq.utils.entity.AuditedEntity;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 
 import java.util.HashSet;
@@ -12,6 +13,7 @@ import java.util.Set;
 
 @Entity
 @Data
+@EqualsAndHashCode(callSuper=false)
 @Table(name = "manufacturers")
 @NoArgsConstructor
 @AllArgsConstructor

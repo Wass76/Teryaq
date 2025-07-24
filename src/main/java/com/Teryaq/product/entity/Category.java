@@ -18,6 +18,7 @@ import java.util.Set;
 
 @Entity
 @Data
+@EqualsAndHashCode(callSuper=false)
 @Table(name = "categories")
 @NoArgsConstructor
 @AllArgsConstructor
