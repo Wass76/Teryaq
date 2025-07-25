@@ -9,4 +9,6 @@ public class PurchaseOrderItemDTOResponse {
     private Integer quantity;
     private Double price;
     private String barcode;
+    private Long productId;
+    private com.Teryaq.product.Enum.ProductType productType;
 } 

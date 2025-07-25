@@ -1,5 +1,6 @@
 package com.Teryaq.product.service;
 
+import com.Teryaq.product.Enum.ProductType;
 import com.Teryaq.product.dto.*;
 import com.Teryaq.product.entity.PurchaseOrder;
 import com.Teryaq.product.entity.PurchaseOrderItem;
@@ -18,7 +19,6 @@ import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -32,76 +32,101 @@ public class PurchaseOrderService {
     private final PurchaseOrderMapper purchaseOrderMapper;
 
     @Transactional
-    public PurchaseOrderDTOResponse create(PurchaseOrderDTORequest request) {
+    public PurchaseOrderDTOResponse create(PurchaseOrderDTORequest request, String language) {
         Supplier supplier = supplierRepository.findById(request.getSupplierId())
                 .orElseThrow(() -> new ResourceNotFoundException("Supplier not found"));
         List<PurchaseOrderItem> items = request.getItems().stream().map(itemDto -> {
-            if ("PHARMACY".equals(itemDto.getProductType())) {
-                pharmacyProductRepo.findById(itemDto.getProductId())
+            String barcode = itemDto.getBarcode();
+            Double price = itemDto.getPrice();
+            if (itemDto.getProductType() == ProductType.PHARMACY) {
+                PharmacyProduct product = pharmacyProductRepo.findById(itemDto.getProductId())
                     .orElseThrow(() -> new ResourceNotFoundException("PharmacyProduct not found: " + itemDto.getProductId()));
-            } else if ("MASTER".equals(itemDto.getProductType())) {
-                masterProductRepo.findById(itemDto.getProductId())
+                if (barcode == null || barcode.isBlank()) {
+                    barcode = product.getBarcodes().stream().findFirst().map(b -> b.getBarcode()).orElse(null);
+                }
+                if (price == null) {
+                    price = (double) product.getRefPurchasePrice();
+                }
+            } else if (itemDto.getProductType() == ProductType.MASTER) {
+                MasterProduct product = masterProductRepo.findById(itemDto.getProductId())
                     .orElseThrow(() -> new ResourceNotFoundException("MasterProduct not found: " + itemDto.getProductId()));
+                if (barcode == null || barcode.isBlank()) {
+                    barcode = product.getBarcode();
+                }
+                // Always use master product price
+                price = (double) product.getRefPurchasePrice();
             } else {
                 throw new ConflictException("Invalid productType: " + itemDto.getProductType());
             }
-            return purchaseOrderMapper.toItemEntity(itemDto);
+            return purchaseOrderMapper.toItemEntity(itemDto, barcode, price);
         }).collect(Collectors.toList());
         if (items.isEmpty()) throw new ConflictException("Order must have at least one item");
         PurchaseOrder order = purchaseOrderMapper.toEntity(request, supplier, items);
         PurchaseOrder saved = purchaseOrderRepo.save(order);
         // Fetch product lists for mapping
         List<Long> pharmacyProductIds = saved.getItems().stream()
-            .filter(i -> "PHARMACY".equals(i.getProductType()))
+            .filter(i -> i.getProductType() == ProductType.PHARMACY)
             .map(PurchaseOrderItem::getProductId)
             .toList();
         List<Long> masterProductIds = saved.getItems().stream()
-            .filter(i -> "MASTER".equals(i.getProductType()))
+            .filter(i -> i.getProductType() == ProductType.MASTER)
             .map(PurchaseOrderItem::getProductId)
             .toList();
         List<PharmacyProduct> pharmacyProducts = pharmacyProductRepo.findAllById(pharmacyProductIds);
         List<MasterProduct> masterProducts = masterProductRepo.findAllById(masterProductIds);
-        return purchaseOrderMapper.toResponse(saved, pharmacyProducts, masterProducts);
+        return purchaseOrderMapper.toResponse(saved, pharmacyProducts, masterProducts, language);
     }
 
-    public PurchaseOrderDTOResponse getById(Long id) {
+    public PurchaseOrderDTOResponse create(PurchaseOrderDTORequest request) {
+        return create(request, "ar");
+    }
+
+    public PurchaseOrderDTOResponse getById(Long id, String language) {
         PurchaseOrder order = purchaseOrderRepo.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Purchase order not found"));
         // Fetch product names for all items
         List<PharmacyProduct> pharmacyProducts = pharmacyProductRepo.findAllById(
             order.getItems().stream()
-                .filter(i -> "PHARMACY".equals(i.getProductType()))
+                .filter(i -> i.getProductType() == ProductType.PHARMACY)
                 .map(PurchaseOrderItem::getProductId)
                 .toList()
         );
         List<MasterProduct> masterProducts = masterProductRepo.findAllById(
             order.getItems().stream()
-                .filter(i -> "MASTER".equals(i.getProductType()))
+                .filter(i -> i.getProductType() == ProductType.MASTER)
                 .map(PurchaseOrderItem::getProductId)
                 .toList()
         );
         // Merge names for mapping
-        return purchaseOrderMapper.toResponse(order, pharmacyProducts, masterProducts);
+        return purchaseOrderMapper.toResponse(order, pharmacyProducts, masterProducts, language);
     }
 
-    public List<PurchaseOrderDTOResponse> listAll() {
+    public PurchaseOrderDTOResponse getById(Long id) {
+        return getById(id, "ar");
+    }
+
+    public List<PurchaseOrderDTOResponse> listAll(String language) {
         return purchaseOrderRepo.findAll().stream()
             .map(order -> {
                 List<PharmacyProduct> pharmacyProducts = pharmacyProductRepo.findAllById(
                     order.getItems().stream()
-                        .filter(i -> "PHARMACY".equals(i.getProductType()))
+                        .filter(i -> i.getProductType() == ProductType.PHARMACY)
                         .map(PurchaseOrderItem::getProductId)
                         .toList()
                 );
                 List<MasterProduct> masterProducts = masterProductRepo.findAllById(
                     order.getItems().stream()
-                        .filter(i -> "MASTER".equals(i.getProductType()))
+                        .filter(i -> i.getProductType() == ProductType.MASTER)
                         .map(PurchaseOrderItem::getProductId)
                         .toList()
                 );
-                return purchaseOrderMapper.toResponse(order, pharmacyProducts, masterProducts);
+                return purchaseOrderMapper.toResponse(order, pharmacyProducts, masterProducts, language);
             })
             .toList();
+    }
+
+    public List<PurchaseOrderDTOResponse> listAll() {
+        return listAll("ar");
     }
 
     @Transactional

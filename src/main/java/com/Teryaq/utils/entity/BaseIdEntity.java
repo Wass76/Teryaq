@@ -2,17 +2,21 @@ package com.Teryaq.utils.entity;
 
 import jakarta.persistence.*;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
 
 import java.io.Serializable;
 
+@Getter
 @Data
 @MappedSuperclass
 @SuperBuilder
 @NoArgsConstructor
 public abstract class BaseIdEntity implements Serializable {
     
+    @EqualsAndHashCode.Include
     @Id
     @GeneratedValue(strategy = GenerationType.SEQUENCE)
     @SequenceGenerator(

@@ -1,16 +1,21 @@
 package com.Teryaq.product.entity;
 
+import com.Teryaq.product.Enum.ProductType;
 import com.Teryaq.utils.entity.AuditedEntity;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
-import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 
-@Data
+@Getter
+@Setter
 @Entity
 @Table(name = "purchase_order_item")
 @NoArgsConstructor
 @AllArgsConstructor
+@EqualsAndHashCode(onlyExplicitlyIncluded = true, callSuper = true)
 public class PurchaseOrderItem extends AuditedEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "purchase_order_id", nullable = false)
@@ -20,7 +25,7 @@ public class PurchaseOrderItem extends AuditedEntity {
     private Long productId;
 
     @Column(nullable = false)
-    private String productType; // 'MASTER' or 'PHARMACY'
+    private ProductType productType; // 'MASTER' or 'PHARMACY'
 
     @Column(nullable = false)
     private Integer quantity;

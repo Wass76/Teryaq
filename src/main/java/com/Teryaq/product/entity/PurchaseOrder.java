@@ -4,16 +4,23 @@ import com.Teryaq.user.entity.Supplier;
 import com.Teryaq.utils.entity.AuditedEntity;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
-import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
+
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
-@Data
+@Getter
+@Setter
 @Entity
 @Table(name = "purchase_order")
 @NoArgsConstructor
 @AllArgsConstructor
+@EqualsAndHashCode(onlyExplicitlyIncluded = true, callSuper = true)
 public class PurchaseOrder extends AuditedEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "supplier_id", nullable = false)
@@ -29,7 +36,7 @@ public class PurchaseOrder extends AuditedEntity {
     private String status; // قيد الانتظار, مكتمل, ملغى
 
     @OneToMany(mappedBy = "purchaseOrder", cascade = CascadeType.ALL, orphanRemoval = true)
-    private Set<PurchaseOrderItem> items = new HashSet<>();
+    private List<PurchaseOrderItem> items = new ArrayList<>();
 
     @Override
     protected String getSequenceName() {

@@ -1,5 +1,6 @@
 package com.Teryaq.product.mapper;
 
+import com.Teryaq.product.Enum.ProductType;
 import com.Teryaq.product.dto.*;
 import com.Teryaq.product.entity.PurchaseOrder;
 import com.Teryaq.product.entity.PurchaseOrderItem;
@@ -17,10 +18,14 @@ public class PurchaseOrderMapper {
         order.setSupplier(supplier);
         order.setCurrency(dto.getCurrency());
         order.setStatus("قيد الانتظار");
-        order.setItems(items.stream().peek(i -> i.setPurchaseOrder(order)).collect(Collectors.toSet()));
+        order.setItems(items.stream().peek(i -> i.setPurchaseOrder(order)).collect(Collectors.toList()));
         double total = items.stream().mapToDouble(i -> i.getPrice() * i.getQuantity()).sum();
         order.setTotal(total);
         return order;
+    }
+
+    public PurchaseOrderDTOResponse toResponse(PurchaseOrder order, List<PharmacyProduct> pharmacyProducts, List<MasterProduct> masterProducts, String language) {
+        return toResponse(order, pharmacyProducts, masterProducts);
     }
 
     public PurchaseOrderDTOResponse toResponse(PurchaseOrder order, List<PharmacyProduct> pharmacyProducts, List<MasterProduct> masterProducts) {
@@ -32,12 +37,12 @@ public class PurchaseOrderMapper {
         dto.setStatus(order.getStatus());
         dto.setItems(order.getItems().stream().map(item -> {
             String productName = null;
-            if ("PHARMACY".equals(item.getProductType())) {
+            if (item.getProductType() == ProductType.PHARMACY) {
                 PharmacyProduct product = pharmacyProducts.stream()
                     .filter(p -> p.getId().equals(item.getProductId()))
                     .findFirst().orElse(null);
                 productName = product != null ? product.getTradeName() : "N/A";
-            } else if ("MASTER".equals(item.getProductType())) {
+            } else if (item.getProductType() == ProductType.MASTER) {
                 MasterProduct product = masterProducts.stream()
                     .filter(p -> p.getId().equals(item.getProductId()))
                     .findFirst().orElse(null);
@@ -48,23 +53,25 @@ public class PurchaseOrderMapper {
         return dto;
     }
 
-    public PurchaseOrderItem toItemEntity(PurchaseOrderItemDTORequest dto) {
+    public PurchaseOrderItem toItemEntity(PurchaseOrderItemDTORequest dto, String barcode, Double price) {
         PurchaseOrderItem item = new PurchaseOrderItem();
         item.setProductId(dto.getProductId());
         item.setProductType(dto.getProductType());
         item.setQuantity(dto.getQuantity());
-        item.setPrice(dto.getPrice());
-        item.setBarcode(dto.getBarcode());
+        item.setPrice(price);
+        item.setBarcode(barcode);
         return item;
     }
 
     public PurchaseOrderItemDTOResponse toItemResponse(PurchaseOrderItem item, String productName) {
         PurchaseOrderItemDTOResponse dto = new PurchaseOrderItemDTOResponse();
         dto.setId(item.getId());
+        dto.setProductId(item.getProductId());
         dto.setProductName(productName);
         dto.setQuantity(item.getQuantity());
         dto.setPrice(item.getPrice());
         dto.setBarcode(item.getBarcode());
+        dto.setProductType(item.getProductType());
         return dto;
     }
 } 

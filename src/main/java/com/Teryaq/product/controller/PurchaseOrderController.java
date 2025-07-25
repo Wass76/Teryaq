@@ -22,12 +22,12 @@ public class PurchaseOrderController {
     private final MasterProductRepo masterProductRepo;
 
     @PostMapping
-    public ResponseEntity<PurchaseOrderDTOResponse> create(@RequestBody PurchaseOrderDTORequest request) {
-        return ResponseEntity.ok(purchaseOrderService.create(request));
+    public ResponseEntity<PurchaseOrderDTOResponse> create(@RequestBody PurchaseOrderDTORequest request, @RequestParam(defaultValue = "ar") String language) {
+        return ResponseEntity.ok(purchaseOrderService.create(request, language));
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<PurchaseOrderDTOResponse> getById(@PathVariable Long id) {
+    public ResponseEntity<PurchaseOrderDTOResponse> getById(@PathVariable Long id, @RequestParam(defaultValue = "ar") String language) {
         var order = purchaseOrderService.getOrderEntityById(id); // Add this method to return entity
         var pharmacyProducts = pharmacyProductRepo.findAllById(
             order.getItems().stream()
@@ -41,11 +41,11 @@ public class PurchaseOrderController {
                 .map(PurchaseOrderItem::getProductId)
                 .toList()
         );
-        return ResponseEntity.ok(purchaseOrderService.getMapper().toResponse(order, pharmacyProducts, masterProducts));
+        return ResponseEntity.ok(purchaseOrderService.getMapper().toResponse(order, pharmacyProducts, masterProducts, language));
     }
 
     @GetMapping
-    public ResponseEntity<List<PurchaseOrderDTOResponse>> listAll() {
+    public ResponseEntity<List<PurchaseOrderDTOResponse>> listAll(@RequestParam(defaultValue = "ar") String language) {
         var orders = purchaseOrderService.getAllOrderEntities(); // Add this method to return entities
         var responses = orders.stream().map(order -> {
             var pharmacyProducts = pharmacyProductRepo.findAllById(
@@ -60,13 +60,13 @@ public class PurchaseOrderController {
                     .map(PurchaseOrderItem::getProductId)
                     .toList()
             );
-            return purchaseOrderService.getMapper().toResponse(order, pharmacyProducts, masterProducts);
+            return purchaseOrderService.getMapper().toResponse(order, pharmacyProducts, masterProducts, language);
         }).toList();
         return ResponseEntity.ok(responses);
     }
 
     @PostMapping("/{id}/cancel")
-    public ResponseEntity<Void> cancel(@PathVariable Long id) {
+    public ResponseEntity<Void> cancel(@PathVariable Long id, @RequestParam(defaultValue = "ar") String language) {
         purchaseOrderService.cancel(id);
         return ResponseEntity.ok().build();
     }

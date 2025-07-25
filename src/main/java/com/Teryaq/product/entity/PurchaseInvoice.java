@@ -1,5 +1,6 @@
 package com.Teryaq.product.entity;
 
+import com.Teryaq.user.Enum.Currency;
 import com.Teryaq.user.entity.Supplier;
 import com.Teryaq.utils.entity.AuditedEntity;
 import jakarta.persistence.*;
@@ -24,7 +25,7 @@ public class PurchaseInvoice extends AuditedEntity {
     private Supplier supplier;
 
     @Column(nullable = false)
-    private String currency;
+    private Currency currency;
 
     @Column(nullable = false)
     private Double total;
