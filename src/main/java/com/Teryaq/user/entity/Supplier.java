@@ -1,5 +1,6 @@
 package com.Teryaq.user.entity;
 
+import com.Teryaq.user.Enum.Currency;
 import com.Teryaq.utils.entity.AuditedEntity;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -22,7 +23,7 @@ public class Supplier extends AuditedEntity {
     private String address;
 
     @Column
-    private String preferredCurrency; // SYP or USD
+    private Currency preferredCurrency; // SYP or USD
 
     @Override
     protected String getSequenceName() {
