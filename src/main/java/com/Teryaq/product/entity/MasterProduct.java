@@ -4,12 +4,14 @@ import com.Teryaq.utils.entity.AuditedEntity;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 
 import java.util.Set;
 import java.util.HashSet;
 
 @Data
+@EqualsAndHashCode(callSuper=false)
 @Entity
 @Table(
         name = "master_product",

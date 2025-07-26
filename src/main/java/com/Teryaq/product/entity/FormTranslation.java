@@ -11,6 +11,7 @@ import lombok.ToString;
 
 @Entity
 @Data
+@EqualsAndHashCode(callSuper=false)
 @Table(name = "form_translation")
 @NoArgsConstructor
 @AllArgsConstructor

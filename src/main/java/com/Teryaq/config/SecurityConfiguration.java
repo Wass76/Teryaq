@@ -78,7 +78,6 @@ public class SecurityConfiguration extends Exception implements WebMvcConfigurer
                                 .permitAll()
                                 .requestMatchers("/api/v1/admin/pharmacies/**").authenticated()
                                 .requestMatchers("api/v1/pharmacy/**").authenticated()
-                                .requestMatchers("api/v1/master_products/**").authenticated()
                                 .anyRequest().permitAll()
                 )
                 .sessionManagement(session -> session.sessionCreationPolicy(STATELESS))

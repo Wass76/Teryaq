@@ -13,6 +13,7 @@ import lombok.ToString;
 
 @Entity
 @Data
+@EqualsAndHashCode(callSuper=false)
 @Table(name = "Category_Translation")
 @NoArgsConstructor
 @AllArgsConstructor

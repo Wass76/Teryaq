@@ -13,6 +13,7 @@ import com.Teryaq.utils.entity.AuditedEntity;
 // import lombok.ToString;
 
 @Data
+@EqualsAndHashCode(callSuper=false)
 @Entity
 @Table(
         name = "pharmacy_product_barcode",
