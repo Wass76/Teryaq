@@ -1,5 +1,6 @@
 package com.Teryaq.product.entity;
 
+import com.Teryaq.product.Enum.OrderStatus;
 import com.Teryaq.user.entity.Supplier;
 import com.Teryaq.utils.entity.AuditedEntity;
 import jakarta.persistence.*;
@@ -33,7 +34,7 @@ public class PurchaseOrder extends AuditedEntity {
     private Double total;
 
     @Column(nullable = false)
-    private String status; // قيد الانتظار, مكتمل, ملغى
+    private OrderStatus status; // قيد الانتظار, مكتمل, ملغى
 
     @OneToMany(mappedBy = "purchaseOrder", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<PurchaseOrderItem> items = new ArrayList<>();

@@ -2,24 +2,19 @@ package com.Teryaq.product.controller;
 
 import com.Teryaq.product.dto.PurchaseOrderDTORequest;
 import com.Teryaq.product.dto.PurchaseOrderDTOResponse;
+import com.Teryaq.product.dto.PaginationDTO;
 import com.Teryaq.product.service.PurchaseOrderService;
-import com.Teryaq.product.entity.PharmacyProduct;
-import com.Teryaq.product.entity.MasterProduct;
-import com.Teryaq.product.entity.PurchaseOrderItem;
-import com.Teryaq.product.repo.PharmacyProductRepo;
-import com.Teryaq.product.repo.MasterProductRepo;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
+import com.Teryaq.product.Enum.OrderStatus;
 
 @RestController
 @RequestMapping("/api/purchase-orders")
 @RequiredArgsConstructor
 public class PurchaseOrderController {
     private final PurchaseOrderService purchaseOrderService;
-    private final PharmacyProductRepo pharmacyProductRepo;
-    private final MasterProductRepo masterProductRepo;
 
     @PostMapping
     public ResponseEntity<PurchaseOrderDTOResponse> create(@RequestBody PurchaseOrderDTORequest request, @RequestParam(defaultValue = "ar") String language) {
@@ -28,45 +23,40 @@ public class PurchaseOrderController {
 
     @GetMapping("/{id}")
     public ResponseEntity<PurchaseOrderDTOResponse> getById(@PathVariable Long id, @RequestParam(defaultValue = "ar") String language) {
-        var order = purchaseOrderService.getOrderEntityById(id); // Add this method to return entity
-        var pharmacyProducts = pharmacyProductRepo.findAllById(
-            order.getItems().stream()
-                .filter(i -> "PHARMACY".equals(i.getProductType()))
-                .map(PurchaseOrderItem::getProductId)
-                .toList()
-        );
-        var masterProducts = masterProductRepo.findAllById(
-            order.getItems().stream()
-                .filter(i -> "MASTER".equals(i.getProductType()))
-                .map(PurchaseOrderItem::getProductId)
-                .toList()
-        );
-        return ResponseEntity.ok(purchaseOrderService.getMapper().toResponse(order, pharmacyProducts, masterProducts, language));
+        return ResponseEntity.ok(purchaseOrderService.getById(id, language));
     }
 
     @GetMapping
     public ResponseEntity<List<PurchaseOrderDTOResponse>> listAll(@RequestParam(defaultValue = "ar") String language) {
-        var orders = purchaseOrderService.getAllOrderEntities(); // Add this method to return entities
-        var responses = orders.stream().map(order -> {
-            var pharmacyProducts = pharmacyProductRepo.findAllById(
-                order.getItems().stream()
-                    .filter(i -> "PHARMACY".equals(i.getProductType()))
-                    .map(PurchaseOrderItem::getProductId)
-                    .toList()
-            );
-            var masterProducts = masterProductRepo.findAllById(
-                order.getItems().stream()
-                    .filter(i -> "MASTER".equals(i.getProductType()))
-                    .map(PurchaseOrderItem::getProductId)
-                    .toList()
-            );
-            return purchaseOrderService.getMapper().toResponse(order, pharmacyProducts, masterProducts, language);
-        }).toList();
-        return ResponseEntity.ok(responses);
+        return ResponseEntity.ok(purchaseOrderService.listAll(language));
+    }
+
+    @GetMapping("/paginated")
+    public ResponseEntity<PaginationDTO<PurchaseOrderDTOResponse>> listAllPaginated(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "ar") String language) {
+        return ResponseEntity.ok(purchaseOrderService.listAllPaginated(page, size, language));
+    }
+
+    @GetMapping("/status/{status}")
+    public ResponseEntity<List<PurchaseOrderDTOResponse>> getByStatus(
+            @PathVariable OrderStatus status,
+            @RequestParam(defaultValue = "ar") String language) {
+        return ResponseEntity.ok(purchaseOrderService.getByStatus(status, language));
+    }
+
+    @GetMapping("/status/{status}/paginated")
+    public ResponseEntity<PaginationDTO<PurchaseOrderDTOResponse>> getByStatusPaginated(
+            @PathVariable OrderStatus status,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "ar") String language) {
+        return ResponseEntity.ok(purchaseOrderService.getByStatusPaginated(status, page, size, language));
     }
 
     @PostMapping("/{id}/cancel")
-    public ResponseEntity<Void> cancel(@PathVariable Long id, @RequestParam(defaultValue = "ar") String language) {
+    public ResponseEntity<Void> cancel(@PathVariable Long id) {
         purchaseOrderService.cancel(id);
         return ResponseEntity.ok().build();
     }

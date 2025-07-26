@@ -5,16 +5,23 @@ import com.Teryaq.user.entity.Supplier;
 import com.Teryaq.utils.entity.AuditedEntity;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
-import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 import java.util.HashSet;
+import java.util.Objects;
 import java.util.Set;
+import java.util.List;
+import java.util.ArrayList;
 
-@Data
+@Getter
+@Setter
 @Entity
 @Table(name = "purchase_invoice")
 @NoArgsConstructor
 @AllArgsConstructor
+@EqualsAndHashCode(callSuper = true, onlyExplicitlyIncluded = true)
 public class PurchaseInvoice extends AuditedEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "purchase_order_id", nullable = false)
@@ -30,11 +37,13 @@ public class PurchaseInvoice extends AuditedEntity {
     @Column(nullable = false)
     private Double total;
 
-    @Column(nullable = false)
-    private String status; // مكتمل, ملغى
+    @OneToMany(mappedBy = "purchaseInvoice", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
+    private List<PurchaseInvoiceItem> items = new ArrayList<>();
 
-    @OneToMany(mappedBy = "purchaseInvoice", cascade = CascadeType.ALL, orphanRemoval = true)
-    private Set<PurchaseInvoiceItem> items = new HashSet<>();
+    @EqualsAndHashCode.Include
+    protected Long getIdForEquals() {
+        return super.getId();
+    }
 
     @Override
     protected String getSequenceName() {

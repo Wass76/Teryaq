@@ -1,5 +1,6 @@
 package com.Teryaq.product.entity;
 
+import com.Teryaq.product.Enum.ProductType;
 import com.Teryaq.utils.entity.AuditedEntity;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -18,7 +19,7 @@ public class StockItem extends AuditedEntity {
     private Long productId;
 
     @Column(nullable = false)
-    private String productType; // 'MASTER' or 'PHARMACY'
+    private ProductType productType; // 'MASTER' or 'PHARMACY'
 
     @Column(nullable = false)
     private Integer quantity;

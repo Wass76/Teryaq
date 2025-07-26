@@ -1,17 +1,22 @@
 package com.Teryaq.product.entity;
 
+import com.Teryaq.product.Enum.ProductType;
 import com.Teryaq.utils.entity.AuditedEntity;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
-import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import java.time.LocalDate;
 
-@Data
+@Getter
+@Setter
 @Entity
 @Table(name = "purchase_invoice_item")
 @NoArgsConstructor
 @AllArgsConstructor
+@EqualsAndHashCode(callSuper = true, onlyExplicitlyIncluded = true)
 public class PurchaseInvoiceItem extends AuditedEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "purchase_invoice_id", nullable = false)
@@ -21,7 +26,7 @@ public class PurchaseInvoiceItem extends AuditedEntity {
     private Long productId;
 
     @Column(nullable = false)
-    private String productType; // 'MASTER' or 'PHARMACY'
+    private ProductType productType; // 'MASTER' or 'PHARMACY'
 
     @Column(nullable = false)
     private Integer receivedQty;
@@ -40,6 +45,11 @@ public class PurchaseInvoiceItem extends AuditedEntity {
 
     @Column(nullable = true)
     private LocalDate expiryDate;
+
+    @EqualsAndHashCode.Include
+    protected Long getIdForEquals() {
+        return super.getId();
+    }
 
     @Override
     protected String getSequenceName() {

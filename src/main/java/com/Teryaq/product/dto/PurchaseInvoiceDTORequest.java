@@ -10,6 +10,5 @@ public class PurchaseInvoiceDTORequest {
     private Long supplierId;
     private Currency currency;
     private Double total;
-    private String status;
     private List<PurchaseInvoiceItemDTORequest> items;
 } 

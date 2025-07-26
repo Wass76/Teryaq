@@ -11,6 +11,5 @@ public class PurchaseInvoiceDTOResponse {
     private String supplierName;
     private Currency currency;
     private Double total;
-    private String status;
     private List<PurchaseInvoiceItemDTOResponse> items;
 } 

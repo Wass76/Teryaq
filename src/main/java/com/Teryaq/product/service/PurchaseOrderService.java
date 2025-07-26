@@ -1,5 +1,6 @@
 package com.Teryaq.product.service;
 
+import com.Teryaq.product.Enum.OrderStatus;
 import com.Teryaq.product.Enum.ProductType;
 import com.Teryaq.product.dto.*;
 import com.Teryaq.product.entity.PurchaseOrder;
@@ -20,6 +21,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import java.util.List;
 import java.util.stream.Collectors;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 
 @Service
 @RequiredArgsConstructor
@@ -106,23 +110,133 @@ public class PurchaseOrderService {
     }
 
     public List<PurchaseOrderDTOResponse> listAll(String language) {
-        return purchaseOrderRepo.findAll().stream()
-            .map(order -> {
-                List<PharmacyProduct> pharmacyProducts = pharmacyProductRepo.findAllById(
-                    order.getItems().stream()
-                        .filter(i -> i.getProductType() == ProductType.PHARMACY)
-                        .map(PurchaseOrderItem::getProductId)
-                        .toList()
-                );
-                List<MasterProduct> masterProducts = masterProductRepo.findAllById(
-                    order.getItems().stream()
-                        .filter(i -> i.getProductType() == ProductType.MASTER)
-                        .map(PurchaseOrderItem::getProductId)
-                        .toList()
-                );
-                return purchaseOrderMapper.toResponse(order, pharmacyProducts, masterProducts, language);
-            })
+        List<PurchaseOrder> orders = purchaseOrderRepo.findAll();
+        
+        // Collect all product IDs efficiently
+        List<Long> allPharmacyProductIds = orders.stream()
+            .flatMap(order -> order.getItems().stream())
+            .filter(item -> item.getProductType() == ProductType.PHARMACY)
+            .map(PurchaseOrderItem::getProductId)
+            .distinct()
             .toList();
+            
+        List<Long> allMasterProductIds = orders.stream()
+            .flatMap(order -> order.getItems().stream())
+            .filter(item -> item.getProductType() == ProductType.MASTER)
+            .map(PurchaseOrderItem::getProductId)
+            .distinct()
+            .toList();
+        
+        // Fetch all products once
+        List<PharmacyProduct> allPharmacyProducts = pharmacyProductRepo.findAllById(allPharmacyProductIds);
+        List<MasterProduct> allMasterProducts = masterProductRepo.findAllById(allMasterProductIds);
+        
+        return orders.stream()
+            .map(order -> purchaseOrderMapper.toResponse(order, allPharmacyProducts, allMasterProducts, language))
+            .toList();
+    }
+
+    public PaginationDTO<PurchaseOrderDTOResponse> listAllPaginated(int page, int size, String language) {
+        Pageable pageable = PageRequest.of(page, size);
+        Page<PurchaseOrder> orderPage = purchaseOrderRepo.findAll(pageable);
+        
+        List<PurchaseOrder> orders = orderPage.getContent();
+        
+        // Collect all product IDs efficiently
+        List<Long> allPharmacyProductIds = orders.stream()
+            .flatMap(order -> order.getItems().stream())
+            .filter(item -> item.getProductType() == ProductType.PHARMACY)
+            .map(PurchaseOrderItem::getProductId)
+            .distinct()
+            .toList();
+            
+        List<Long> allMasterProductIds = orders.stream()
+            .flatMap(order -> order.getItems().stream())
+            .filter(item -> item.getProductType() == ProductType.MASTER)
+            .map(PurchaseOrderItem::getProductId)
+            .distinct()
+            .toList();
+        
+        // Fetch all products once
+        List<PharmacyProduct> allPharmacyProducts = pharmacyProductRepo.findAllById(allPharmacyProductIds);
+        List<MasterProduct> allMasterProducts = masterProductRepo.findAllById(allMasterProductIds);
+        
+        List<PurchaseOrderDTOResponse> responses = orders.stream()
+            .map(order -> purchaseOrderMapper.toResponse(order, allPharmacyProducts, allMasterProducts, language))
+            .toList();
+            
+        return new PaginationDTO<>(responses, page, size, orderPage.getTotalElements());
+    }
+
+    public PaginationDTO<PurchaseOrderDTOResponse> listAllPaginated(int page, int size) {
+        return listAllPaginated(page, size, "ar");
+    }
+
+    public List<PurchaseOrderDTOResponse> getByStatus(OrderStatus status, String language) {
+        List<PurchaseOrder> orders = purchaseOrderRepo.findByStatus(status);
+        
+        // Collect all product IDs efficiently
+        List<Long> allPharmacyProductIds = orders.stream()
+            .flatMap(order -> order.getItems().stream())
+            .filter(item -> item.getProductType() == ProductType.PHARMACY)
+            .map(PurchaseOrderItem::getProductId)
+            .distinct()
+            .toList();
+            
+        List<Long> allMasterProductIds = orders.stream()
+            .flatMap(order -> order.getItems().stream())
+            .filter(item -> item.getProductType() == ProductType.MASTER)
+            .map(PurchaseOrderItem::getProductId)
+            .distinct()
+            .toList();
+        
+        // Fetch all products once
+        List<PharmacyProduct> allPharmacyProducts = pharmacyProductRepo.findAllById(allPharmacyProductIds);
+        List<MasterProduct> allMasterProducts = masterProductRepo.findAllById(allMasterProductIds);
+        
+        return orders.stream()
+            .map(order -> purchaseOrderMapper.toResponse(order, allPharmacyProducts, allMasterProducts, language))
+            .toList();
+    }
+
+    public List<PurchaseOrderDTOResponse> getByStatus(OrderStatus status) {
+        return getByStatus(status, "ar");
+    }
+
+    public PaginationDTO<PurchaseOrderDTOResponse> getByStatusPaginated(OrderStatus status, int page, int size, String language) {
+        Pageable pageable = PageRequest.of(page, size);
+        Page<PurchaseOrder> orderPage = purchaseOrderRepo.findByStatus(status, pageable);
+        
+        List<PurchaseOrder> orders = orderPage.getContent();
+        
+        // Collect all product IDs efficiently
+        List<Long> allPharmacyProductIds = orders.stream()
+            .flatMap(order -> order.getItems().stream())
+            .filter(item -> item.getProductType() == ProductType.PHARMACY)
+            .map(PurchaseOrderItem::getProductId)
+            .distinct()
+            .toList();
+            
+        List<Long> allMasterProductIds = orders.stream()
+            .flatMap(order -> order.getItems().stream())
+            .filter(item -> item.getProductType() == ProductType.MASTER)
+            .map(PurchaseOrderItem::getProductId)
+            .distinct()
+            .toList();
+        
+        // Fetch all products once
+        List<PharmacyProduct> allPharmacyProducts = pharmacyProductRepo.findAllById(allPharmacyProductIds);
+        List<MasterProduct> allMasterProducts = masterProductRepo.findAllById(allMasterProductIds);
+        
+        List<PurchaseOrderDTOResponse> responses = orders.stream()
+            .map(order -> purchaseOrderMapper.toResponse(order, allPharmacyProducts, allMasterProducts, language))
+            .toList();
+            
+        return new PaginationDTO<>(responses, page, size, orderPage.getTotalElements());
+    }
+
+    public PaginationDTO<PurchaseOrderDTOResponse> getByStatusPaginated(OrderStatus status, int page, int size) {
+        return getByStatusPaginated(status, page, size, "ar");
     }
 
     public List<PurchaseOrderDTOResponse> listAll() {
@@ -133,10 +247,10 @@ public class PurchaseOrderService {
     public void cancel(Long id) {
         PurchaseOrder order = purchaseOrderRepo.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Purchase order not found"));
-        if ("مكتمل".equals(order.getStatus())) {
+        if (order.getStatus() == OrderStatus.DONE) {
             throw new ConflictException("Cannot cancel a completed order");
         }
-        order.setStatus("ملغى");
+        order.setStatus(OrderStatus.CANCELLED);
         purchaseOrderRepo.save(order);
     }
 

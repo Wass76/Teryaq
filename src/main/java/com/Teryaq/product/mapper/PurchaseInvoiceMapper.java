@@ -6,9 +6,12 @@ import com.Teryaq.product.entity.PurchaseInvoiceItem;
 import com.Teryaq.product.entity.PharmacyProduct;
 import com.Teryaq.product.entity.MasterProduct;
 import com.Teryaq.user.entity.Supplier;
+import com.Teryaq.product.entity.PharmacyProductTranslation;
+import com.Teryaq.product.entity.MasterProductTranslation;
 import org.springframework.stereotype.Component;
 import java.util.List;
 import java.util.stream.Collectors;
+import com.Teryaq.product.Enum.ProductType;
 
 @Component
 public class PurchaseInvoiceMapper {
@@ -17,32 +20,47 @@ public class PurchaseInvoiceMapper {
         invoice.setPurchaseOrder(null); // Set in service if needed
         invoice.setSupplier(supplier);
         invoice.setCurrency(dto.getCurrency());
-        invoice.setStatus(dto.getStatus());
-        invoice.setItems(items.stream().peek(i -> i.setPurchaseInvoice(invoice)).collect(Collectors.toSet()));
-        invoice.setTotal(dto.getTotal());
+        invoice.setItems(items.stream().peek(i -> i.setPurchaseInvoice(invoice)).collect(Collectors.toList()));
         return invoice;
     }
 
-    public PurchaseInvoiceDTOResponse toResponse(PurchaseInvoice invoice, List<PharmacyProduct> pharmacyProducts, List<MasterProduct> masterProducts) {
+    public PurchaseInvoiceDTOResponse toResponse(PurchaseInvoice invoice, List<PharmacyProduct> pharmacyProducts, List<MasterProduct> masterProducts, String language) {
         PurchaseInvoiceDTOResponse dto = new PurchaseInvoiceDTOResponse();
         dto.setId(invoice.getId());
         dto.setPurchaseOrderId(invoice.getPurchaseOrder() != null ? invoice.getPurchaseOrder().getId() : null);
         dto.setSupplierName(invoice.getSupplier().getName());
         dto.setCurrency(invoice.getCurrency());
         dto.setTotal(invoice.getTotal());
-        dto.setStatus(invoice.getStatus());
         dto.setItems(invoice.getItems().stream().map(item -> {
             String productName = null;
-            if ("PHARMACY".equals(item.getProductType())) {
+            if (item.getProductType() == ProductType.PHARMACY) {
                 PharmacyProduct product = pharmacyProducts.stream()
                     .filter(p -> p.getId().equals(item.getProductId()))
                     .findFirst().orElse(null);
-                productName = product != null ? product.getTradeName() : "N/A";
-            } else if ("MASTER".equals(item.getProductType())) {
+                if (product != null) {
+                    // Try to get translated name
+                    productName = product.getTranslations().stream()
+                        .filter(t -> t.getLanguage().getCode().equals(language))
+                        .findFirst()
+                        .map(PharmacyProductTranslation::getTradeName)
+                        .orElse(product.getTradeName()); // Fallback to default
+                } else {
+                    productName = "N/A";
+                }
+            } else if (item.getProductType() == ProductType.MASTER) {
                 MasterProduct product = masterProducts.stream()
                     .filter(p -> p.getId().equals(item.getProductId()))
                     .findFirst().orElse(null);
-                productName = product != null ? product.getTradeName() : "N/A";
+                if (product != null) {
+                    // Try to get translated name
+                    productName = product.getTranslations().stream()
+                        .filter(t -> t.getLanguage().getCode().equals(language))
+                        .findFirst()
+                        .map(MasterProductTranslation::getTradeName)
+                        .orElse(product.getTradeName()); // Fallback to default
+                } else {
+                    productName = "N/A";
+                }
             }
             return toItemResponse(item, productName);
         }).toList());
@@ -54,9 +72,8 @@ public class PurchaseInvoiceMapper {
         item.setProductId(dto.getProductId());
         item.setProductType(dto.getProductType());
         item.setReceivedQty(dto.getReceivedQty());
-        item.setBonusQty(dto.getBonusQty());
+        item.setBonusQty(dto.getBonusQty() != null ? dto.getBonusQty() : 0); // Default to 0 if null
         item.setInvoicePrice(dto.getInvoicePrice());
-        item.setActualPrice(dto.getActualPrice());
         item.setBatchNo(dto.getBatchNo());
         item.setExpiryDate(dto.getExpiryDate());
         return item;

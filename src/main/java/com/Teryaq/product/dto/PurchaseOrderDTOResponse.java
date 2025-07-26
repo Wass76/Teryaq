@@ -1,5 +1,6 @@
 package com.Teryaq.product.dto;
 
+import com.Teryaq.product.Enum.OrderStatus;
 import lombok.Data;
 import java.util.List;
 
@@ -9,6 +10,6 @@ public class PurchaseOrderDTOResponse {
     private String supplierName;
     private String currency;
     private Double total;
-    private String status;
+    private OrderStatus status;
     private List<PurchaseOrderItemDTOResponse> items;
 } 
