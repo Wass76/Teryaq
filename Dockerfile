@@ -11,4 +11,4 @@ COPY target/Teryaq-0.0.1-SNAPSHOT.jar /app/teryaq.jar
 EXPOSE 3000
 
 # Define the command to run your Spring Boot application
-ENTRYPOINT ["java", "-jar", "/app/teryaq.jar"]
+ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS -jar /app/teryaq.jar"]

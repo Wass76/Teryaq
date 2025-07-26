@@ -16,6 +16,15 @@ services:
     networks:
       - teryaq-net
     restart: unless-stopped
+    # Resource limits to prevent CPU thrashing and memory issues
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
     volumes:
       # Named Volume for Persistent Database Data (CRUCIAL FOR DATA PERSISTENCE & RESTORATION)
       - teryaq_pg_data:/var/lib/postgresql/data # Maps internal PGDATA to a named Docker volume
@@ -47,8 +56,20 @@ services:
       SPRING_FLYWAY_ENABLED: "true"
       SPRING_FLYWAY_LOCATIONS: "classpath:/db/migration"
       SPRING_FLYWAY_BASELINE_ON_MIGRATE: "true"
+      # JVM memory settings to prevent memory leaks
+      JAVA_OPTS: "-Xmx768m -Xms256m"
     networks:
       - teryaq-net # Connects to the shared network
+    restart: unless-stopped
+    # Resource limits to prevent CPU thrashing and memory issues
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 1024M
+        reservations:
+          cpus: '0.25'
+          memory: 512M
 
 networks:
   teryaq-net:

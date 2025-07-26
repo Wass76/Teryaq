@@ -27,4 +27,7 @@ spring:
         globally_quoted_identifiers: true
         globally_quoted_identifiers_skip_column_definitions: true
     show-sql: true
+
+
+
 jwtKey: 7402bb3c24c35f15d1a7f1422078d9c1a4d9ebf1a276ff01ac84e6407625532e
