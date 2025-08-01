@@ -6,6 +6,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
+import lombok.ToString;
 // import org.hibernate.annotations.Fetch;
 // import org.hibernate.annotations.FetchMode;
 
@@ -25,9 +26,13 @@ public class Form extends AuditedEntity {
     private String name;
 
     @OneToMany(mappedBy = "form")
+    @EqualsAndHashCode.Exclude
+    @ToString.Exclude
     private Set<MasterProduct> product;
 
     @OneToMany(mappedBy = "form", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
+    @EqualsAndHashCode.Exclude
+    @ToString.Exclude
    // @Fetch(FetchMode.SUBSELECT)
     private Set<FormTranslation> translations = new HashSet<>();
 

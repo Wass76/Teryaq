@@ -35,6 +35,8 @@ public class Category extends AuditedEntity{
     private Set<MasterProduct> products = new HashSet<>();
 
     @OneToMany(mappedBy = "category", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
+    @EqualsAndHashCode.Exclude
+    @ToString.Exclude
     // @Fetch(FetchMode.SUBSELECT)
     private Set<CategoryTranslation> translations = new HashSet<>();
 

@@ -6,6 +6,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
+import lombok.ToString;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -24,11 +25,15 @@ public class Type extends AuditedEntity {
 
 
     @OneToMany(mappedBy = "type")
+    @EqualsAndHashCode.Exclude
+    @ToString.Exclude
     // @EqualsAndHashCode.Exclude
     // @ToString.Exclude
     private Set<MasterProduct> product;
 
     @OneToMany(mappedBy = "type", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
+    @EqualsAndHashCode.Exclude
+    @ToString.Exclude
    // @Fetch(FetchMode.SUBSELECT)
     private Set<TypeTranslation> translations = new HashSet<>();
 
