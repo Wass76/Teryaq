@@ -3,6 +3,9 @@ package com.Teryaq.product.controller;
 import com.Teryaq.product.dto.PharmacyProductDTORequest;
 import com.Teryaq.product.mapper.PharmacyProductMapper;
 import com.Teryaq.product.service.PharmacyProductService;
+import com.Teryaq.user.entity.Employee;
+import com.Teryaq.user.entity.User;
+import com.Teryaq.user.service.UserService;
 
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -17,10 +20,12 @@ public class PharmacyProductController {
 
     private final PharmacyProductService pharmacyProductService;
     private final PharmacyProductMapper pharmacyProductMapper;
+    private final UserService userService;
 
-    public PharmacyProductController(PharmacyProductService pharmacyProductService, PharmacyProductMapper pharmacyProductMapper) {
+    public PharmacyProductController(PharmacyProductService pharmacyProductService, PharmacyProductMapper pharmacyProductMapper, UserService userService) {
         this.pharmacyProductService = pharmacyProductService;
         this.pharmacyProductMapper = pharmacyProductMapper;
+        this.userService = userService;
     }
 
     @GetMapping
@@ -71,14 +76,63 @@ public class PharmacyProductController {
     @PostMapping
     public ResponseEntity<?> createPharmacyProduct(@RequestBody PharmacyProductDTORequest pharmacyProduct, 
                                                    @RequestParam(name = "lang", defaultValue = "en") String lang ) {
-       return ResponseEntity.ok( pharmacyProductService.insertPharmacyProduct(pharmacyProduct, lang));
+
+        User currentUser = userService.getCurrentUser();
+        
+        // التحقق من أن المستخدم هو Employee
+        if (!(currentUser instanceof Employee)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body("Only pharmacy employees can create pharmacy products");
+        }
+        
+        Employee employee = (Employee) currentUser;
+        
+        // التحقق من أن الموظف مرتبط بصيدلية
+        if (employee.getPharmacy() == null) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body("Employee is not associated with any pharmacy");
+        }
+        
+        Long pharmacyId = employee.getPharmacy().getId();
+        
+        // التحقق من أن pharmacyId ليس null
+        if (pharmacyId == null) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body("Pharmacy ID is null for employee");
+        }
+                                                                                       
+        return ResponseEntity.ok(pharmacyProductService.insertPharmacyProduct(pharmacyProduct, lang, pharmacyId));
     }
 
     @PutMapping("{id}")
     public  ResponseEntity<?> updatePharmacyProductById(@PathVariable Long id,
                                                         @RequestBody PharmacyProductDTORequest pharmacyProduct, 
                                                         @RequestParam(name = "lang", defaultValue = "en") String lang) {
-        return ResponseEntity.ok(pharmacyProductService.editPharmacyProduct(id, pharmacyProduct, lang));
+        User currentUser = userService.getCurrentUser();
+        
+        // التحقق من أن المستخدم هو Employee
+        if (!(currentUser instanceof Employee)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body("Only pharmacy employees can update pharmacy products");
+        }
+        
+        Employee employee = (Employee) currentUser;
+        
+        // التحقق من أن الموظف مرتبط بصيدلية
+        if (employee.getPharmacy() == null) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body("Employee is not associated with any pharmacy");
+        }
+        
+        Long pharmacyId = employee.getPharmacy().getId();
+        
+        // التحقق من أن pharmacyId ليس null
+        if (pharmacyId == null) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body("Pharmacy ID is null for employee");
+        }
+        
+        return ResponseEntity.ok(pharmacyProductService.editPharmacyProduct(id, pharmacyProduct, lang, pharmacyId));
     }
 
     @DeleteMapping("{id}")

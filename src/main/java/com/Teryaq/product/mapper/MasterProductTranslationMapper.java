@@ -12,7 +12,6 @@ public class MasterProductTranslationMapper {
         return MProductTranslationDTOResponse.builder()
                 .tradeName(translation.getTradeName())
                 .scientificName(translation.getScientificName())
-                .notes(translation.getNotes())
                 .languageName(translation.getLanguage().getName())
                 .build();
     }
@@ -21,7 +20,6 @@ public class MasterProductTranslationMapper {
         MasterProductTranslation translation = new MasterProductTranslation();
         translation.setTradeName(dto.getTradeName());
         translation.setScientificName(dto.getScientificName());
-        translation.setNotes(dto.getNotes());
         return translation;
     }
 }

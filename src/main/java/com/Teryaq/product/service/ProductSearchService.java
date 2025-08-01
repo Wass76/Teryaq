@@ -3,6 +3,8 @@ package com.Teryaq.product.service;
 import com.Teryaq.product.dto.ProductSearchDTO;
 import com.Teryaq.product.entity.MasterProduct;
 import com.Teryaq.product.entity.PharmacyProduct;
+import com.Teryaq.product.entity.PharmacyProductBarcode;
+import com.Teryaq.product.entity.ProductType;
 import com.Teryaq.product.repo.MasterProductRepo;
 import com.Teryaq.product.repo.PharmacyProductRepo;
 
@@ -12,6 +14,8 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
@@ -72,21 +76,15 @@ public class ProductSearchService {
                 .orElse(product.getScientificName())
                 : product.getScientificName();
 
-        String translatedNotes = product.getTranslations() != null
-                ? product.getTranslations().stream()
-                .filter(t -> t.getLanguage() != null && t.getLanguage().getCode() != null)
-                .filter(t -> t.getLanguage().getCode().trim().equalsIgnoreCase(languageCode))
-                .findFirst()
-                .map(t -> t.getNotes())
-                .orElse(product.getNotes())
-                : product.getNotes();
+        String translatedNotes = product.getNotes();
 
         return ProductSearchDTO.builder()
                 .id(product.getId())
                 .tradeName(translatedTradeName)
                 .scientificName(translatedScientificName)
-                .barcode(product.getBarcode())
-                .productType("MASTER")
+                .barcodes(product.getBarcode() != null ? Set.of(product.getBarcode()) : new HashSet<>())               
+                //.productType(ProductType.MASTER)
+                .productTypeName(ProductType.MASTER.getTranslatedName(languageCode))
                 .requiresPrescription(product.getRequiresPrescription())
                 .concentration(product.getConcentration())
                 .size(product.getSize())
@@ -138,23 +136,17 @@ public class ProductSearchService {
                 .orElse(product.getScientificName())
                 : product.getScientificName();
 
-        String translatedNotes = product.getTranslations() != null
-                ? product.getTranslations().stream()
-                .filter(t -> t.getLanguage() != null && t.getLanguage().getCode() != null)
-                .filter(t -> t.getLanguage().getCode().trim().equalsIgnoreCase(languageCode))
-                .findFirst()
-                .map(t -> t.getNotes())
-                .orElse(product.getNotes())
-                : product.getNotes();
+        String translatedNotes = product.getNotes();
 
         return ProductSearchDTO.builder()
                 .id(product.getId())
                 .tradeName(translatedTradeName)
                 .scientificName(translatedScientificName)
-                .barcode(product.getBarcodes() != null && !product.getBarcodes().isEmpty() 
-                    ? product.getBarcodes().iterator().next().getBarcode() 
-                    : null)
-                .productType("PHARMACY")
+                .barcodes(product.getBarcodes() != null && !product.getBarcodes().isEmpty() 
+                    ? product.getBarcodes().stream().map(PharmacyProductBarcode::getBarcode).collect(Collectors.toSet()) 
+                    : new HashSet<>())
+                //.productType(ProductType.PHARMACY)
+                .productTypeName(ProductType.PHARMACY.getTranslatedName(languageCode))
                 .requiresPrescription(product.getRequiresPrescription())
                 .concentration(product.getConcentration())
                 .size(product.getSize())

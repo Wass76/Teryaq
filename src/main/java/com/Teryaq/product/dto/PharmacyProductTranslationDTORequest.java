@@ -18,7 +18,7 @@ public class PharmacyProductTranslationDTORequest {
     @NotBlank(message = "Scientific name is required")
     private String scientificName;
 
-    private String notes;
+
 
     private String languageCode ;
 } 

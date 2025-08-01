@@ -1,5 +1,6 @@
 package com.Teryaq.product.dto;
 
+
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -18,7 +19,7 @@ public class PharmacyProductListDTO {
     private String size;
     private Boolean requiresPrescription;
     private Set<String> barcodes;
-    private String productType;
+    private String productTypeName;
         
     private Long pharmacyId;
     private String pharmacyName;

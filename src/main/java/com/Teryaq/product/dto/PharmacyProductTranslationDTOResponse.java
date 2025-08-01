@@ -13,6 +13,5 @@ public class PharmacyProductTranslationDTOResponse {
 
     private String tradeName;
     private String scientificName;
-    private String notes;
     private String languageName;
 } 

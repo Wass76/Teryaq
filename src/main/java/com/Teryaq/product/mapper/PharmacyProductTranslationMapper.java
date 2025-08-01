@@ -13,7 +13,6 @@ public class PharmacyProductTranslationMapper {
         return PharmacyProductTranslationDTOResponse.builder()
                 .tradeName(translation.getTradeName())
                 .scientificName(translation.getScientificName())
-                .notes(translation.getNotes())
                 .languageName(translation.getLanguage().getName())
                 .build();
     }
@@ -22,7 +21,6 @@ public class PharmacyProductTranslationMapper {
         PharmacyProductTranslation translation = new PharmacyProductTranslation();
         translation.setTradeName(dto.getTradeName());
         translation.setScientificName(dto.getScientificName());
-        translation.setNotes(dto.getNotes());
         return translation;
     }
 } 

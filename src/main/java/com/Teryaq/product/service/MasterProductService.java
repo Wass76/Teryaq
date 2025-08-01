@@ -71,16 +71,10 @@ public class MasterProductService {
                     if (t.getLanguageCode() != null) {
                         lang = languageRepo.findByCode(t.getLanguageCode())
                                 .orElseThrow(() -> new EntityNotFoundException("Language not found: " + t.getLanguageCode()));
-                    } else if (t.getLanguageId() != null) {
-                        lang = languageRepo.findById(t.getLanguageId())
-                                .orElseThrow(() -> new EntityNotFoundException("Language not found: " + t.getLanguageId()));
-                    } else {
-                        throw new EntityNotFoundException("Language code or id must be provided");
-                    }
+                    } 
                     MasterProductTranslation translation = new MasterProductTranslation();
                     translation.setTradeName(t.getTradeName());
                     translation.setScientificName(t.getScientificName());
-                    translation.setNotes(t.getNotes());
                     translation.setProduct(saved);
                     translation.setLanguage(lang);
                     return translation;

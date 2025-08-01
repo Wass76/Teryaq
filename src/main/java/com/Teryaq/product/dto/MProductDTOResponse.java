@@ -1,5 +1,6 @@
 package com.Teryaq.product.dto;
 
+
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -24,9 +25,8 @@ public class MProductDTOResponse {
     private float tax;
     private String barcode;
 
-    @Builder.Default
-    private String productType = "MASTER";
-    
+   
+    private String productTypeName;
 
     @Builder.Default
     private Boolean requiresPrescription = false;
@@ -36,6 +36,5 @@ public class MProductDTOResponse {
     private String manufacturer;
     private Set<String> categories;
 
-    // @Builder.Default
-    // private Set<MProductTranslationDTOResponse> translations = new HashSet<>();
+
 }

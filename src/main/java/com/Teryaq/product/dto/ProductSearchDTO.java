@@ -1,5 +1,9 @@
 package com.Teryaq.product.dto;
 
+
+import java.util.Set;
+
+
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -13,8 +17,9 @@ public class ProductSearchDTO {
     private Long id;
     private String tradeName;
     private String scientificName;
-    private String barcode;
-    private String productType; // "MASTER" or "PHARMACY"
+    private Set<String> barcodes;
+   
+    private String productTypeName;
     private Boolean requiresPrescription;
     private String concentration;
     private String size;

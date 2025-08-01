@@ -19,6 +19,7 @@ import org.springframework.stereotype.Component;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
+import com.Teryaq.product.entity.ProductType;
 
 @Component
 @RequiredArgsConstructor
@@ -29,9 +30,8 @@ public class PharmacyProductMapper {
     private final FormRepo formRepo;
     private final ManufacturerRepo manufacturerRepo;
     private final PharmacyRepository pharmacyRepository;
-   // private final PharmacyProductTranslationMapper translationMapper;
 
-    public PharmacyProduct toEntity(PharmacyProductDTORequest dto) {
+    public PharmacyProduct toEntity(PharmacyProductDTORequest dto, Long pharmacyId) {
         PharmacyProduct product = new PharmacyProduct();
 
         product.setTradeName(dto.getTradeName());
@@ -57,9 +57,9 @@ public class PharmacyProductMapper {
         product.setRequiresPrescription(dto.getRequiresPrescription());
 
         // إضافة الصيدلية
-        if (dto.getPharmacyId() != null) {
-            product.setPharmacy(pharmacyRepository.findById(dto.getPharmacyId())
-                    .orElseThrow(() -> new RuntimeException("Pharmacy not found with ID: " + dto.getPharmacyId())));
+        if (pharmacyId != null) {
+            product.setPharmacy(pharmacyRepository.findById(pharmacyId)
+                    .orElseThrow(() -> new RuntimeException("Pharmacy not found with ID: " + pharmacyId)));
         }
 
         if (dto.getCategoryIds() != null) {
@@ -104,13 +104,14 @@ public class PharmacyProductMapper {
                 .size(product.getSize())
                 // .refPurchasePrice(product.getRefPurchasePrice())
                 // .refSellingPrice(product.getRefSellingPrice())
-                .notes(translation != null ? translation.getNotes() : product.getNotes())
+                .notes(product.getNotes())  
                 .tax(product.getTax())
                 .barcodes(product.getBarcodes() != null ? 
                     product.getBarcodes().stream()
                         .map(PharmacyProductBarcode::getBarcode)
                         .collect(Collectors.toSet()) : new HashSet<>())
-                .productType("PHARMACY")
+                // .productType(ProductType.PHARMACY)
+                .productTypeName(ProductType.PHARMACY.getTranslatedName(sanitizedLangCode))
                 .requiresPrescription(product.getRequiresPrescription())
                
 
@@ -164,7 +165,7 @@ public class PharmacyProductMapper {
                 .build();
     }
 
-    public void updateEntityFromRequest(PharmacyProduct existing, PharmacyProductDTORequest dto) {
+    public void updateEntityFromRequest(PharmacyProduct existing, PharmacyProductDTORequest dto, Long pharmacyId) {
         if (dto.getTradeName() != null) {
             existing.setTradeName(dto.getTradeName());
         }
@@ -212,9 +213,9 @@ public class PharmacyProductMapper {
         }
 
         // تحديث الصيدلية
-        if (dto.getPharmacyId() != null) {
-            existing.setPharmacy(pharmacyRepository.findById(dto.getPharmacyId())
-                    .orElseThrow(() -> new RuntimeException("Pharmacy not found with ID: " + dto.getPharmacyId())));
+        if (pharmacyId != null) {
+            existing.setPharmacy(pharmacyRepository.findById(pharmacyId)
+                    .orElseThrow(() -> new RuntimeException("Pharmacy not found with ID: " + pharmacyId)));
         }
 
         // تحديث الكلاسات
@@ -254,7 +255,8 @@ public class PharmacyProductMapper {
                     product.getBarcodes().stream()
                         .map(PharmacyProductBarcode::getBarcode)
                         .collect(Collectors.toSet()) : new HashSet<>())
-                .productType("PHARMACY")
+                //.productType(ProductType.PHARMACY)
+                .productTypeName(ProductType.PHARMACY.getTranslatedName(sanitizedLangCode))
                 .pharmacyId(product.getPharmacy() != null ? product.getPharmacy().getId() : null)
                 .pharmacyName(product.getPharmacy() != null ? product.getPharmacy().getName() : null)
                 .build();
