@@ -40,9 +40,6 @@ public class PharmacyProductDTORequest {
     @Builder.Default
     private Boolean requiresPrescription = false;
 
-    @NotNull(message = "Pharmacy ID is required")
-    private Long pharmacyId;
-
     private Long typeId;
     private Long formId;
     private Long manufacturerId;

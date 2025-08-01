@@ -1,5 +1,6 @@
 package com.Teryaq.product.dto;
 
+
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -24,8 +25,9 @@ public class PharmacyProductDTOResponse {
     private float tax;
     private Set<String> barcodes;
 
-    @Builder.Default
-    private String productType = "PHARMACY";
+  
+    
+    private String productTypeName;
 
     @Builder.Default
     private Boolean requiresPrescription = false;
@@ -38,6 +40,5 @@ public class PharmacyProductDTOResponse {
     private String manufacturer;
     private Set<String> categories;
 
-    // @Builder.Default
-    // private Set<PharmacyProductTranslationDTOResponse> translations = new HashSet<>();
+
 }

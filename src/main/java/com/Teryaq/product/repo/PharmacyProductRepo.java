@@ -33,8 +33,7 @@ public interface PharmacyProductRepo extends JpaRepository<PharmacyProduct, Long
         LOWER(pb.barcode) LIKE LOWER(CONCAT('%', :keyword, '%')) OR
         (pt.language.code = :languageCode AND (
             LOWER(pt.tradeName) LIKE LOWER(CONCAT('%', :keyword, '%')) OR
-            LOWER(pt.scientificName) LIKE LOWER(CONCAT('%', :keyword, '%')) OR
-            LOWER(pt.notes) LIKE LOWER(CONCAT('%', :keyword, '%'))
+            LOWER(pt.scientificName) LIKE LOWER(CONCAT('%', :keyword, '%'))
         ))
     )
     """)

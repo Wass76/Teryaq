@@ -6,6 +6,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
+import lombok.ToString;
 
 import java.util.Set;
 import java.util.HashSet;
@@ -36,12 +37,14 @@ public class MasterProduct extends AuditedEntity {
     private String barcode;
     private Boolean requiresPrescription;
 
-    @ManyToMany(cascade = {CascadeType.PERSIST, CascadeType.MERGE}, fetch = FetchType.LAZY)
+    @ManyToMany(cascade = {CascadeType.MERGE}, fetch = FetchType.LAZY)
     @JoinTable(
             name = "product_category",
             joinColumns = @JoinColumn(name = "product_id"),
             inverseJoinColumns = @JoinColumn(name = "category_id")
     )
+    @EqualsAndHashCode.Exclude
+    @ToString.Exclude
     private Set<Category> categories = new HashSet<>();
 
     @ManyToOne
@@ -58,6 +61,8 @@ public class MasterProduct extends AuditedEntity {
 
 
     @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true)
+    @EqualsAndHashCode.Exclude
+    @ToString.Exclude
     private Set<MasterProductTranslation> translations = new HashSet<>();
 
     @Override

@@ -4,6 +4,9 @@ import com.Teryaq.language.Language;
 import com.Teryaq.language.LanguageRepo;
 import com.Teryaq.product.repo.*;
 import com.Teryaq.product.entity.*;
+import com.Teryaq.user.Enum.Currency;
+import com.Teryaq.user.entity.Supplier;
+import com.Teryaq.user.repository.SupplierRepository;   
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -29,6 +32,8 @@ public class DataSeed {
     private final ManufacturerRepo manufacturerRepo;
     private final ManufacturerTranslationRepo manufacturerTranslationRepo;
 
+    private final SupplierRepository supplierRepo;
+
     @PostConstruct
     public void seedAll() {
         seedLanguages();
@@ -36,6 +41,7 @@ public class DataSeed {
         seedForms();
         seedTypes();
         seedManufacturers();
+        seedSuppliers();
     }
 
     private void seedLanguages() {
@@ -159,6 +165,17 @@ public class DataSeed {
         }
     }
 
+    private void seedSuppliers() {
+        if (supplierRepo.count() == 0) {
+            List<Supplier> suppliers = List.of(
+                new Supplier("شركة الشام للأدوية", "0999999999", "دمشق - باب شرقي", Currency.SYP),
+                new Supplier("شركة ابن زهر", "0988888888", "حلب - الجميلية", Currency.SYP),
+                new Supplier("شركة ترياق", "0933333333", "دمشق - المزة", Currency.SYP)
+            );
+            supplierRepo.saveAll(suppliers);
+            System.out.println("✅ Suppliers seeded");
+        }
+    }
 
 
 }

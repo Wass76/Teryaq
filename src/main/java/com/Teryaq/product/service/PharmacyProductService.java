@@ -67,7 +67,9 @@ public class PharmacyProductService {
         return pharmacyProductMapper.toResponse(product, langCode);
     }
 
-    public PharmacyProductDTOResponse insertPharmacyProduct(PharmacyProductDTORequest requestDTO, String langCode) {
+    public PharmacyProductDTOResponse insertPharmacyProduct(PharmacyProductDTORequest requestDTO, 
+                                                            String langCode, 
+                                                            Long pharmacyId) {
         // تحقق من الباركودات إذا كانت موجودة مسبقاً
         if (requestDTO.getBarcodes() != null && !requestDTO.getBarcodes().isEmpty()) {
             for (String barcode : requestDTO.getBarcodes()) {
@@ -82,15 +84,15 @@ public class PharmacyProductService {
         }
         
         // تحقق من وجود الصيدلية
-        if (requestDTO.getPharmacyId() == null) {
+        if (pharmacyId == null) {
             throw new ConflictException("Pharmacy ID is required");
         }
         
-        if (!pharmacyRepository.existsById(requestDTO.getPharmacyId())) {
-            throw new EntityNotFoundException("Pharmacy with ID " + requestDTO.getPharmacyId() + " not found");
+        if (!pharmacyRepository.existsById(pharmacyId)) {
+            throw new EntityNotFoundException("Pharmacy with ID " + pharmacyId + " not found");
         }
         
-        PharmacyProduct product = pharmacyProductMapper.toEntity(requestDTO);
+        PharmacyProduct product = pharmacyProductMapper.toEntity(requestDTO, pharmacyId);
         PharmacyProduct saved = pharmacyProductRepo.save(product);
 
         // حفظ الترجمات
@@ -99,7 +101,7 @@ public class PharmacyProductService {
                 .map(t -> {
                     Language lang = languageRepo.findByCode(t.getLanguageCode())
                             .orElseThrow(() -> new EntityNotFoundException("Language not found: " + t.getLanguageCode()));
-                    return new PharmacyProductTranslation(t.getTradeName(), t.getScientificName(), t.getNotes(), saved, lang);
+                    return new PharmacyProductTranslation(t.getTradeName(), t.getScientificName(), saved, lang);
                 })
                 .collect(Collectors.toList());
 
@@ -110,7 +112,14 @@ public class PharmacyProductService {
         return pharmacyProductMapper.toResponse(saved, langCode);
     }
 
-    public PharmacyProductDTOResponse editPharmacyProduct(Long id, PharmacyProductDTORequest requestDTO, String langCode) {
+    public PharmacyProductDTOResponse editPharmacyProduct(Long id,
+                                                         PharmacyProductDTORequest requestDTO,
+                                                         String langCode,
+                                                         Long pharmacyId) {
+        if (pharmacyId == null) {
+            throw new ConflictException("Pharmacy ID is required");
+        }
+
         return pharmacyProductRepo.findByIdWithTranslations(id).map(existing -> {
             // تحقق من تكرار الباركودات إذا تم تغييرها
             if (requestDTO.getBarcodes() != null && !requestDTO.getBarcodes().isEmpty()) {
@@ -132,12 +141,12 @@ public class PharmacyProductService {
             }
             
             // تحقق من وجود الصيدلية إذا تم تحديثها
-            if (requestDTO.getPharmacyId() != null && !pharmacyRepository.existsById(requestDTO.getPharmacyId())) {
-                throw new EntityNotFoundException("Pharmacy with ID " + requestDTO.getPharmacyId() + " not found");
+            if (pharmacyId != null && !pharmacyRepository.existsById(pharmacyId)) {
+                throw new EntityNotFoundException("Pharmacy with ID " + pharmacyId + " not found");
             }
             
             // استخدام دالة المابير لتحديث الكائن
-            pharmacyProductMapper.updateEntityFromRequest(existing, requestDTO);
+            pharmacyProductMapper.updateEntityFromRequest(existing, requestDTO, pharmacyId);
             
             PharmacyProduct saved = pharmacyProductRepo.save(existing);
 
@@ -151,7 +160,7 @@ public class PharmacyProductService {
                     .map(t -> {
                         Language lang = languageRepo.findByCode(t.getLanguageCode())
                                 .orElseThrow(() -> new EntityNotFoundException("Language not found: " + t.getLanguageCode()));
-                        return new PharmacyProductTranslation(t.getTradeName(), t.getScientificName(), t.getNotes(), saved, lang);
+                        return new PharmacyProductTranslation(t.getTradeName(), t.getScientificName(),  saved, lang);
                     })
                     .collect(Collectors.toList());
 
@@ -169,4 +178,8 @@ public class PharmacyProductService {
         }
         pharmacyProductRepo.deleteById(id);
     }
+
+
 }
+
+

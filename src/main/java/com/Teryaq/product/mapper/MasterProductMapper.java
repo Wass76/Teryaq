@@ -11,6 +11,7 @@ import org.springframework.stereotype.Component;
 import java.util.HashSet;
 //import java.util.Set;
 import java.util.stream.Collectors;
+import com.Teryaq.product.entity.ProductType;
 
 @Component
 @RequiredArgsConstructor
@@ -75,10 +76,10 @@ public class MasterProductMapper {
                 .size(product.getSize())
                 .refPurchasePrice(product.getRefPurchasePrice())
                 .refSellingPrice(product.getRefSellingPrice())
-                .notes(translation != null ? translation.getNotes() : product.getNotes())
+                .notes(product.getNotes())
                 .tax(product.getTax())
                 .barcode(product.getBarcode())
-                .productType("MASTER")
+                .productTypeName(ProductType.MASTER.getTranslatedName(languageCode))
                 .requiresPrescription(product.getRequiresPrescription())
 
                 .categories(
@@ -123,7 +124,6 @@ public class MasterProductMapper {
                                 .orElse(product.getManufacturer().getName())
                                 : null
                 )
-              //  .translations(allTranslations)
 
                 .build();
     }

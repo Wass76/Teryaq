@@ -19,9 +19,7 @@ public class MProductTranslationDTORequest {
     @NotBlank(message = "Scientific name is required")
     private String scientificName;
 
-    private String notes;
 
 
-    private Long languageId ;
     private String languageCode;
 }

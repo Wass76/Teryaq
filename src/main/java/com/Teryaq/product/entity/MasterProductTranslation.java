@@ -19,7 +19,6 @@ import lombok.ToString;
 public class MasterProductTranslation extends AuditedEntity {
     private String tradeName;
     private String scientificName;
-    private String notes;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "product_id")

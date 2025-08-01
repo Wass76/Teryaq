@@ -8,6 +8,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
+import lombok.ToString;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -35,12 +36,14 @@ public class PharmacyProduct extends AuditedEntity {
     @JoinColumn(name = "pharmacy_id", nullable = false)
     private Pharmacy pharmacy;  
 
-    @ManyToMany(cascade = {CascadeType.PERSIST, CascadeType.MERGE})
+    @ManyToMany(cascade = {CascadeType.MERGE})
     @JoinTable(
             name = "pharmacy_product_category",
             joinColumns = @JoinColumn(name = "product_id"),
             inverseJoinColumns = @JoinColumn(name = "category_id")
     )
+    @EqualsAndHashCode.Exclude
+    @ToString.Exclude
     private Set<Category> categories = new HashSet<>();
 
     @ManyToOne
@@ -56,15 +59,13 @@ public class PharmacyProduct extends AuditedEntity {
     private Manufacturer manufacturer;
 
     @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
-//    @Fetch(FetchMode.SUBSELECT)
-//    @EqualsAndHashCode.Exclude
-//    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
+    @ToString.Exclude
     private Set<PharmacyProductBarcode> barcodes = new HashSet<>();
 
     @OneToMany(mappedBy = "product", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
-//    @Fetch(FetchMode.SUBSELECT)
-//    @EqualsAndHashCode.Exclude
-//@ToString.Exclude
+    @EqualsAndHashCode.Exclude
+    @ToString.Exclude
     private Set<PharmacyProductTranslation> translations = new HashSet<>();
 
     @Override
