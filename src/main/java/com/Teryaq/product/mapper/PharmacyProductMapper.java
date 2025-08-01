@@ -185,19 +185,27 @@ public class PharmacyProductMapper {
         }
         // تحديث الباركودات المتعددة
         if (dto.getBarcodes() != null) {
-            // حذف الباركودات الحالية
-            existing.getBarcodes().clear();
-            
-            // إضافة الباركودات الجديدة
-            Set<PharmacyProductBarcode> newBarcodes = dto.getBarcodes().stream()
-                    .map(barcodeStr -> {
-                        PharmacyProductBarcode barcode = new PharmacyProductBarcode();
-                        barcode.setBarcode(barcodeStr);
-                        barcode.setProduct(existing);
-                        return barcode;
-                    })
+            // تحقق من الباركودات الموجودة حالياً
+            Set<String> existingBarcodes = existing.getBarcodes().stream()
+                    .map(PharmacyProductBarcode::getBarcode)
                     .collect(Collectors.toSet());
-            existing.getBarcodes().addAll(newBarcodes);
+            
+            Set<String> newBarcodes = new HashSet<>(dto.getBarcodes());
+            
+            // إزالة الباركودات التي لم تعد موجودة في الطلب
+            existing.getBarcodes().removeIf(barcode -> !newBarcodes.contains(barcode.getBarcode()));
+            
+            // إضافة الباركودات الجديدة فقط
+            Set<String> barcodesToAdd = newBarcodes.stream()
+                    .filter(barcode -> !existingBarcodes.contains(barcode))
+                    .collect(Collectors.toSet());
+            
+            for (String barcodeStr : barcodesToAdd) {
+                PharmacyProductBarcode barcode = new PharmacyProductBarcode();
+                barcode.setBarcode(barcodeStr);
+                barcode.setProduct(existing);
+                existing.getBarcodes().add(barcode);
+            }
         }
         if (dto.getRequiresPrescription() != null) {
             existing.setRequiresPrescription(dto.getRequiresPrescription());
