@@ -21,4 +21,7 @@ public interface PharmacyProductBarcodeRepo extends JpaRepository<PharmacyProduc
     
     @Query("SELECT pb FROM PharmacyProductBarcode pb WHERE pb.barcode IN :barcodes")
     List<PharmacyProductBarcode> findByBarcodes(@Param("barcodes") List<String> barcodes);
+    
+    @Query("SELECT COUNT(pb) > 0 FROM PharmacyProductBarcode pb WHERE pb.barcode = :barcode AND pb.product.id != :productId")
+    boolean existsByBarcodeAndProductIdNot(@Param("barcode") String barcode, @Param("productId") Long productId);
 } 

@@ -115,14 +115,10 @@ public class PharmacyProductService {
             // تحقق من تكرار الباركودات إذا تم تغييرها
             if (requestDTO.getBarcodes() != null && !requestDTO.getBarcodes().isEmpty()) {
                 for (String barcode : requestDTO.getBarcodes()) {
-                    // تحقق من وجود الباركود في منتجات أخرى
-                    if (pharmacyProductBarcodeRepo.existsByBarcode(barcode)) {
-                        // تحقق من أن الباركود لا ينتمي للمنتج الحالي
-                        boolean belongsToCurrentProduct = existing.getBarcodes().stream()
-                                .anyMatch(b -> b.getBarcode().equals(barcode));
-                        if (!belongsToCurrentProduct) {
-                            throw new ConflictException("Barcode " + barcode + " already exists");
-                        }
+                    // تحقق من وجود الباركود في منتجات أخرى (غير المنتج الحالي)
+                    boolean barcodeExistsInOtherProducts = pharmacyProductBarcodeRepo.existsByBarcodeAndProductIdNot(barcode, id);
+                    if (barcodeExistsInOtherProducts) {
+                        throw new ConflictException("Barcode " + barcode + " already exists in another product");
                     }
                     // تحقق من عدم وجود الباركود في الماستر
                     if (masterProductRepo.findByBarcode(barcode).isPresent()) {

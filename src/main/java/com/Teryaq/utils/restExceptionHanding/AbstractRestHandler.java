@@ -1,6 +1,7 @@
 package com.Teryaq.utils.restExceptionHanding;
 
 import com.Teryaq.utils.exception.*;
+import jakarta.persistence.EntityNotFoundException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -96,5 +97,16 @@ public class AbstractRestHandler {
                 LocalDateTime.now()
         );
         return new ResponseEntity<>(apiException,invalidStatus);
+    }
+
+    @ExceptionHandler(value = {EntityNotFoundException.class})
+    public ResponseEntity<Object> handleEntityNotFoundException(EntityNotFoundException e){
+        HttpStatus notFound = HttpStatus.NOT_FOUND;
+        ApiException apiException = new ApiException(
+                e.getMessage(),
+                notFound,
+                LocalDateTime.now()
+        );
+        return new ResponseEntity<>(apiException,notFound);
     }
 }
