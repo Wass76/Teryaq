@@ -139,15 +139,16 @@ public class PharmacyProductService {
             // استخدام دالة المابير لتحديث الكائن
             pharmacyProductMapper.updateEntityFromRequest(existing, requestDTO);
             
+            // حفظ الكائن الرئيسي أولاً
             PharmacyProduct saved = pharmacyProductRepo.save(existing);
-
-            // تحديث الترجمات
+            
+            // تحديث الترجمات بشكل منفصل لتجنب مشاكل Cascade
             if (requestDTO.getTranslations() != null && !requestDTO.getTranslations().isEmpty()) {
                 // حذف الترجمات القديمة
                 pharmacyProductTranslationRepo.deleteByProduct(saved);
-
+                
                 // إنشاء الترجمات الجديدة
-                List<PharmacyProductTranslation> translations = requestDTO.getTranslations().stream()
+                List<PharmacyProductTranslation> newTranslations = requestDTO.getTranslations().stream()
                     .map(t -> {
                         Language lang = languageRepo.findByCode(t.getLanguageCode())
                                 .orElseThrow(() -> new EntityNotFoundException("Language not found: " + t.getLanguageCode()));
@@ -155,11 +156,11 @@ public class PharmacyProductService {
                     })
                     .collect(Collectors.toList());
 
-                pharmacyProductTranslationRepo.saveAll(translations);
-                saved.setTranslations(new HashSet<>(translations));
+                pharmacyProductTranslationRepo.saveAll(newTranslations);
             }
-
-            return pharmacyProductMapper.toResponse(saved, langCode);
+            
+            // إعادة تحميل الكائن مع الترجمات
+            return pharmacyProductMapper.toResponse(pharmacyProductRepo.findByIdWithTranslations(saved.getId()).orElse(saved), langCode);
         }).orElseThrow(() -> new EntityNotFoundException("Pharmacy Product with ID " + id + " not found"));
     }
 
