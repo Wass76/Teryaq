@@ -7,6 +7,7 @@ import com.Teryaq.product.entity.PharmacyProductBarcode;
 import com.Teryaq.product.entity.ProductType;
 import com.Teryaq.product.repo.MasterProductRepo;
 import com.Teryaq.product.repo.PharmacyProductRepo;
+import com.Teryaq.user.repository.UserRepository;
 import com.Teryaq.user.service.BaseSecurityService;
 
 import lombok.RequiredArgsConstructor;
@@ -21,11 +22,16 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
-@RequiredArgsConstructor
 public class ProductSearchService extends BaseSecurityService {
 
     private final MasterProductRepo masterProductRepo;
     private final PharmacyProductRepo pharmacyProductRepo;
+
+    protected ProductSearchService(UserRepository userRepository, MasterProductRepo masterProductRepo, PharmacyProductRepo pharmacyProductRepo) {
+        super(userRepository);
+        this.masterProductRepo = masterProductRepo;
+        this.pharmacyProductRepo = pharmacyProductRepo;
+    }
 
 
     public List<ProductSearchDTO> searchProducts(String keyword, String languageCode) {

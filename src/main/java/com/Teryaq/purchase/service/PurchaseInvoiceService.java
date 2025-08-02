@@ -26,17 +26,21 @@ import com.Teryaq.utils.exception.ConflictException;
 import com.Teryaq.utils.exception.ResourceNotFoundException;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
 import java.util.List;
-
+import java.util.stream.Collectors;
 
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 @Service
-@RequiredArgsConstructor
 public class PurchaseInvoiceService extends BaseSecurityService {
     private static final Logger logger = LoggerFactory.getLogger(PurchaseInvoiceService.class);
     private final PurchaseInvoiceRepo purchaseInvoiceRepo;
