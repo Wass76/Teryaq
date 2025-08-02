@@ -7,6 +7,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
+import lombok.ToString;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -24,9 +25,13 @@ public class Manufacturer extends AuditedEntity {
 
 
     @OneToMany(mappedBy = "manufacturer")
+    @EqualsAndHashCode.Exclude
+    @ToString.Exclude
     private Set<MasterProduct> product;
 
     @OneToMany(mappedBy = "manufacturer", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
+    @EqualsAndHashCode.Exclude
+    @ToString.Exclude
    // @Fetch(FetchMode.SUBSELECT)
     private Set<ManufacturerTranslation> translations = new HashSet<>();
 

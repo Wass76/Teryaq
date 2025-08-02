@@ -13,6 +13,8 @@ import com.Teryaq.product.repo.TypeRepo;
 import com.Teryaq.product.repo.FormRepo;
 import com.Teryaq.product.repo.ManufacturerRepo;
 import com.Teryaq.user.repository.PharmacyRepository;
+
+import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -59,7 +61,7 @@ public class PharmacyProductMapper {
         // إضافة الصيدلية
         if (pharmacyId != null) {
             product.setPharmacy(pharmacyRepository.findById(pharmacyId)
-                    .orElseThrow(() -> new RuntimeException("Pharmacy not found with ID: " + pharmacyId)));
+                    .orElseThrow(() -> new EntityNotFoundException("Pharmacy not found with ID: " + pharmacyId)));
         }
 
         if (dto.getCategoryIds() != null) {
@@ -215,7 +217,7 @@ public class PharmacyProductMapper {
         // تحديث الصيدلية
         if (pharmacyId != null) {
             existing.setPharmacy(pharmacyRepository.findById(pharmacyId)
-                    .orElseThrow(() -> new RuntimeException("Pharmacy not found with ID: " + pharmacyId)));
+                    .orElseThrow(() -> new EntityNotFoundException("Pharmacy not found with ID: " + pharmacyId)));
         }
 
         // تحديث الكلاسات

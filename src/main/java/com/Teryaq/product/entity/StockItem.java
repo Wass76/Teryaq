@@ -7,7 +7,6 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 
 @Data
 @Entity
@@ -41,7 +40,7 @@ public class StockItem extends AuditedEntity {
     private PurchaseInvoice purchaseInvoice;
 
     @Column
-    private LocalDateTime dateAdded;
+    private LocalDate dateAdded;
 
     @Column
     private Long addedBy;
