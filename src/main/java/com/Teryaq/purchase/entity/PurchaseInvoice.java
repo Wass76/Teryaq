@@ -1,6 +1,7 @@
-package com.Teryaq.product.entity;
+package com.Teryaq.purchase.entity;
 
 import com.Teryaq.user.Enum.Currency;
+import com.Teryaq.user.entity.Pharmacy;
 import com.Teryaq.user.entity.Supplier;
 import com.Teryaq.utils.entity.AuditedEntity;
 import jakarta.persistence.*;
@@ -9,9 +10,7 @@ import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import java.util.HashSet;
-import java.util.Objects;
-import java.util.Set;
+
 import java.util.List;
 import java.util.ArrayList;
 
@@ -36,6 +35,10 @@ public class PurchaseInvoice extends AuditedEntity {
 
     @Column(nullable = false)
     private Double total;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "pharmacy_id", nullable = false)
+    private Pharmacy pharmacy;
 
     @OneToMany(mappedBy = "purchaseInvoice", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
     private List<PurchaseInvoiceItem> items = new ArrayList<>();

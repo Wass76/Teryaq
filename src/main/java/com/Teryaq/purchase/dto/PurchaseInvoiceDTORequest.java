@@ -1,4 +1,4 @@
-package com.Teryaq.product.dto;
+package com.Teryaq.purchase.dto;
 
 import com.Teryaq.user.Enum.Currency;
 import lombok.Data;

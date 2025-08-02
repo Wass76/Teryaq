@@ -3,6 +3,7 @@ package com.Teryaq.user.entity;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
 
@@ -10,6 +11,7 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.List;
 
+@EqualsAndHashCode(callSuper = true)
 @Entity
 @Data
 @SuperBuilder
@@ -28,8 +30,7 @@ public class Employee extends User {
     @OneToMany(mappedBy = "employee", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<EmployeeWorkingHours> employeeWorkingHoursList;
 
-    @Column
-    private String pharmacyName; // For now, just a string. Can be a relation later.
+
 
     // Add more fields as needed for pharmacy context
     @Override

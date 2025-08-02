@@ -1,8 +1,11 @@
-package com.Teryaq.product.mapper;
+package com.Teryaq.purchase.mapper;
 
-import com.Teryaq.product.dto.*;
-import com.Teryaq.product.entity.PurchaseInvoice;
-import com.Teryaq.product.entity.PurchaseInvoiceItem;
+import com.Teryaq.purchase.dto.PurchaseInvoiceDTORequest;
+import com.Teryaq.purchase.dto.PurchaseInvoiceDTOResponse;
+import com.Teryaq.purchase.dto.PurchaseInvoiceItemDTORequest;
+import com.Teryaq.purchase.dto.PurchaseInvoiceItemDTOResponse;
+import com.Teryaq.purchase.entity.PurchaseInvoice;
+import com.Teryaq.purchase.entity.PurchaseInvoiceItem;
 import com.Teryaq.product.entity.PharmacyProduct;
 import com.Teryaq.product.entity.MasterProduct;
 import com.Teryaq.user.entity.Supplier;
@@ -21,6 +24,7 @@ public class PurchaseInvoiceMapper {
         invoice.setSupplier(supplier);
         invoice.setCurrency(dto.getCurrency());
         invoice.setItems(items.stream().peek(i -> i.setPurchaseInvoice(invoice)).collect(Collectors.toList()));
+        // Note: pharmacy will be set in the service layer
         return invoice;
     }
 

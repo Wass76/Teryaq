@@ -1,10 +1,13 @@
-package com.Teryaq.product.mapper;
+package com.Teryaq.purchase.mapper;
 
 import com.Teryaq.product.Enum.OrderStatus;
 import com.Teryaq.product.Enum.ProductType;
-import com.Teryaq.product.dto.*;
-import com.Teryaq.product.entity.PurchaseOrder;
-import com.Teryaq.product.entity.PurchaseOrderItem;
+import com.Teryaq.purchase.dto.PurchaseOrderDTORequest;
+import com.Teryaq.purchase.dto.PurchaseOrderDTOResponse;
+import com.Teryaq.purchase.dto.PurchaseOrderItemDTORequest;
+import com.Teryaq.purchase.dto.PurchaseOrderItemDTOResponse;
+import com.Teryaq.purchase.entity.PurchaseOrder;
+import com.Teryaq.purchase.entity.PurchaseOrderItem;
 import com.Teryaq.product.entity.PharmacyProduct;
 import com.Teryaq.product.entity.MasterProduct;
 import com.Teryaq.user.entity.Supplier;

@@ -1,4 +1,4 @@
-package com.Teryaq.product.dto;
+package com.Teryaq.purchase.dto;
 
 import java.time.LocalDate;
 

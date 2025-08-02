@@ -1,6 +1,7 @@
-package com.Teryaq.product.entity;
+package com.Teryaq.purchase.entity;
 
 import com.Teryaq.product.Enum.OrderStatus;
+import com.Teryaq.user.entity.Pharmacy;
 import com.Teryaq.user.entity.Supplier;
 import com.Teryaq.utils.entity.AuditedEntity;
 import jakarta.persistence.*;
@@ -11,9 +12,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
 @Getter
 @Setter
@@ -35,6 +34,10 @@ public class PurchaseOrder extends AuditedEntity {
 
     @Column(nullable = false)
     private OrderStatus status; // قيد الانتظار, مكتمل, ملغى
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "pharmacy_id", nullable = false)
+    private Pharmacy pharmacy;
 
     @OneToMany(mappedBy = "purchaseOrder", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<PurchaseOrderItem> items = new ArrayList<>();

@@ -5,6 +5,8 @@ import com.Teryaq.product.Enum.ProductType;
 import com.Teryaq.product.repo.StockItemRepo;
 import com.Teryaq.product.repo.PharmacyProductRepo;
 import com.Teryaq.product.repo.MasterProductRepo;
+import com.Teryaq.user.repository.UserRepository;
+import com.Teryaq.user.service.BaseSecurityService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -15,44 +17,60 @@ import java.util.HashMap;
 import java.util.stream.Collectors;
 
 @Service
-@RequiredArgsConstructor
-public class StockManagementService {
-    
+public class StockManagementService extends BaseSecurityService {
+
     private final StockItemRepo stockItemRepo;
     private final PharmacyProductRepo pharmacyProductRepo;
     private final MasterProductRepo masterProductRepo;
-    
-    
+
+
+    public StockManagementService(StockItemRepo stockItemRepo,
+                                PharmacyProductRepo pharmacyProductRepo,
+                                MasterProductRepo masterProductRepo,
+                                UserRepository userRepository) {
+        super(userRepository);
+        this.stockItemRepo = stockItemRepo;
+        this.pharmacyProductRepo = pharmacyProductRepo;
+        this.masterProductRepo = masterProductRepo;
+    }
+
+
     public Integer getTotalQuantityByProductId(Long productId) {
-        return stockItemRepo.getTotalQuantityByProductId(productId);
+        Long currentPharmacyId = getCurrentUserPharmacyId();
+        return stockItemRepo.getTotalQuantityByProductIdAndPharmacyId(productId, currentPharmacyId);
     }
     
    
     public List<StockItem> getStockItemsByProductId(Long productId) {
-        return stockItemRepo.findByProductId(productId);
+        Long currentPharmacyId = getCurrentUserPharmacyId();
+        return stockItemRepo.findByProductIdAndPharmacyId(productId, currentPharmacyId);
     }
     
     
     public List<StockItem> getAvailableStockByProductId(Long productId) {
+        Long currentPharmacyId = getCurrentUserPharmacyId();
         LocalDate today = LocalDate.now();
-        return stockItemRepo.findByProductIdAndQuantityGreaterThanAndExpiryDateAfterOrderByDateAddedAsc(
-            productId, 0, today);
+        return stockItemRepo.findByProductIdAndPharmacyIdAndQuantityGreaterThanAndExpiryDateAfterOrderByDateAddedAsc(
+            productId, currentPharmacyId, 0, today);
     }
     
     
     public List<StockItem> getExpiredItems() {
-        return stockItemRepo.findExpiredItems(LocalDate.now());
+        Long currentPharmacyId = getCurrentUserPharmacyId();
+        return stockItemRepo.findExpiredItemsByPharmacyId(LocalDate.now(), currentPharmacyId);
     }
    
     public List<StockItem> getItemsExpiringSoon() {
+        Long currentPharmacyId = getCurrentUserPharmacyId();
         LocalDate today = LocalDate.now();
         LocalDate thirtyDaysFromNow = today.plusDays(30);
-        return stockItemRepo.findItemsExpiringSoon(today, thirtyDaysFromNow);
+        return stockItemRepo.findItemsExpiringSoonByPharmacyId(today, thirtyDaysFromNow, currentPharmacyId);
     }
     
    
     public Map<String, Object> getStockReportByProductType(ProductType productType) {
-        List<StockItem> stockItems = stockItemRepo.findByProductType(productType);
+        Long currentPharmacyId = getCurrentUserPharmacyId();
+        List<StockItem> stockItems = stockItemRepo.findByProductTypeAndPharmacyId(productType, currentPharmacyId);
         
         Map<String, Object> report = new HashMap<>();
         report.put("productType", productType);
@@ -79,7 +97,7 @@ public class StockManagementService {
     
  
     public boolean isQuantityAvailable(Long productId, Integer requiredQuantity) {
-        Integer availableQuantity = stockItemRepo.getTotalQuantityByProductId(productId);
+        Integer availableQuantity = getTotalQuantityByProductId(productId);
         return availableQuantity >= requiredQuantity;
     }
     
@@ -113,9 +131,10 @@ public class StockManagementService {
     
   
     public List<StockItem> getStockItemsForSale(Long productId, Integer requiredQuantity) {
+        Long currentPharmacyId = getCurrentUserPharmacyId();
         LocalDate today = LocalDate.now();
         List<StockItem> availableStock = stockItemRepo
-            .findByProductIdAndQuantityGreaterThanAndExpiryDateAfterOrderByDateAddedAsc(productId, 0, today);
+            .findByProductIdAndPharmacyIdAndQuantityGreaterThanAndExpiryDateAfterOrderByDateAddedAsc(productId, currentPharmacyId, 0, today);
         
         // تطبيق FIFO - ترتيب حسب تاريخ الإضافة (الأقدم أولاً)
         return availableStock.stream()
@@ -125,12 +144,13 @@ public class StockManagementService {
 
   
     public List<StockItem> getAllStockItems() {
-        return stockItemRepo.findAll();
+        Long currentPharmacyId = getCurrentUserPharmacyId();
+        return stockItemRepo.findByPharmacyId(currentPharmacyId);
     }
 
    
     public List<Map<String, Object>> getAllStockItemsWithProductInfo() {
-        List<StockItem> stockItems = stockItemRepo.findAll();
+        List<StockItem> stockItems = getAllStockItems();
         
         return stockItems.stream().map(item -> {
             Map<String, Object> stockInfo = new HashMap<>();

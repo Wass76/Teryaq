@@ -12,6 +12,7 @@ import com.Teryaq.product.Enum.DiscountType;
 import com.Teryaq.product.Enum.PaymentMethod;
 import com.Teryaq.product.Enum.PaymentType;
 import com.Teryaq.user.entity.Customer;
+import com.Teryaq.user.entity.Pharmacy;
 import com.Teryaq.utils.entity.AuditedEntity;
 import com.fasterxml.jackson.annotation.JsonFormat;
 
@@ -47,6 +48,10 @@ public class SaleInvoice extends AuditedEntity{
 
     private float remainingAmount;
 
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "pharmacy_id", nullable = false)
+    private Pharmacy pharmacy;
 
     @OneToMany(mappedBy = "saleInvoice", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<SaleInvoiceItem> items;

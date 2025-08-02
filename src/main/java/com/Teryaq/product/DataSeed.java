@@ -59,13 +59,7 @@ public class DataSeed {
         seedCustomers();
         seedPharmacy();
         seedEmployee();
-        // seedMasterProducts();
-        // seedPharmacyProducts();
-        // seedPurchaseOrders();
-        // seedPurchaseInvoices();
-        // seedStockItems();
-        // seedSampleSales();
-        // seedCustomerDebts();
+
     }
 
     private void seedLanguages() {
@@ -252,7 +246,6 @@ public class DataSeed {
                     .pharmacy(pharmacy)
                     .phoneNumber("0999999999")
                     .dateOfHire(LocalDate.now())
-                    .pharmacyName(pharmacy.getName())
                     .build();
 
             employeeRepository.save(employee);
@@ -261,8 +254,7 @@ public class DataSeed {
             System.out.println("Password: password123");
         }
     }
-
-    // private void seedMasterProducts() {
+}
     //     if (masterProductRepo.count() == 0) {
     //         Language ar = languageRepo.findByCode("ar").orElseThrow();
     //         Category painkillers = categoryRepo.findById(1L).orElseThrow();
@@ -731,4 +723,4 @@ public class DataSeed {
     //         System.out.println("✅ Customer Debts seeded");
     //     }
     // }
-}
+//}

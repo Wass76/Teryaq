@@ -15,16 +15,6 @@ public class TypeMapper {
         if (type == null) return null;
     
         String sanitizedLangCode = langCode == null ? "en" : langCode.trim().toLowerCase();
-        
-        System.out.println("Processing type: " + type.getName() + " with langCode: " + sanitizedLangCode);
-        System.out.println("Type translations count: " + (type.getTranslations() != null ? type.getTranslations().size() : 0));
-        
-        if (type.getTranslations() != null) {
-            type.getTranslations().forEach(t -> {
-                System.out.println("Translation: " + t.getName() + " for language: " + 
-                    (t.getLanguage() != null ? t.getLanguage().getCode() : "null"));
-            });
-        }
     
         String translatedName = type.getTranslations().stream()
                 .filter(t -> t.getLanguage() != null && t.getLanguage().getCode() != null)
@@ -32,8 +22,6 @@ public class TypeMapper {
                 .map(TypeTranslation::getName)
                 .findFirst()
                 .orElse(type.getName());
-                
-        System.out.println("Final translated name: " + translatedName);
         
         return TypeDTOResponse.builder()
                 .id(type.getId())

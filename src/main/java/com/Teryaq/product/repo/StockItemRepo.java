@@ -38,4 +38,27 @@ public interface StockItemRepo extends JpaRepository<StockItem, Long> {
     // البحث عن منتجات قريبة من انتهاء الصلاحية (خلال 30 يوم)
     @Query("SELECT s FROM StockItem s WHERE s.expiryDate BETWEEN :startDate AND :endDate AND s.quantity > 0")
     List<StockItem> findItemsExpiringSoon(@Param("startDate") LocalDate startDate, @Param("endDate") LocalDate endDate);
+    
+    // Pharmacy-specific queries
+    List<StockItem> findByPharmacyId(Long pharmacyId);
+    
+    List<StockItem> findByProductIdAndPharmacyId(Long productId, Long pharmacyId);
+    
+    List<StockItem> findByProductTypeAndPharmacyId(ProductType productType, Long pharmacyId);
+    
+    @Query("SELECT COALESCE(SUM(s.quantity), 0) FROM StockItem s WHERE s.productId = :productId AND s.pharmacy.id = :pharmacyId AND s.quantity > 0")
+    Integer getTotalQuantityByProductIdAndPharmacyId(@Param("productId") Long productId, @Param("pharmacyId") Long pharmacyId);
+    
+    @Query("SELECT s FROM StockItem s WHERE s.expiryDate < :date AND s.pharmacy.id = :pharmacyId AND s.quantity > 0")
+    List<StockItem> findExpiredItemsByPharmacyId(@Param("date") LocalDate date, @Param("pharmacyId") Long pharmacyId);
+    
+    @Query("SELECT s FROM StockItem s WHERE s.expiryDate BETWEEN :startDate AND :endDate AND s.pharmacy.id = :pharmacyId AND s.quantity > 0")
+    List<StockItem> findItemsExpiringSoonByPharmacyId(@Param("startDate") LocalDate startDate, @Param("endDate") LocalDate endDate, @Param("pharmacyId") Long pharmacyId);
+    
+    @Query("SELECT s FROM StockItem s WHERE s.productId = :productId AND s.pharmacy.id = :pharmacyId AND s.quantity > :minQuantity AND s.expiryDate > :date ORDER BY s.dateAdded ASC")
+    List<StockItem> findByProductIdAndPharmacyIdAndQuantityGreaterThanAndExpiryDateAfterOrderByDateAddedAsc(
+        @Param("productId") Long productId, 
+        @Param("pharmacyId") Long pharmacyId, 
+        @Param("minQuantity") Integer minQuantity, 
+        @Param("date") LocalDate date);
 } 

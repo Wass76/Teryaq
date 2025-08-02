@@ -11,12 +11,16 @@ import com.Teryaq.product.entity.StockItem;
 import com.Teryaq.product.repo.StockItemRepo;
 import com.Teryaq.product.service.StockManagementService;
 import com.Teryaq.user.entity.Customer;
+import com.Teryaq.user.entity.Pharmacy;
 import com.Teryaq.user.repository.CustomerRepo;
+import com.Teryaq.user.service.BaseSecurityService;
 import com.Teryaq.utils.exception.ConflictException;
 import com.Teryaq.utils.exception.RequestNotValidException;
 
 import jakarta.persistence.EntityNotFoundException;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -29,7 +33,9 @@ import java.time.LocalDate;
 import com.Teryaq.user.repository.CustomerDebtRepository;
 
 @Service
-public class SaleService {
+public class SaleService extends BaseSecurityService {
+    private static final Logger logger = LoggerFactory.getLogger(SaleService.class);
+
     @Autowired
     private SaleInvoiceRepository saleInvoiceRepository;
     @Autowired
@@ -50,8 +56,33 @@ public class SaleService {
     @Autowired
     private SaleMapper saleMapper;
 
+    public SaleService(SaleInvoiceRepository saleInvoiceRepository,
+                      SaleInvoiceItemRepository saleInvoiceItemRepository,
+                      CustomerRepo customerRepository,
+                      StockItemRepo stockItemRepo,
+                      StockManagementService stockManagementService,
+                      DiscountCalculationService discountCalculationService,
+                      PaymentValidationService paymentValidationService,
+                      CustomerDebtRepository customerDebtRepository,
+                      SaleMapper saleMapper,
+                      com.Teryaq.user.repository.UserRepository userRepository) {
+        super(userRepository);
+        this.saleInvoiceRepository = saleInvoiceRepository;
+        this.saleInvoiceItemRepository = saleInvoiceItemRepository;
+        this.customerRepository = customerRepository;
+        this.stockItemRepo = stockItemRepo;
+        this.stockManagementService = stockManagementService;
+        this.discountCalculationService = discountCalculationService;
+        this.paymentValidationService = paymentValidationService;
+        this.customerDebtRepository = customerDebtRepository;
+        this.saleMapper = saleMapper;
+    }
+
     @Transactional
     public SaleInvoiceDTOResponse createSaleInvoice(SaleInvoiceDTORequest requestDTO) {
+        // Get current user's pharmacy
+        Pharmacy currentPharmacy = getCurrentUserPharmacy();
+        
         // الحصول على العميل
         Customer customer = null;
         if (requestDTO.getCustomerId() != null) {
@@ -197,7 +228,7 @@ public class SaleService {
             customerDebtRepository.save(debt);
         } catch (Exception e) {
             // تسجيل الخطأ ولكن لا نوقف عملية البيع
-            System.err.println("Error creating customer debt: " + e.getMessage());
+            logger.error("Error creating customer debt for invoice {}: {}", invoice.getId(), e.getMessage(), e);
         }
     }
 
@@ -205,7 +236,11 @@ public class SaleService {
      * الحصول على فاتورة بيع بواسطة المعرف
      */
     public SaleInvoiceDTOResponse getSaleById(Long saleId) {
-        SaleInvoice saleInvoice = saleInvoiceRepository.findById(saleId)
+        // Get current user's pharmacy ID
+        Long currentPharmacyId = getCurrentUserPharmacyId();
+        
+        // Find sale invoice by ID and pharmacy ID to ensure pharmacy isolation
+        SaleInvoice saleInvoice = saleInvoiceRepository.findByIdAndPharmacyId(saleId, currentPharmacyId)
                 .orElseThrow(() -> new EntityNotFoundException("Sale invoice not found with ID: " + saleId));
         return saleMapper.toResponse(saleInvoice);
     }
@@ -215,8 +250,11 @@ public class SaleService {
      */
     @Transactional
     public void cancelSale(Long saleId) {
-        // البحث عن فاتورة البيع
-        SaleInvoice saleInvoice = saleInvoiceRepository.findById(saleId)
+        // Get current user's pharmacy ID for security
+        Long currentPharmacyId = getCurrentUserPharmacyId();
+        
+        // البحث عن فاتورة البيع with pharmacy filtering
+        SaleInvoice saleInvoice = saleInvoiceRepository.findByIdAndPharmacyId(saleId, currentPharmacyId)
                 .orElseThrow(() -> new EntityNotFoundException("Sale invoice not found with ID: " + saleId));
 
         // التحقق من أن الفاتورة لم يتم دفعها بالكامل (لا يمكن إلغاء فواتير مدفوعة بالكامل)

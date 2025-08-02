@@ -14,15 +14,7 @@ public class CategoryMapper {
 
         String sanitizedLangCode = langCode == null ? "en" : langCode.trim().toLowerCase();
         
-        System.out.println("Processing category: " + category.getName() + " with langCode: " + sanitizedLangCode);
-        System.out.println("Category translations count: " + (category.getTranslations() != null ? category.getTranslations().size() : 0));
-        
-        if (category.getTranslations() != null) {
-            category.getTranslations().forEach(t -> {
-                System.out.println("Translation: " + t.getName() + " for language: " + 
-                    (t.getLanguage() != null ? t.getLanguage().getCode() : "null"));
-            });
-        }
+
 
         String translatedName = category.getTranslations().stream()
                 .filter(t -> t.getLanguage() != null && t.getLanguage().getCode() != null)
@@ -31,7 +23,7 @@ public class CategoryMapper {
                 .findFirst()
                 .orElse(category.getName());
                 
-        System.out.println("Final translated name: " + translatedName);
+
 
         return CategoryDTOResponse.builder()
                 .id(category.getId())

@@ -1,4 +1,4 @@
-package com.Teryaq.product.entity;
+package com.Teryaq.purchase.entity;
 
 import com.Teryaq.product.Enum.ProductType;
 import com.Teryaq.utils.entity.AuditedEntity;

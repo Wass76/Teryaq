@@ -20,7 +20,7 @@ public class TypeController {
 
     @GetMapping
     public  ResponseEntity<?> getAll(@RequestParam(name = "lang", defaultValue = "en") String lang) {
-        System.out.println("Received langCode: " + lang);
+
         return ResponseEntity.ok(typeService.getTypes(lang));
     }
 

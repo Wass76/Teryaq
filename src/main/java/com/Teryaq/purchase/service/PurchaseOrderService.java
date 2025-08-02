@@ -1,15 +1,17 @@
-package com.Teryaq.product.service;
+package com.Teryaq.purchase.service;
 
 import com.Teryaq.product.Enum.OrderStatus;
 import com.Teryaq.product.Enum.ProductType;
 import com.Teryaq.product.dto.*;
-import com.Teryaq.product.entity.PurchaseOrder;
-import com.Teryaq.product.entity.PurchaseOrderItem;
+import com.Teryaq.purchase.dto.PurchaseOrderDTORequest;
+import com.Teryaq.purchase.dto.PurchaseOrderDTOResponse;
+import com.Teryaq.purchase.entity.PurchaseOrder;
+import com.Teryaq.purchase.entity.PurchaseOrderItem;
 import com.Teryaq.product.entity.PharmacyProduct;
 import com.Teryaq.product.entity.MasterProduct;
-import com.Teryaq.product.mapper.PurchaseOrderMapper;
-import com.Teryaq.product.repo.PurchaseOrderRepo;
-import com.Teryaq.product.repo.PurchaseOrderItemRepo;
+import com.Teryaq.purchase.mapper.PurchaseOrderMapper;
+import com.Teryaq.purchase.repository.PurchaseOrderRepo;
+import com.Teryaq.purchase.repository.PurchaseOrderItemRepo;
 import com.Teryaq.product.repo.PharmacyProductRepo;
 import com.Teryaq.product.repo.MasterProductRepo;
 import com.Teryaq.user.entity.Supplier;
@@ -254,14 +256,5 @@ public class PurchaseOrderService {
         purchaseOrderRepo.save(order);
     }
 
-    public PurchaseOrder getOrderEntityById(Long id) {
-        return purchaseOrderRepo.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Purchase order not found"));
-    }
-    public List<PurchaseOrder> getAllOrderEntities() {
-        return purchaseOrderRepo.findAll();
-    }
-    public PurchaseOrderMapper getMapper() {
-        return purchaseOrderMapper;
-    }
+
 } 

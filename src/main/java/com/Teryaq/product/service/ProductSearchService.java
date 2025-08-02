@@ -7,6 +7,7 @@ import com.Teryaq.product.entity.PharmacyProductBarcode;
 import com.Teryaq.product.entity.ProductType;
 import com.Teryaq.product.repo.MasterProductRepo;
 import com.Teryaq.product.repo.PharmacyProductRepo;
+import com.Teryaq.user.service.BaseSecurityService;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -21,7 +22,7 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
-public class ProductSearchService {
+public class ProductSearchService extends BaseSecurityService {
 
     private final MasterProductRepo masterProductRepo;
     private final PharmacyProductRepo pharmacyProductRepo;
@@ -30,12 +31,15 @@ public class ProductSearchService {
     public List<ProductSearchDTO> searchProducts(String keyword, String languageCode) {
         List<ProductSearchDTO> results = new ArrayList<>();
 
+        // Get current user's pharmacy ID for filtering
+        Long currentPharmacyId = getCurrentUserPharmacyId();
+
         // البحث في منتجات الماستر باستخدام الـ repository المحسن
         Page<MasterProduct> masterProductsPage = masterProductRepo.search(keyword, languageCode, PageRequest.of(0, 1000));
         List<MasterProduct> masterProducts = masterProductsPage.getContent();
 
-        // البحث في منتجات الصيدلية باستخدام الـ repository المحسن
-        Page<PharmacyProduct> pharmacyProductsPage = pharmacyProductRepo.search(keyword, languageCode, PageRequest.of(0, 1000));
+        // البحث في منتجات الصيدلية باستخدام الـ repository المحسن - مع فلتر الصيدلية
+        Page<PharmacyProduct> pharmacyProductsPage = pharmacyProductRepo.searchByPharmacyId(keyword, languageCode, currentPharmacyId, PageRequest.of(0, 1000));
         List<PharmacyProduct> pharmacyProducts = pharmacyProductsPage.getContent();
 
         // تحويل منتجات الماستر

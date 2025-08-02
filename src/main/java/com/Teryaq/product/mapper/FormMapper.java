@@ -15,15 +15,7 @@ public class FormMapper {
 
        String sanitizedLangCode = langCode == null ? "en" : langCode.trim().toLowerCase();
        
-       System.out.println("Processing form: " + form.getName() + " with langCode: " + sanitizedLangCode);
-       System.out.println("Form translations count: " + (form.getTranslations() != null ? form.getTranslations().size() : 0));
        
-       if (form.getTranslations() != null) {
-           form.getTranslations().forEach(t -> {
-               System.out.println("Translation: " + t.getName() + " for language: " + 
-                   (t.getLanguage() != null ? t.getLanguage().getCode() : "null"));
-           });
-       }
 
        String translatedName = form.getTranslations().stream()
                .filter(t -> t.getLanguage() != null && t.getLanguage().getCode() != null)
@@ -32,7 +24,7 @@ public class FormMapper {
                .findFirst()
                .orElse(form.getName());
                
-       System.out.println("Final translated name: " + translatedName);
+       
 
      return FormDTOResponse.builder()
              .id(form.getId())

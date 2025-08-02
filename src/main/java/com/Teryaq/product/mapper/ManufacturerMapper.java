@@ -14,15 +14,7 @@ public class ManufacturerMapper {
 
         String sanitizedLangCode = langCode == null ? "en" : langCode.trim().toLowerCase();
         
-        System.out.println("Processing manufacturer: " + manufacturer.getName() + " with langCode: " + sanitizedLangCode);
-        System.out.println("Manufacturer translations count: " + (manufacturer.getTranslations() != null ? manufacturer.getTranslations().size() : 0));
-        
-        if (manufacturer.getTranslations() != null) {
-            manufacturer.getTranslations().forEach(t -> {
-                System.out.println("Translation: " + t.getName() + " for language: " + 
-                    (t.getLanguage() != null ? t.getLanguage().getCode() : "null"));
-            });
-        }
+
 
         String translatedName = manufacturer.getTranslations().stream()
                 .filter(t -> t.getLanguage() != null && t.getLanguage().getCode() != null)
@@ -31,7 +23,7 @@ public class ManufacturerMapper {
                 .findFirst()
                 .orElse(manufacturer.getName());
                 
-        System.out.println("Final translated name: " + translatedName);
+
 
         return ManufacturerDTOResponse.builder()
                 .id(manufacturer.getId())

@@ -2,6 +2,10 @@ package com.Teryaq.product.controller;
 
 import com.Teryaq.product.dto.StockItemDTOResponse;
 import com.Teryaq.product.dto.StockReportDTOResponse;
+import com.Teryaq.product.dto.StockQuantityDTOResponse;
+import com.Teryaq.product.dto.StockAvailabilityDTOResponse;
+import com.Teryaq.product.dto.ComprehensiveStockReportDTOResponse;
+import com.Teryaq.product.dto.StockItemWithProductInfoDTOResponse;
 import com.Teryaq.product.Enum.ProductType;
 import com.Teryaq.product.service.StockManagementService;
 import com.Teryaq.product.mapper.StockItemMapper;
@@ -13,6 +17,12 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.NotNull;
+import com.Teryaq.product.entity.StockItem;
 
 @RestController
 @RequestMapping("/api/v1/stock")
@@ -26,7 +36,7 @@ public class StockController {
     @GetMapping("/product/{productId}")
     @Operation(summary = "Get stock items for a specific product", 
                description = "Retrieve all stock items for a given product ID")
-    public ResponseEntity<List<StockItemDTOResponse>> getStockByProductId(@PathVariable Long productId) {
+    public ResponseEntity<List<StockItemDTOResponse>> getStockByProductId(@Min(1) @PathVariable Long productId) {
         List<StockItemDTOResponse> stockItems = stockItemMapper.toResponseList(
             stockManagementService.getStockItemsByProductId(productId));
         return ResponseEntity.ok(stockItems);
@@ -44,28 +54,29 @@ public class StockController {
     @GetMapping("/product/{productId}/quantity")
     @Operation(summary = "Get total quantity for a specific product", 
                description = "Get the total available quantity for a given product ID")
-    public ResponseEntity<Map<String, Object>> getTotalQuantityByProductId(@PathVariable Long productId) {
+    public ResponseEntity<StockQuantityDTOResponse> getTotalQuantityByProductId(@PathVariable Long productId) {
         Integer totalQuantity = stockManagementService.getTotalQuantityByProductId(productId);
-        Map<String, Object> response = Map.of(
-            "productId", productId,
-            "totalQuantity", totalQuantity
-        );
+        StockQuantityDTOResponse response = StockQuantityDTOResponse.builder()
+                .productId(productId)
+                .totalQuantity(totalQuantity)
+                .build();
         return ResponseEntity.ok(response);
     }
     
     @GetMapping("/product/{productId}/check-availability")
     @Operation(summary = "Check if quantity is available for a product", 
                description = "Check if a specific quantity is available for a given product ID")
-    public ResponseEntity<Map<String, Object>> checkQuantityAvailability(
-            @PathVariable Long productId, 
-            @RequestParam Integer requiredQuantity) {
+    public ResponseEntity<StockAvailabilityDTOResponse> checkQuantityAvailability(
+            @Min(1) @PathVariable Long productId, 
+            @Min(1) @Max(10000) @RequestParam Integer requiredQuantity) {
         boolean isAvailable = stockManagementService.isQuantityAvailable(productId, requiredQuantity);
-        Map<String, Object> response = Map.of(
-            "productId", productId,
-            "requiredQuantity", requiredQuantity,
-            "isAvailable", isAvailable,
-            "availableQuantity", stockManagementService.getTotalQuantityByProductId(productId)
-        );
+        Integer availableQuantity = stockManagementService.getTotalQuantityByProductId(productId);
+        StockAvailabilityDTOResponse response = StockAvailabilityDTOResponse.builder()
+                .productId(productId)
+                .requiredQuantity(requiredQuantity)
+                .isAvailable(isAvailable)
+                .availableQuantity(availableQuantity)
+                .build();
         return ResponseEntity.ok(response);
     }
     
@@ -94,7 +105,7 @@ public class StockController {
             @PathVariable ProductType productType) {
         Map<String, Object> reportData = stockManagementService.getStockReportByProductType(productType);
         List<StockItemDTOResponse> stockItems = stockItemMapper.toResponseList(
-            stockManagementService.getStockItemsByProductId(0L)); // This needs to be fixed
+            stockManagementService.getAllStockItems()); // Fixed: Get all stock items for the pharmacy
         
         StockReportDTOResponse report = StockReportDTOResponse.builder()
                 .productType(productType)
@@ -112,9 +123,20 @@ public class StockController {
     @GetMapping("/comprehensive-report")
     @Operation(summary = "Get comprehensive stock report", 
                description = "Get a comprehensive stock report including all product types and alerts")
-    public ResponseEntity<Map<String, Object>> getComprehensiveStockReport() {
+    public ResponseEntity<ComprehensiveStockReportDTOResponse> getComprehensiveStockReport() {
         Map<String, Object> report = stockManagementService.getComprehensiveStockReport();
-        return ResponseEntity.ok(report);
+        List<StockItemDTOResponse> expiredItems = stockItemMapper.toResponseList(
+            stockManagementService.getExpiredItems());
+        List<StockItemDTOResponse> expiringSoonItems = stockItemMapper.toResponseList(
+            stockManagementService.getItemsExpiringSoon());
+        
+        ComprehensiveStockReportDTOResponse response = ComprehensiveStockReportDTOResponse.builder()
+                .pharmacyProducts((Map<String, Object>) report.get("pharmacyProducts"))
+                .masterProducts((Map<String, Object>) report.get("masterProducts"))
+                .expiredItems(expiredItems)
+                .expiringSoonItems(expiringSoonItems)
+                .build();
+        return ResponseEntity.ok(response);
     }
 
     @GetMapping("/all")
@@ -129,8 +151,24 @@ public class StockController {
     @GetMapping("/all-with-product-info")
     @Operation(summary = "Get all stock items with product information", 
                description = "Retrieve all stock items with detailed product information")
-    public ResponseEntity<List<Map<String, Object>>> getAllStockItemsWithProductInfo() {
-        List<Map<String, Object>> stockItems = stockManagementService.getAllStockItemsWithProductInfo();
-        return ResponseEntity.ok(stockItems);
+    public ResponseEntity<List<StockItemWithProductInfoDTOResponse>> getAllStockItemsWithProductInfo() {
+        List<StockItem> stockItems = stockManagementService.getAllStockItems();
+        List<StockItemWithProductInfoDTOResponse> response = stockItems.stream()
+            .map(item -> StockItemWithProductInfoDTOResponse.builder()
+                .id(item.getId())
+                .productId(item.getProductId())
+                .productType(item.getProductType())
+                .quantity(item.getQuantity())
+                .actualPurchasePrice(item.getActualPurchasePrice())
+                .expiryDate(item.getExpiryDate())
+                .dateAdded(item.getDateAdded())
+                .productName(stockManagementService.getProductName(item.getProductId(), item.getProductType()))
+                .batchNo(item.getBatchNo())
+                .bonusQty(item.getBonusQty())
+                .addedBy(item.getAddedBy())
+                .purchaseInvoiceId(item.getPurchaseInvoice() != null ? item.getPurchaseInvoice().getId() : null)
+                .build())
+            .collect(Collectors.toList());
+        return ResponseEntity.ok(response);
     }
 } 

@@ -64,8 +64,5 @@ public class User extends BaseUser {
         return "user_id_seq";
     }
 
-//    @Override
-//    public String getUsername() {
-//        return email;  // Use email as username for authentication
-//    }
+
 }

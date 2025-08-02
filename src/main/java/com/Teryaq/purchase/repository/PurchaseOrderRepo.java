@@ -1,6 +1,6 @@
-package com.Teryaq.product.repo;
+package com.Teryaq.purchase.repository;
 
-import com.Teryaq.product.entity.PurchaseOrder;
+import com.Teryaq.purchase.entity.PurchaseOrder;
 import com.Teryaq.product.Enum.OrderStatus;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;

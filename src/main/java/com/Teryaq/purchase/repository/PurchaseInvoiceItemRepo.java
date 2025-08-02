@@ -1,6 +1,6 @@
-package com.Teryaq.product.repo;
+package com.Teryaq.purchase.repository;
 
-import com.Teryaq.product.entity.PurchaseInvoiceItem;
+import com.Teryaq.purchase.entity.PurchaseInvoiceItem;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface PurchaseInvoiceItemRepo extends JpaRepository<PurchaseInvoiceItem, Long> {

@@ -1,9 +1,9 @@
-package com.Teryaq.product.controller;
+package com.Teryaq.purchase.controller;
 
-import com.Teryaq.product.dto.PurchaseOrderDTORequest;
-import com.Teryaq.product.dto.PurchaseOrderDTOResponse;
+import com.Teryaq.purchase.dto.PurchaseOrderDTORequest;
+import com.Teryaq.purchase.dto.PurchaseOrderDTOResponse;
 import com.Teryaq.product.dto.PaginationDTO;
-import com.Teryaq.product.service.PurchaseOrderService;
+import com.Teryaq.purchase.service.PurchaseOrderService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;

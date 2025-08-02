@@ -1,13 +1,17 @@
 package com.Teryaq.product.entity;
 
 import com.Teryaq.product.Enum.ProductType;
+import com.Teryaq.purchase.entity.PurchaseInvoice;
+import com.Teryaq.user.entity.Pharmacy;
 import com.Teryaq.utils.entity.AuditedEntity;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import java.time.LocalDate;
 
+@EqualsAndHashCode(callSuper = true)
 @Data
 @Entity
 @Table(name = "stock_item")
@@ -41,6 +45,10 @@ public class StockItem extends AuditedEntity {
 
     @Column
     private LocalDate dateAdded;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "pharmacy_id", nullable = false)
+    private Pharmacy pharmacy;
 
     @Column
     private Long addedBy;
