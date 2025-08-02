@@ -13,6 +13,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.HashSet;
 import java.util.Set;
@@ -27,7 +28,7 @@ public class ProductSearchService {
 
 
     public List<ProductSearchDTO> searchProducts(String keyword, String languageCode) {
-        List<ProductSearchDTO> results = new java.util.ArrayList<>();
+        List<ProductSearchDTO> results = new ArrayList<>();
 
         // البحث في منتجات الماستر باستخدام الـ repository المحسن
         Page<MasterProduct> masterProductsPage = masterProductRepo.search(keyword, languageCode, PageRequest.of(0, 1000));

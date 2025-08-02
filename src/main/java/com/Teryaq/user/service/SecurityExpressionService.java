@@ -40,14 +40,6 @@ public class SecurityExpressionService extends BaseSecurityService {
     }
 
     /**
-     * Checks if the current user is a System Admin
-     */
-    public boolean isSystemAdmin() {
-        User currentUser = getCurrentUser();
-        return currentUser.getRole().getName().equals("SYSTEM_ADMIN");
-    }
-
-    /**
      * Checks if the current user has a specific permission
      * @param permissionName The permission to check for
      * @return true if the user has the permission
