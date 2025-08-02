@@ -7,6 +7,8 @@ import com.Teryaq.user.entity.Employee;
 import com.Teryaq.user.entity.User;
 import com.Teryaq.user.service.UserService;
 
+import jakarta.validation.Valid;
+
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -27,6 +29,7 @@ public class PharmacyProductController {
         this.pharmacyProductMapper = pharmacyProductMapper;
         this.userService = userService;
     }
+    
 
     @GetMapping
     public ResponseEntity<?> getAllPharmacyProducts(@RequestParam(name = "lang", defaultValue = "en") String lang ,
@@ -74,7 +77,7 @@ public class PharmacyProductController {
     }
 
     @PostMapping
-    public ResponseEntity<?> createPharmacyProduct(@RequestBody PharmacyProductDTORequest pharmacyProduct, 
+    public ResponseEntity<?> createPharmacyProduct(@Valid @RequestBody PharmacyProductDTORequest pharmacyProduct, 
                                                    @RequestParam(name = "lang", defaultValue = "en") String lang ) {
 
         User currentUser = userService.getCurrentUser();
