@@ -13,6 +13,8 @@ import java.util.Set;
 @NoArgsConstructor
 @Builder
 public class PharmacyProductListDTO {
+
+    private Long id;
     private String tradeName;
     private String scientificName;
     private String concentration;

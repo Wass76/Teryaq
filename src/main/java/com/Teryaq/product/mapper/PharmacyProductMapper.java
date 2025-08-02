@@ -246,6 +246,7 @@ public class PharmacyProductMapper {
                 .orElse(null)
                 : null;
         return PharmacyProductListDTO.builder()
+                .id(product.getId())
                 .tradeName(translation != null ? translation.getTradeName() : product.getTradeName())
                 .scientificName(translation != null ? translation.getScientificName() : product.getScientificName())
                 .concentration(product.getConcentration())
