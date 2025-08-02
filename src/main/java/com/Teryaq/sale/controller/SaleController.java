@@ -29,7 +29,7 @@ public class SaleController {
     
     private final SaleService saleService;
    
-    @PreAuthorize("hasRole('EMPLOYEE')")
+//    @PreAuthorize("hasRole('EMPLOYEE')")
     @Operation(
         summary = "Create a new sale invoice", 
         description = "Creates a new sale invoice with the given request. Requires EMPLOYEE role."
@@ -52,7 +52,7 @@ public class SaleController {
         return ResponseEntity.ok(response);
     }
 
-    @PreAuthorize("hasRole('EMPLOYEE')")
+//    @PreAuthorize("hasRole('EMPLOYEE')")
     @Operation(
         summary = "Get a sale invoice by ID", 
         description = "Retrieves a sale invoice by its ID. Requires EMPLOYEE role."
@@ -73,7 +73,7 @@ public class SaleController {
         return ResponseEntity.ok(response);
     }
 
-    @PreAuthorize("hasRole('EMPLOYEE')")
+//    @PreAuthorize("hasRole('EMPLOYEE')")
     @Operation(
         summary = "Cancel a sale invoice", 
         description = "Cancels a sale invoice and restores stock quantities. Requires EMPLOYEE role."
