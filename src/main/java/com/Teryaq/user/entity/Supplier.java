@@ -9,11 +9,11 @@ import lombok.NoArgsConstructor;
 
 @Data
 @Entity
-@Table(name = "suppliers", uniqueConstraints = {@UniqueConstraint(columnNames = {"name"})})
+@Table(name = "suppliers", uniqueConstraints = {@UniqueConstraint(columnNames = {"name", "pharmacy_id"})})
 @NoArgsConstructor
 @AllArgsConstructor
 public class Supplier extends AuditedEntity {
-    @Column(nullable = false, unique = true)
+    @Column(nullable = false)
     private String name;
 
     @Column
@@ -24,6 +24,10 @@ public class Supplier extends AuditedEntity {
 
     @Column
     private Currency preferredCurrency; // SYP or USD
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "pharmacy_id", nullable = false)
+    private Pharmacy pharmacy;
 
     @Override
     protected String getSequenceName() {

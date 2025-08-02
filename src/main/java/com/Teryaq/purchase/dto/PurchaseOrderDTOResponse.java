@@ -1,6 +1,7 @@
 package com.Teryaq.purchase.dto;
 
 import com.Teryaq.product.Enum.OrderStatus;
+import com.Teryaq.user.Enum.Currency;
 import lombok.Data;
 import java.util.List;
 
@@ -8,7 +9,7 @@ import java.util.List;
 public class PurchaseOrderDTOResponse {
     private Long id;
     private String supplierName;
-    private String currency;
+    private Currency currency;
     private Double total;
     private OrderStatus status;
     private List<PurchaseOrderItemDTOResponse> items;

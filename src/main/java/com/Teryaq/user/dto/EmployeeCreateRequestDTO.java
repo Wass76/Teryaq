@@ -1,5 +1,6 @@
 package com.Teryaq.user.dto;
 
+import com.Teryaq.utils.annotation.ValidPassword;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.Teryaq.user.Enum.UserStatus;
 import com.Teryaq.utils.annotation.ValidEnum;
@@ -18,7 +19,8 @@ public class EmployeeCreateRequestDTO {
     @Schema(description = "Employee's last name", example = "Doe")
     private String lastName;
     
-    @Schema(description = "Employee's password", example = "password123")
+    @Schema(description = "Employee's password", example = "Password!1")
+    @ValidPassword
     private String password;
     
     @Schema(description = "Employee's phone number", example = "1234567890")

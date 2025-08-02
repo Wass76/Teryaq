@@ -9,14 +9,15 @@ import com.Teryaq.user.entity.Employee;
 import com.Teryaq.user.entity.EmployeeWorkingHours;
 import com.Teryaq.user.entity.Pharmacy;
 import com.Teryaq.user.entity.Role;
+import com.Teryaq.user.entity.User;
 import com.Teryaq.user.mapper.WorkShiftMapper;
 import com.Teryaq.user.mapper.EmployeeMapper;
 import com.Teryaq.user.repository.EmployeeRepository;
 import com.Teryaq.user.repository.EmployeeWorkingHoursRepository;
 import com.Teryaq.user.repository.RoleRepository;
+import com.Teryaq.user.repository.UserRepository;
 import com.Teryaq.utils.exception.ResourceNotFoundException;
-import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
+import com.Teryaq.utils.exception.UnAuthorizedException;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -29,28 +30,45 @@ import java.time.DayOfWeek;
 import java.util.logging.Logger;
 
 @Service
-@RequiredArgsConstructor
-public class EmployeeService {
+@Transactional
+public class EmployeeService extends BaseSecurityService {
     
-    @Autowired
-    private EmployeeRepository employeeRepository;
+    private final EmployeeRepository employeeRepository;
+    private final EmployeeWorkingHoursRepository employeeWorkingHoursRepository;
+    private final RoleRepository roleRepository;
+    private final PasswordEncoder passwordEncoder;
+    private final UserService userService;
     
-    @Autowired
-    private EmployeeWorkingHoursRepository employeeWorkingHoursRepository;
-    
-    @Autowired
-    private RoleRepository roleRepository;
-    
-    @Autowired
-    private PasswordEncoder passwordEncoder;
-    
-    @Autowired
-    private UserService userService;
+    public EmployeeService(EmployeeRepository employeeRepository,
+                         EmployeeWorkingHoursRepository employeeWorkingHoursRepository,
+                         RoleRepository roleRepository,
+                         PasswordEncoder passwordEncoder,
+                         UserService userService,
+                         UserRepository userRepository) {
+        super(userRepository);
+        this.employeeRepository = employeeRepository;
+        this.employeeWorkingHoursRepository = employeeWorkingHoursRepository;
+        this.roleRepository = roleRepository;
+        this.passwordEncoder = passwordEncoder;
+        this.userService = userService;
+    }
     
     Logger logger = Logger.getLogger(EmployeeService.class.getName());
     
     @Transactional
-    public EmployeeResponseDTO addEmployee(EmployeeCreateRequestDTO dto, Pharmacy pharmacy) {
+    public EmployeeResponseDTO addEmployee(EmployeeCreateRequestDTO dto) {
+        // Validate that the current user is a pharmacy manager
+        User currentUser = getCurrentUser();
+        if (!(currentUser instanceof Employee)) {
+            throw new UnAuthorizedException("Only pharmacy employees can create employees");
+        }
+        
+        Employee manager = (Employee) currentUser;
+        if (manager.getPharmacy() == null) {
+            throw new UnAuthorizedException("Employee is not associated with any pharmacy");
+        }
+        
+        Pharmacy pharmacy = manager.getPharmacy();
         logger.info("Starting to add new employee: " + dto.getFirstName() + " " + dto.getLastName());
         logger.info("Manager pharmacy: " + pharmacy.getName() + " (ID: " + pharmacy.getId() + ")");
         
@@ -69,7 +87,19 @@ public class EmployeeService {
         return EmployeeMapper.toResponseDTO(employee);
     }
     
-    public List<EmployeeResponseDTO> getAllEmployeesInPharmacy(Long pharmacyId) {
+    public List<EmployeeResponseDTO> getAllEmployeesInPharmacy() {
+        // Validate that the current user is a pharmacy manager
+        User currentUser = getCurrentUser();
+        if (!(currentUser instanceof Employee)) {
+            throw new UnAuthorizedException("Only pharmacy employees can access employee data");
+        }
+        
+        Employee manager = (Employee) currentUser;
+        if (manager.getPharmacy() == null) {
+            throw new UnAuthorizedException("Employee is not associated with any pharmacy");
+        }
+        
+        Long pharmacyId = manager.getPharmacy().getId();
         logger.info("Getting all employees for pharmacy ID: " + pharmacyId);
         return employeeRepository.findByPharmacy_Id(pharmacyId)
                 .stream()
@@ -77,7 +107,19 @@ public class EmployeeService {
                 .collect(java.util.stream.Collectors.toList());
     }
     
-    public EmployeeResponseDTO updateEmployeeInPharmacy(Long employeeId, EmployeeCreateRequestDTO dto, Long managerPharmacyId) {
+    public EmployeeResponseDTO updateEmployeeInPharmacy(Long employeeId, EmployeeCreateRequestDTO dto) {
+        // Validate that the current user is a pharmacy manager
+        User currentUser = getCurrentUser();
+        if (!(currentUser instanceof Employee)) {
+            throw new UnAuthorizedException("Only pharmacy employees can update employees");
+        }
+        
+        Employee manager = (Employee) currentUser;
+        if (manager.getPharmacy() == null) {
+            throw new UnAuthorizedException("Employee is not associated with any pharmacy");
+        }
+        
+        Long managerPharmacyId = manager.getPharmacy().getId();
         logger.info("Starting to update employee with ID: " + employeeId);
         
         // Validate and get employee
@@ -95,7 +137,19 @@ public class EmployeeService {
         return EmployeeMapper.toResponseDTO(employee);
     }
     @Transactional
-    public void deleteEmployeeInPharmacy(Long employeeId, Long managerPharmacyId) {
+    public void deleteEmployeeInPharmacy(Long employeeId) {
+        // Validate that the current user is a pharmacy manager
+        User currentUser = getCurrentUser();
+        if (!(currentUser instanceof Employee)) {
+            throw new UnAuthorizedException("Only pharmacy employees can delete employees");
+        }
+        
+        Employee manager = (Employee) currentUser;
+        if (manager.getPharmacy() == null) {
+            throw new UnAuthorizedException("Employee is not associated with any pharmacy");
+        }
+        
+        Long managerPharmacyId = manager.getPharmacy().getId();
         logger.info("Starting to delete employee with ID: " + employeeId);
         
         Employee employee = employeeRepository.findById(employeeId)
@@ -125,7 +179,19 @@ public class EmployeeService {
                 .orElseThrow(() -> new ResourceNotFoundException("Employee not found"));
     }
     
-    public EmployeeResponseDTO createWorkingHoursForEmployee(Long employeeId, CreateWorkingHoursRequestDTO request, Long managerPharmacyId) {
+    public EmployeeResponseDTO createWorkingHoursForEmployee(Long employeeId, CreateWorkingHoursRequestDTO request) {
+        // Validate that the current user is a pharmacy manager
+        User currentUser = getCurrentUser();
+        if (!(currentUser instanceof Employee)) {
+            throw new UnAuthorizedException("Only pharmacy employees can create working hours");
+        }
+        
+        Employee manager = (Employee) currentUser;
+        if (manager.getPharmacy() == null) {
+            throw new UnAuthorizedException("Employee is not associated with any pharmacy");
+        }
+        
+        Long managerPharmacyId = manager.getPharmacy().getId();
         logger.info("Creating working hours for employee ID: " + employeeId);
         
         // Validate and get employee

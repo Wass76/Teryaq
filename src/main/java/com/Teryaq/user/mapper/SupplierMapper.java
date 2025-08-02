@@ -3,16 +3,18 @@ package com.Teryaq.user.mapper;
 import com.Teryaq.user.dto.SupplierDTORequest;
 import com.Teryaq.user.dto.SupplierDTOResponse;
 import com.Teryaq.user.entity.Supplier;
+import com.Teryaq.user.entity.Pharmacy;
 import org.springframework.stereotype.Component;
 
 @Component
 public class SupplierMapper {
-    public Supplier toEntity(SupplierDTORequest dto) {
+    public Supplier toEntity(SupplierDTORequest dto, Pharmacy pharmacy) {
         Supplier supplier = new Supplier();
         supplier.setName(dto.getName());
         supplier.setPhone(dto.getPhone());
         supplier.setAddress(dto.getAddress());
         supplier.setPreferredCurrency(dto.getPreferredCurrency());
+        supplier.setPharmacy(pharmacy);
         return supplier;
     }
 

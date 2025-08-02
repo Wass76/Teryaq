@@ -1,5 +1,6 @@
 package com.Teryaq.user.dto;
 
+import com.Teryaq.utils.annotation.ValidPassword;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -21,6 +22,7 @@ public class UserCreateRequestDTO {
     private String email;
     
     @NotBlank(message = "Password is required")
+    @ValidPassword
     private String password;
     
     @NotBlank(message = "First name is required")

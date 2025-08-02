@@ -144,6 +144,7 @@ public class PurchaseInvoiceService extends BaseSecurityService {
             stock.setBatchNo(item.getBatchNo());
             stock.setActualPurchasePrice(item.getActualPrice());
             stock.setPurchaseInvoice(saved);
+            stock.setPharmacy(currentPharmacy); // Set the pharmacy for the stock item
             stock.setDateAdded(LocalDate.now());
             Object principal = SecurityContextHolder.getContext().getAuthentication() != null ? SecurityContextHolder.getContext().getAuthentication().getPrincipal() : null;
             if (principal instanceof com.Teryaq.user.entity.User user) {

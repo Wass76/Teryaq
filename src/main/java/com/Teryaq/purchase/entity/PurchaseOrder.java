@@ -1,6 +1,7 @@
 package com.Teryaq.purchase.entity;
 
 import com.Teryaq.product.Enum.OrderStatus;
+import com.Teryaq.user.Enum.Currency;
 import com.Teryaq.user.entity.Pharmacy;
 import com.Teryaq.user.entity.Supplier;
 import com.Teryaq.utils.entity.AuditedEntity;
@@ -27,7 +28,7 @@ public class PurchaseOrder extends AuditedEntity {
     private Supplier supplier;
 
     @Column(nullable = false)
-    private String currency; // SYP or USD
+    private Currency currency; // SYP or USD
 
     @Column(nullable = false)
     private Double total;

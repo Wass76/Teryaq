@@ -51,10 +51,10 @@ public class DataSeed {
         seedForms();
         seedTypes();
         seedManufacturers();
-        seedSuppliers();
+//        seedSuppliers();
         seedCustomers();
         seedPharmacy();
-        seedEmployee();
+//        seedEmployee();
 
     }
 
@@ -173,17 +173,17 @@ public class DataSeed {
         }
     }
 
-    private void seedSuppliers() {
-        if (supplierRepo.count() == 0) {
-            List<Supplier> suppliers = List.of(
-                new Supplier("شركة الشام للأدوية", "0999999999", "دمشق - باب شرقي", Currency.SYP),
-                new Supplier("شركة ابن زهر", "0988888888", "حلب - الجميلية", Currency.SYP),
-                new Supplier("شركة ترياق", "0933333333", "دمشق - المزة", Currency.SYP)
-            );
-            supplierRepo.saveAll(suppliers);
-            System.out.println("✅ Suppliers seeded");
-        }
-    }
+//    private void seedSuppliers() {
+//        if (supplierRepo.count() == 0) {
+//            List<Supplier> suppliers = List.of(
+//                new Supplier("شركة الشام للأدوية", "0999999999", "دمشق - باب شرقي", Currency.SYP , pharmacyRepository.findAll().getFirst()),
+//                new Supplier("شركة ابن زهر", "0988888888", "حلب - الجميلية", Currency.SYP , pharmacyRepository.findAll().getFirst()),
+//                new Supplier("شركة ترياق", "0933333333", "دمشق - المزة", Currency.SYP ,  pharmacyRepository.findAll().getFirst())
+//            );
+//            supplierRepo.saveAll(suppliers);
+//            System.out.println("✅ Suppliers seeded");
+//        }
+//    }
 
     private void seedCustomers() {
         if (customerRepository.count() == 0) {
@@ -222,34 +222,34 @@ public class DataSeed {
         }
     }
 
-    private void seedEmployee() {
-        if (employeeRepository.count() == 0) {
-            // Get pharmacy and role
-            Pharmacy pharmacy = pharmacyRepository.findAll().get(0);
-            Role employeeRole = roleRepository.findByName("EMPLOYEE")
-                    .orElse(roleRepository.findByName("PHARMACY_EMPLOYEE")
-                            .orElse(roleRepository.findAll().get(0))); // Fallback to first role
-
-            // Create employee
-            Employee employee = Employee.builder()
-                    .firstName("صيدلي")
-                    .lastName("ترياق")
-                    .email("pharmacist@teryaq.com")
-                    .password(passwordEncoder.encode("password123"))
-                    .role(employeeRole)
-                    .status(UserStatus.ACTIVE)
-                    .position("PHARMACIST")
-                    .pharmacy(pharmacy)
-                    .phoneNumber("0999999999")
-                    .dateOfHire(LocalDate.now())
-                    .build();
-
-            employeeRepository.save(employee);
-            System.out.println("✅ Employee seeded with pharmacy association");
-            System.out.println("Email: pharmacist@teryaq.com");
-            System.out.println("Password: password123");
-        }
-    }
+//    private void seedEmployee() {
+//        if (employeeRepository.count() == 0) {
+//            // Get pharmacy and role
+//            Pharmacy pharmacy = pharmacyRepository.findAll().get(0);
+//            Role employeeRole = roleRepository.findByName("EMPLOYEE")
+//                    .orElse(roleRepository.findByName("PHARMACY_EMPLOYEE")
+//                            .orElse(roleRepository.findAll().get(0))); // Fallback to first role
+//
+//            // Create employee
+//            Employee employee = Employee.builder()
+//                    .firstName("صيدلي")
+//                    .lastName("ترياق")
+//                    .email("pharmacist@teryaq.com")
+//                    .password(passwordEncoder.encode("password123"))
+//                    .role(employeeRole)
+//                    .status(UserStatus.ACTIVE)
+//                    .position("PHARMACIST")
+//                    .pharmacy(pharmacy)
+//                    .phoneNumber("0999999999")
+//                    .dateOfHire(LocalDate.now())
+//                    .build();
+//
+//            employeeRepository.save(employee);
+//            System.out.println("✅ Employee seeded with pharmacy association");
+//            System.out.println("Email: pharmacist@teryaq.com");
+//            System.out.println("Password: password123");
+//        }
+//    }
 }
     //     if (masterProductRepo.count() == 0) {
     //         Language ar = languageRepo.findByCode("ar").orElseThrow();

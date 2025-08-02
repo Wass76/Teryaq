@@ -10,4 +10,8 @@ import java.util.List;
 public interface PurchaseOrderRepo extends JpaRepository<PurchaseOrder, Long> {
     List<PurchaseOrder> findByStatus(OrderStatus status);
     Page<PurchaseOrder> findByStatus(OrderStatus status, Pageable pageable);
+    List<PurchaseOrder> findByPharmacyId(Long pharmacyId);
+    Page<PurchaseOrder> findByPharmacyId(Long pharmacyId, Pageable pageable);
+    List<PurchaseOrder> findByPharmacyIdAndStatus(Long pharmacyId, OrderStatus status);
+    Page<PurchaseOrder> findByPharmacyIdAndStatus(Long pharmacyId, OrderStatus status, Pageable pageable);
 } 

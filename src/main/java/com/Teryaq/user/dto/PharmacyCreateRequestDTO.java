@@ -1,5 +1,6 @@
 package com.Teryaq.user.dto;
 
+import com.Teryaq.utils.annotation.ValidPassword;
 import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 
@@ -12,5 +13,6 @@ public class PharmacyCreateRequestDTO {
     @NotBlank(message = "Phone number couldn't be blank")
     private String phoneNumber;
     @NotBlank(message = "Manager password couldn't be blank")
+    @ValidPassword
     private String managerPassword;
 }

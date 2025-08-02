@@ -11,6 +11,7 @@ import com.Teryaq.purchase.entity.PurchaseOrderItem;
 import com.Teryaq.product.entity.PharmacyProduct;
 import com.Teryaq.product.entity.MasterProduct;
 import com.Teryaq.user.entity.Supplier;
+import com.Teryaq.user.entity.Pharmacy;
 import org.springframework.stereotype.Component;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -19,9 +20,10 @@ import com.Teryaq.product.entity.MasterProductTranslation;
 
 @Component
 public class PurchaseOrderMapper {
-    public PurchaseOrder toEntity(PurchaseOrderDTORequest dto, Supplier supplier, List<PurchaseOrderItem> items) {
+    public PurchaseOrder toEntity(PurchaseOrderDTORequest dto, Supplier supplier, Pharmacy pharmacy, List<PurchaseOrderItem> items) {
         PurchaseOrder order = new PurchaseOrder();
         order.setSupplier(supplier);
+        order.setPharmacy(pharmacy);
         order.setCurrency(dto.getCurrency());
         order.setStatus(OrderStatus.PENDING);
         order.setItems(items.stream().peek(i -> i.setPurchaseOrder(order)).collect(Collectors.toList()));
