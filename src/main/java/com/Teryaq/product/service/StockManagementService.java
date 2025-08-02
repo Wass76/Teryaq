@@ -22,48 +22,35 @@ public class StockManagementService {
     private final PharmacyProductRepo pharmacyProductRepo;
     private final MasterProductRepo masterProductRepo;
     
-    /**
-     * الحصول على إجمالي الكمية المتوفرة لمنتج معين
-     */
+    
     public Integer getTotalQuantityByProductId(Long productId) {
         return stockItemRepo.getTotalQuantityByProductId(productId);
     }
     
-    /**
-     * الحصول على تفاصيل المخزون لمنتج معين
-     */
+   
     public List<StockItem> getStockItemsByProductId(Long productId) {
         return stockItemRepo.findByProductId(productId);
     }
     
-    /**
-     * الحصول على المخزون المتوفر لمنتج معين (كمية > 0 وتاريخ انتهاء صالح)
-     */
+    
     public List<StockItem> getAvailableStockByProductId(Long productId) {
         LocalDate today = LocalDate.now();
         return stockItemRepo.findByProductIdAndQuantityGreaterThanAndExpiryDateAfterOrderByDateAddedAsc(
             productId, 0, today);
     }
     
-    /**
-     * الحصول على المنتجات منتهية الصلاحية
-     */
+    
     public List<StockItem> getExpiredItems() {
         return stockItemRepo.findExpiredItems(LocalDate.now());
     }
-    
-    /**
-     * الحصول على المنتجات القريبة من انتهاء الصلاحية (خلال 30 يوم)
-     */
+   
     public List<StockItem> getItemsExpiringSoon() {
         LocalDate today = LocalDate.now();
         LocalDate thirtyDaysFromNow = today.plusDays(30);
         return stockItemRepo.findItemsExpiringSoon(today, thirtyDaysFromNow);
     }
     
-    /**
-     * الحصول على تقرير المخزون حسب نوع المنتج
-     */
+   
     public Map<String, Object> getStockReportByProductType(ProductType productType) {
         List<StockItem> stockItems = stockItemRepo.findByProductType(productType);
         
@@ -74,13 +61,11 @@ public class StockManagementService {
         report.put("totalValue", stockItems.stream()
             .mapToDouble(item -> item.getQuantity() * item.getActualPurchasePrice()).sum());
         
-        // حساب المنتجات منتهية الصلاحية
         long expiredCount = stockItems.stream()
             .filter(item -> item.getExpiryDate() != null && item.getExpiryDate().isBefore(LocalDate.now()))
             .count();
         report.put("expiredItems", expiredCount);
         
-        // حساب المنتجات قريبة من انتهاء الصلاحية
         LocalDate thirtyDaysFromNow = LocalDate.now().plusDays(30);
         long expiringSoonCount = stockItems.stream()
             .filter(item -> item.getExpiryDate() != null && 
@@ -92,17 +77,13 @@ public class StockManagementService {
         return report;
     }
     
-    /**
-     * التحقق من توفر الكمية المطلوبة لمنتج معين
-     */
+ 
     public boolean isQuantityAvailable(Long productId, Integer requiredQuantity) {
         Integer availableQuantity = stockItemRepo.getTotalQuantityByProductId(productId);
         return availableQuantity >= requiredQuantity;
     }
     
-    /**
-     * الحصول على اسم المنتج حسب النوع
-     */
+  
     public String getProductName(Long productId, ProductType productType) {
         if (productType == ProductType.PHARMACY) {
             return pharmacyProductRepo.findById(productId)
@@ -115,31 +96,22 @@ public class StockManagementService {
         }
         return "Unknown Product";
     }
-    
-    /**
-     * الحصول على تقرير شامل للمخزون
-     */
+ 
     public Map<String, Object> getComprehensiveStockReport() {
         Map<String, Object> report = new HashMap<>();
         
-        // تقرير المنتجات الصيدلية
         report.put("pharmacyProducts", getStockReportByProductType(ProductType.PHARMACY));
         
-        // تقرير المنتجات الرئيسية
         report.put("masterProducts", getStockReportByProductType(ProductType.MASTER));
         
-        // المنتجات منتهية الصلاحية
         report.put("expiredItems", getExpiredItems());
         
-        // المنتجات قريبة من انتهاء الصلاحية
         report.put("expiringSoonItems", getItemsExpiringSoon());
         
         return report;
     }
     
-    /**
-     * البحث عن مخزون منتج معين مع تطبيق FIFO
-     */
+  
     public List<StockItem> getStockItemsForSale(Long productId, Integer requiredQuantity) {
         LocalDate today = LocalDate.now();
         List<StockItem> availableStock = stockItemRepo
@@ -149,5 +121,43 @@ public class StockManagementService {
         return availableStock.stream()
             .filter(item -> item.getQuantity() > 0)
             .collect(Collectors.toList());
+    }
+
+  
+    public List<StockItem> getAllStockItems() {
+        return stockItemRepo.findAll();
+    }
+
+   
+    public List<Map<String, Object>> getAllStockItemsWithProductInfo() {
+        List<StockItem> stockItems = stockItemRepo.findAll();
+        
+        return stockItems.stream().map(item -> {
+            Map<String, Object> stockInfo = new HashMap<>();
+            stockInfo.put("id", item.getId());
+            stockInfo.put("productId", item.getProductId());
+            stockInfo.put("productType", item.getProductType());
+            stockInfo.put("quantity", item.getQuantity());
+            stockInfo.put("actualPurchasePrice", item.getActualPurchasePrice());
+            
+            // تنسيق التواريخ كـ strings
+            if (item.getExpiryDate() != null) {
+                stockInfo.put("expiryDate", item.getExpiryDate().toString());
+            } else {
+                stockInfo.put("expiryDate", null);
+            }
+            
+            if (item.getDateAdded() != null) {
+                stockInfo.put("dateAdded", item.getDateAdded().toString());
+            } else {
+                stockInfo.put("dateAdded", null);
+            }
+            
+            // إضافة اسم المنتج
+            String productName = getProductName(item.getProductId(), item.getProductType());
+            stockInfo.put("productName", productName);
+            
+            return stockInfo;
+        }).collect(Collectors.toList());
     }
 } 

@@ -5,15 +5,13 @@ import com.Teryaq.user.dto.CustomerDebtDTOResponse;
 import com.Teryaq.user.entity.CustomerDebt;
 import org.springframework.stereotype.Component;
 
-import java.math.BigDecimal;
-
 @Component
 public class CustomerDebtMapper {
 
     public CustomerDebt toEntity(CustomerDebtDTORequest dto) {
         return CustomerDebt.builder()
                 .amount(dto.getAmount())
-                .paidAmount(BigDecimal.ZERO)
+                .paidAmount(0f)
                 .remainingAmount(dto.getAmount())
                 .dueDate(dto.getDueDate())
                 .notes(dto.getNotes())

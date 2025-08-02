@@ -6,13 +6,7 @@ import org.springframework.stereotype.Service;
 
 @Service
 public class PaymentValidationService {
-    
-    /**
-     * التحقق من صحة نوع الدفع ووسيلة الدفع
-     * @param paymentType نوع الدفع (كاش/دين)
-     * @param paymentMethod وسيلة الدفع
-     * @return true إذا كان صحيحاً
-     */
+ 
     public boolean validatePayment(PaymentType paymentType, PaymentMethod paymentMethod) {
         if (paymentType == null || paymentMethod == null) {
             return false;
@@ -34,18 +28,12 @@ public class PaymentValidationService {
         }
     }
     
-    /**
-     * التحقق من المبلغ المدفوع
-     * @param totalAmount إجمالي الفاتورة
-     * @param paidAmount المبلغ المدفوع
-     * @param paymentType نوع الدفع
-     * @return true إذا كان صحيحاً
-     */
+
     public boolean validatePaidAmount(float totalAmount, float paidAmount, PaymentType paymentType) {
         switch (paymentType) {
             case CASH:
-                // الدفع النقدي يجب أن يكون كاملاً أو أقل
-                return paidAmount >= 0 && paidAmount <= totalAmount;
+                // الدفع النقدي يجب أن يكون كاملاً (لا يمكن أن يكون هناك مبلغ متبقي)
+                return paidAmount >= 0 && paidAmount >= totalAmount;
                 
             case CREDIT:
                 // الدفع الآجل يمكن أن يكون جزئياً
@@ -56,22 +44,12 @@ public class PaymentValidationService {
         }
     }
     
-    /**
-     * حساب المبلغ المتبقي
-     * @param totalAmount إجمالي الفاتورة
-     * @param paidAmount المبلغ المدفوع
-     * @return المبلغ المتبقي
-     */
+ 
     public float calculateRemainingAmount(float totalAmount, float paidAmount) {
         return Math.max(0, totalAmount - paidAmount);
     }
     
-    /**
-     * التحقق من اكتمال الدفع
-     * @param totalAmount إجمالي الفاتورة
-     * @param paidAmount المبلغ المدفوع
-     * @return true إذا كان الدفع مكتملاً
-     */
+    
     public boolean isPaymentComplete(float totalAmount, float paidAmount) {
         return paidAmount >= totalAmount;
     }

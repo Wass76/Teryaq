@@ -5,14 +5,12 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.math.BigDecimal;
-
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
 public class PayDebtDTORequest {
     private Long debtId;
-    private BigDecimal paymentAmount;
+    private Float paymentAmount;
     private String notes;
 } 

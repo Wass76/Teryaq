@@ -23,7 +23,7 @@ import com.Teryaq.utils.exception.ResourceNotFoundException;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import java.time.LocalDateTime;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -105,7 +105,7 @@ public class PurchaseInvoiceService {
             stock.setBatchNo(item.getBatchNo());
             stock.setActualPurchasePrice(item.getActualPrice());
             stock.setPurchaseInvoice(saved);
-            stock.setDateAdded(LocalDateTime.now());
+            stock.setDateAdded(LocalDate.now());
             Object principal = SecurityContextHolder.getContext().getAuthentication() != null ? SecurityContextHolder.getContext().getAuthentication().getPrincipal() : null;
             if (principal instanceof com.Teryaq.user.entity.User user) {
                 stock.setAddedBy(user.getId());

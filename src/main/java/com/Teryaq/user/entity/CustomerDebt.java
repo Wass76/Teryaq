@@ -8,8 +8,7 @@ import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
 
-import java.math.BigDecimal;
-import java.time.LocalDateTime;
+import java.time.LocalDate;
 
 @Entity
 @Data
@@ -25,16 +24,16 @@ public class CustomerDebt extends AuditedEntity {
     private Customer customer;
 
     @Column(nullable = false)
-    private BigDecimal amount; // مبلغ الدين
+    private Float amount; // مبلغ الدين
 
     @Column(nullable = false)
-    private BigDecimal paidAmount; // المبلغ المدفوع
+    private Float paidAmount; // المبلغ المدفوع
 
     @Column(nullable = false)
-    private BigDecimal remainingAmount; // المبلغ المتبقي
+    private Float remainingAmount; // المبلغ المتبقي
 
     @Column(nullable = false)
-    private LocalDateTime dueDate; // تاريخ استحقاق الدين
+    private LocalDate dueDate; // تاريخ استحقاق الدين
 
     @Column
     private String notes; // ملاحظات
@@ -42,15 +41,11 @@ public class CustomerDebt extends AuditedEntity {
     @Column(nullable = false)
     private String status; // ACTIVE, PAID, OVERDUE
 
-    @Column(nullable = false)
-    private LocalDateTime createdAt;
-
     @Column
-    private LocalDateTime paidAt; // تاريخ الدفع
+    private LocalDate paidAt; // تاريخ الدفع
 
     @PrePersist
     protected void onCreate() {
-        createdAt = LocalDateTime.now();
         if (status == null) {
             status = "ACTIVE";
         }

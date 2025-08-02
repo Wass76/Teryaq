@@ -1,6 +1,6 @@
 package com.Teryaq.user.dto;
 
-import jakarta.validation.constraints.Email;
+import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import lombok.AllArgsConstructor;
@@ -13,23 +13,18 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @Builder
 public class CustomerDTORequest {
-
-    @NotBlank(message = "اسم العميل مطلوب")
+ 
+    @Schema(description = "Name of the customer", example = "cash customer")
+    @NotBlank(message = "customer name is required")
     private String name;
 
-    @Pattern(regexp = "^[0-9]{10,11}$", message = "رقم الهاتف يجب أن يكون 10-11 رقم")
+    @Pattern(regexp = "^[0-9]{10}$", message = "Phone number must be 10 digits")
     private String phoneNumber;
 
     private String address;
 
-    @Email(message = "صيغة البريد الإلكتروني غير صحيحة")
-    private String email;
-
-    @Pattern(regexp = "^[0-9]{10}$", message = "رقم الهوية الوطنية يجب أن يكون 10 أرقام")
-    private String nationalId;
-
     private String notes;
 
-    @Builder.Default
-    private boolean isActive = true;
+    // @Builder.Default
+    // private boolean isActive = true;
 }

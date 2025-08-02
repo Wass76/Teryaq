@@ -1,5 +1,6 @@
 package com.Teryaq.product.mapper;
 
+import com.Teryaq.product.Enum.ProductType;
 import com.Teryaq.product.dto.StockItemDTOResponse;
 import com.Teryaq.product.dto.StockReportDTOResponse;
 import com.Teryaq.product.entity.StockItem;
@@ -44,7 +45,7 @@ public class StockItemMapper {
                 .batchNo(stockItem.getBatchNo())
                 .actualPurchasePrice(stockItem.getActualPurchasePrice())
                 .dateAdded(stockItem.getDateAdded())
-                .addedBy(stockItem.getAddedBy())
+                .addedBy(stockItem.getCreatedBy() != null ? stockItem.getCreatedBy() : stockItem.getAddedBy())
                 .purchaseInvoiceId(stockItem.getPurchaseInvoice() != null ? 
                     stockItem.getPurchaseInvoice().getId() : null)
                 .isExpired(isExpired)
@@ -60,7 +61,7 @@ public class StockItemMapper {
     }
     
     public StockReportDTOResponse toReportResponse(List<StockItem> stockItems, 
-                                                  com.Teryaq.product.Enum.ProductType productType) {
+                                                   ProductType productType) {
         List<StockItemDTOResponse> stockItemResponses = toResponseList(stockItems);
         
         Integer totalQuantity = stockItems.stream()

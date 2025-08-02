@@ -1,13 +1,14 @@
 package com.Teryaq.product.dto;
 
 import com.Teryaq.product.Enum.ProductType;
+import com.fasterxml.jackson.annotation.JsonFormat;
+
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 
 @Data
 @AllArgsConstructor
@@ -20,10 +21,14 @@ public class StockItemDTOResponse {
     private ProductType productType;
     private Integer quantity;
     private Integer bonusQty;
+
+    @JsonFormat(pattern = "yyyy-MM-dd")
     private LocalDate expiryDate;
     private String batchNo;
     private Double actualPurchasePrice;
-    private LocalDateTime dateAdded;
+
+    @JsonFormat(pattern = "yyyy-MM-dd")
+    private LocalDate dateAdded;
     private Long addedBy;
     private Long purchaseInvoiceId;
     

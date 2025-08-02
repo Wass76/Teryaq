@@ -10,35 +10,21 @@ import com.Teryaq.user.Enum.UserStatus;
 import com.Teryaq.user.entity.Supplier;
 import com.Teryaq.user.entity.Customer;
 import com.Teryaq.user.entity.Pharmacy;
-import com.Teryaq.user.entity.CustomerDebt;
 import com.Teryaq.user.entity.Employee;
 import com.Teryaq.user.entity.Role;
 import com.Teryaq.user.repository.SupplierRepository;   
 import com.Teryaq.user.repository.CustomerRepo;
 import com.Teryaq.user.repository.PharmacyRepository;
-import com.Teryaq.user.repository.CustomerDebtRepository;
 import com.Teryaq.user.repository.EmployeeRepository;
 import com.Teryaq.user.repository.RoleRepository;
-import com.Teryaq.sale.repo.SaleInvoiceRepository;
-import com.Teryaq.sale.repo.SaleInvoiceItemRepository;
-import com.Teryaq.sale.entity.SaleInvoice;
-import com.Teryaq.sale.entity.SaleInvoiceItem;
-import com.Teryaq.product.Enum.PaymentType;
-import com.Teryaq.product.Enum.PaymentMethod;
-import com.Teryaq.product.Enum.DiscountType;
-import com.Teryaq.product.Enum.OrderStatus;
-import com.Teryaq.product.Enum.ProductType;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
-import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Set;
-import java.util.HashSet;
+
 
 @Component
 @RequiredArgsConstructor
@@ -60,24 +46,7 @@ public class DataSeed {
     private final RoleRepository roleRepository;
     private final PasswordEncoder passwordEncoder;
     
-    // Product repositories
-    private final MasterProductRepo masterProductRepo;
-    private final MasterProductTranslationRepo masterProductTranslationRepo;
-    private final PharmacyProductRepo pharmacyProductRepo;
-    private final StockItemRepo stockItemRepo;
-    
-    // Purchase repositories
-    private final PurchaseOrderRepo purchaseOrderRepo;
-    private final PurchaseOrderItemRepo purchaseOrderItemRepo;
-    private final PurchaseInvoiceRepo purchaseInvoiceRepo;
-    private final PurchaseInvoiceItemRepo purchaseInvoiceItemRepo;
-    
-    // Sale repositories
-    private final SaleInvoiceRepository saleInvoiceRepository;
-    private final SaleInvoiceItemRepository saleInvoiceItemRepository;
-    
-    // Customer Debt repositories
-    private final CustomerDebtRepository customerDebtRepository;
+  
 
     @PostConstruct
     public void seedAll() {
@@ -181,7 +150,7 @@ public class DataSeed {
             List<TypeTranslation> translations = List.of(
                     new TypeTranslation( "دواء ", type1, ar),
                     new TypeTranslation( "مستحضر تجميل ", type2, ar),
-                    new TypeTranslation( "مسلتزم طبي ", type3, ar)
+                    new TypeTranslation( "مستلزمات طبية ", type3, ar)
             );
             typeTranslationRepo.saveAll(translations);
             System.out.println("✅ Types seeded");
@@ -713,9 +682,9 @@ public class DataSeed {
     //         // Debt 1: Active debt for customer 1
     //         CustomerDebt debt1 = CustomerDebt.builder()
     //             .customer(customer1)
-    //             .amount(new BigDecimal("5000.00"))
-    //             .paidAmount(new BigDecimal("2000.00"))
-    //             .remainingAmount(new BigDecimal("3000.00"))
+    //             .amount(new Float("5000.00"))
+    //             .paidAmount(new Float("2000.00"))
+    //             .remainingAmount(new Float("3000.00"))
     //             .dueDate(LocalDateTime.now().plusMonths(2))
     //             .notes("دين على شراء أدوية مسكنة")
     //             .status("ACTIVE")
@@ -725,9 +694,9 @@ public class DataSeed {
     //         // Debt 2: Overdue debt for customer 2
     //         CustomerDebt debt2 = CustomerDebt.builder()
     //             .customer(customer2)
-    //             .amount(new BigDecimal("3000.00"))
-    //             .paidAmount(new BigDecimal("0.00"))
-    //             .remainingAmount(new BigDecimal("3000.00"))
+    //             .amount(new Float("3000.00"))
+    //             .paidAmount(new Float("0.00"))
+    //             .remainingAmount(new Float("3000.00"))
     //             .dueDate(LocalDateTime.now().minusDays(15))
     //             .notes("دين متأخر على شراء مضادات حيوية")
     //             .status("ACTIVE")
@@ -737,9 +706,9 @@ public class DataSeed {
     //         // Debt 3: Paid debt for customer 3
     //         CustomerDebt debt3 = CustomerDebt.builder()
     //             .customer(customer3)
-    //             .amount(new BigDecimal("2000.00"))
-    //             .paidAmount(new BigDecimal("2000.00"))
-    //             .remainingAmount(new BigDecimal("0.00"))
+    //             .amount(new Float("2000.00"))
+    //             .paidAmount(new Float("2000.00"))
+    //             .remainingAmount(new Float("0.00"))
     //             .dueDate(LocalDateTime.now().minusDays(5))
     //             .notes("دين مكتمل الدفع")
     //             .status("PAID")
@@ -750,9 +719,9 @@ public class DataSeed {
     //         // Debt 4: New debt for customer 1
     //         CustomerDebt debt4 = CustomerDebt.builder()
     //             .customer(customer1)
-    //             .amount(new BigDecimal("1500.00"))
-    //             .paidAmount(new BigDecimal("0.00"))
-    //             .remainingAmount(new BigDecimal("1500.00"))
+    //             .amount(new Float("1500.00"))
+    //             .paidAmount(new Float("0.00"))
+    //             .remainingAmount(new Float("1500.00"))
     //             .dueDate(LocalDateTime.now().plusMonths(1))
     //             .notes("دين جديد على شراء فيتامينات")
     //             .status("ACTIVE")

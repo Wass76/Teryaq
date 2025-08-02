@@ -5,8 +5,9 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.math.BigDecimal;
-import java.time.LocalDateTime;
+import java.time.LocalDate;
+
+import com.fasterxml.jackson.annotation.JsonFormat;
 
 @Data
 @AllArgsConstructor
@@ -14,7 +15,9 @@ import java.time.LocalDateTime;
 @Builder
 public class CustomerDebtDTORequest {
     private Long customerId;
-    private BigDecimal amount;
-    private LocalDateTime dueDate;
+    private Float amount;
+
+    @JsonFormat(pattern = "yyyy-MM-dd")
+    private LocalDate dueDate;
     private String notes;
 } 

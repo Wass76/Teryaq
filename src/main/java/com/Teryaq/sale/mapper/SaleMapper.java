@@ -5,6 +5,8 @@ import com.Teryaq.sale.entity.*;
 import com.Teryaq.product.entity.StockItem;
 import com.Teryaq.product.service.StockManagementService;
 import com.Teryaq.user.entity.Customer;
+
+import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import java.util.List;
@@ -35,7 +37,7 @@ public class SaleMapper {
     public SaleInvoice toEntityWithCustomerAndDate(SaleInvoiceDTORequest dto, Customer customer) {
         SaleInvoice invoice = toEntity(dto);
         invoice.setCustomer(customer);
-        invoice.setInvoiceDate(java.time.LocalDateTime.now());
+        invoice.setInvoiceDate(java.time.LocalDate.now());
         return invoice;
     }
     
@@ -63,7 +65,7 @@ public class SaleMapper {
                 StockItem stockItem = stockItems.stream()
                     .filter(stock -> stock.getId().equals(dto.getStockItemId()))
                     .findFirst()
-                    .orElseThrow(() -> new RuntimeException("Stock item not found with ID: " + dto.getStockItemId()));
+                    .orElseThrow(() -> new EntityNotFoundException("Stock item not found with ID: " + dto.getStockItemId()));
                 return toEntity(dto, stockItem);
             })
             .collect(Collectors.toList());
@@ -95,6 +97,7 @@ public class SaleMapper {
     public SaleInvoiceDTOResponse toResponse(SaleInvoice invoice) {
         SaleInvoiceDTOResponse dto = new SaleInvoiceDTOResponse();
         dto.setId(invoice.getId());
+        dto.setCustomerId(invoice.getCustomer() != null ? invoice.getCustomer().getId() : null);
         dto.setCustomerName(invoice.getCustomer() != null ? invoice.getCustomer().getName() : "cash customer");
         dto.setInvoiceDate(invoice.getInvoiceDate());
         dto.setTotalAmount(invoice.getTotalAmount());
@@ -104,6 +107,9 @@ public class SaleMapper {
         dto.setDiscountType(invoice.getDiscountType());
         dto.setPaidAmount(invoice.getPaidAmount());
         dto.setRemainingAmount(invoice.getRemainingAmount());
+        // حساب الحالة بناءً على المبلغ المتبقي
+        String status = invoice.getRemainingAmount() > 0 ? "PENDING" : "COMPLETED";
+        dto.setStatus(status);
         if (invoice.getItems() != null) {
             List<SaleInvoiceItemDTOResponse> items = invoice.getItems().stream()
                 .map(this::toResponse)

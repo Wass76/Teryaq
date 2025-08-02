@@ -30,4 +30,18 @@ public class SaleController {
         SaleInvoiceDTOResponse response = saleService.createSaleInvoice(request);
         return ResponseEntity.ok(response);
     }
+
+    @Operation(summary = "Get a sale invoice by ID", description = "Retrieves a sale invoice by its ID")
+    @GetMapping("/{id}")
+    public ResponseEntity<SaleInvoiceDTOResponse> getSaleById(@PathVariable Long id) {
+        SaleInvoiceDTOResponse response = saleService.getSaleById(id);
+        return ResponseEntity.ok(response);
+    }
+
+    @Operation(summary = "Cancel a sale invoice", description = "Cancels a sale invoice and restores stock quantities")
+    @PostMapping("/{id}/cancel")
+    public ResponseEntity<Void> cancelSale(@PathVariable Long id) {
+        saleService.cancelSale(id);
+        return ResponseEntity.ok().build();
+    }
 } 

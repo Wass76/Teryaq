@@ -116,4 +116,21 @@ public class StockController {
         Map<String, Object> report = stockManagementService.getComprehensiveStockReport();
         return ResponseEntity.ok(report);
     }
+
+    @GetMapping("/all")
+    @Operation(summary = "Get all stock items", 
+               description = "Retrieve all stock items in the inventory")
+    public ResponseEntity<List<StockItemDTOResponse>> getAllStockItems() {
+        List<StockItemDTOResponse> stockItems = stockItemMapper.toResponseList(
+            stockManagementService.getAllStockItems());
+        return ResponseEntity.ok(stockItems);
+    }
+
+    @GetMapping("/all-with-product-info")
+    @Operation(summary = "Get all stock items with product information", 
+               description = "Retrieve all stock items with detailed product information")
+    public ResponseEntity<List<Map<String, Object>>> getAllStockItemsWithProductInfo() {
+        List<Map<String, Object>> stockItems = stockManagementService.getAllStockItemsWithProductInfo();
+        return ResponseEntity.ok(stockItems);
+    }
 } 

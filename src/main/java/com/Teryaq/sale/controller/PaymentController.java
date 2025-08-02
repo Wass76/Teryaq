@@ -92,7 +92,7 @@ public class PaymentController {
         
         PaymentValidationResponse response = new PaymentValidationResponse();
         response.setValid(isValid);
-        response.setMessage(isValid ? "الدفع صحيح" : "نوع الدفع ووسيلة الدفع غير متوافقين");
+        response.setMessage(isValid ? "the payment is valid" : "the payment is not valid");
         
         return ResponseEntity.ok(response);
     }

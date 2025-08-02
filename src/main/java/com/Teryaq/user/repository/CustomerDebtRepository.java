@@ -6,7 +6,6 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
-import java.math.BigDecimal;
 import java.util.List;
 
 @Repository
@@ -18,6 +17,11 @@ public interface CustomerDebtRepository extends JpaRepository<CustomerDebt, Long
     List<CustomerDebt> findByCustomerIdOrderByCreatedAtDesc(Long customerId);
 
     /**
+     * البحث عن جميع ديون العميل
+     */
+    List<CustomerDebt> findByCustomerId(Long customerId);
+
+    /**
      * البحث عن ديون العميل حسب الحالة
      */
     List<CustomerDebt> findByCustomerIdAndStatusOrderByCreatedAtDesc(Long customerId, String status);
@@ -26,7 +30,7 @@ public interface CustomerDebtRepository extends JpaRepository<CustomerDebt, Long
      * إجمالي ديون العميل
      */
     @Query("SELECT COALESCE(SUM(d.remainingAmount), 0) FROM CustomerDebt d WHERE d.customer.id = :customerId AND d.status = 'ACTIVE'")
-    BigDecimal getTotalDebtByCustomerId(@Param("customerId") Long customerId);
+    Float getTotalDebtByCustomerId(@Param("customerId") Long customerId);
 
     /**
      * الديون النشطة للعميل
@@ -44,7 +48,7 @@ public interface CustomerDebtRepository extends JpaRepository<CustomerDebt, Long
      * إجمالي الديون المتأخرة
      */
     @Query("SELECT COALESCE(SUM(d.remainingAmount), 0) FROM CustomerDebt d WHERE d.dueDate < CURRENT_TIMESTAMP AND d.status = 'ACTIVE'")
-    BigDecimal getTotalOverdueDebts();
+    Float getTotalOverdueDebts();
 
     /**
      * الديون حسب الحالة

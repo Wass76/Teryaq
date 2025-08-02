@@ -6,5 +6,6 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface SaleInvoiceItemRepository extends JpaRepository<SaleInvoiceItem, Long> {
-    // يمكنك إضافة دوال بحث مخصصة هنا إذا احتجت
+    // حذف جميع عناصر فاتورة بيع معينة
+    void deleteBySaleInvoiceId(Long saleInvoiceId);
 } 

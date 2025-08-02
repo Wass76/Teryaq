@@ -5,7 +5,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
-import java.time.LocalDateTime;
+import java.time.LocalDate;
 import java.util.List;
 
 import com.Teryaq.product.Enum.DiscountType;
@@ -13,6 +13,7 @@ import com.Teryaq.product.Enum.PaymentMethod;
 import com.Teryaq.product.Enum.PaymentType;
 import com.Teryaq.user.entity.Customer;
 import com.Teryaq.utils.entity.AuditedEntity;
+import com.fasterxml.jackson.annotation.JsonFormat;
 
 @Entity
 @Data
@@ -26,7 +27,8 @@ public class SaleInvoice extends AuditedEntity{
     @JoinColumn(name = "customer_id")
     private Customer customer;
 
-    private LocalDateTime invoiceDate;
+    @JsonFormat(pattern = "yyyy-MM-dd")
+    private LocalDate invoiceDate;
 
     private float totalAmount;
 
