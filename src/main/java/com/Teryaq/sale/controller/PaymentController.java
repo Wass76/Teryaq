@@ -4,7 +4,13 @@ import com.Teryaq.product.Enum.PaymentType;
 import com.Teryaq.product.Enum.PaymentMethod;
 import com.Teryaq.sale.service.PaymentValidationService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -17,6 +23,7 @@ import java.util.stream.Collectors;
 @RequestMapping("/api/payment")
 @Tag(name = "Payment Management", description = "APIs for payment validation and methods")
 @CrossOrigin(origins = "*")
+@SecurityRequirement(name = "BearerAuth")
 public class PaymentController {
 
     @Autowired
@@ -26,7 +33,16 @@ public class PaymentController {
      * الحصول على أنواع الدفع المتاحة
      */
     @GetMapping("/types")
-    @Operation(summary = "Get available payment types", description = "Returns all available payment types (CASH/CREDIT)")
+    @Operation(
+        summary = "Get available payment types", 
+        description = "Returns all available payment types (CASH/CREDIT)"
+    )
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Successfully retrieved payment types",
+            content = @Content(mediaType = "application/json",
+            schema = @Schema(implementation = PaymentTypeResponse.class))),
+        @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
     public ResponseEntity<List<PaymentTypeResponse>> getPaymentTypes() {
         List<PaymentTypeResponse> types = Arrays.stream(PaymentType.values())
             .map(type -> new PaymentTypeResponse(
@@ -43,7 +59,16 @@ public class PaymentController {
      * الحصول على وسائل الدفع المتاحة
      */
     @GetMapping("/methods")
-    @Operation(summary = "Get available payment methods", description = "Returns all available payment methods")
+    @Operation(
+        summary = "Get available payment methods", 
+        description = "Returns all available payment methods"
+    )
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Successfully retrieved payment methods",
+            content = @Content(mediaType = "application/json",
+            schema = @Schema(implementation = PaymentMethodResponse.class))),
+        @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
     public ResponseEntity<List<PaymentMethodResponse>> getPaymentMethods() {
         List<PaymentMethodResponse> methods = Arrays.stream(PaymentMethod.values())
             .map(method -> new PaymentMethodResponse(
@@ -60,8 +85,21 @@ public class PaymentController {
      * الحصول على وسائل الدفع المتوافقة مع نوع الدفع
      */
     @GetMapping("/methods/{paymentType}")
-    @Operation(summary = "Get compatible payment methods", description = "Returns payment methods compatible with the given payment type")
-    public ResponseEntity<List<PaymentMethodResponse>> getCompatiblePaymentMethods(@PathVariable String paymentType) {
+    @Operation(
+        summary = "Get compatible payment methods", 
+        description = "Returns payment methods compatible with the given payment type"
+    )
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Successfully retrieved compatible payment methods",
+            content = @Content(mediaType = "application/json",
+            schema = @Schema(implementation = PaymentMethodResponse.class))),
+        @ApiResponse(responseCode = "400", description = "Invalid payment type"),
+        @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
+    public ResponseEntity<List<PaymentMethodResponse>> getCompatiblePaymentMethods(
+            @Parameter(description = "Payment type", example = "CASH", 
+                      schema = @Schema(allowableValues = {"CASH", "CREDIT"})) 
+            @PathVariable String paymentType) {
         try {
             PaymentType type = PaymentType.valueOf(paymentType.toUpperCase());
             List<PaymentMethod> compatibleMethods = Arrays.stream(PaymentMethod.values())
@@ -86,8 +124,20 @@ public class PaymentController {
      * التحقق من صحة الدفع
      */
     @PostMapping("/validate")
-    @Operation(summary = "Validate payment", description = "Validates payment type and method compatibility")
-    public ResponseEntity<PaymentValidationResponse> validatePayment(@RequestBody PaymentValidationRequest request) {
+    @Operation(
+        summary = "Validate payment", 
+        description = "Validates payment type and method compatibility"
+    )
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Successfully validated payment",
+            content = @Content(mediaType = "application/json",
+            schema = @Schema(implementation = PaymentValidationResponse.class))),
+        @ApiResponse(responseCode = "400", description = "Invalid payment data"),
+        @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
+    public ResponseEntity<PaymentValidationResponse> validatePayment(
+            @Parameter(description = "Payment validation data", required = true)
+            @RequestBody PaymentValidationRequest request) {
         boolean isValid = paymentValidationService.validatePayment(request.getPaymentType(), request.getPaymentMethod());
         
         PaymentValidationResponse response = new PaymentValidationResponse();
@@ -98,9 +148,13 @@ public class PaymentController {
     }
 
     // DTOs for responses
+    @Schema(description = "Payment type response")
     public static class PaymentTypeResponse {
+        @Schema(description = "Payment type code", example = "CASH")
         private String code;
+        @Schema(description = "Arabic name", example = "نقداً")
         private String arabicName;
+        @Schema(description = "English name", example = "Cash")
         private String englishName;
 
         public PaymentTypeResponse(String code, String arabicName, String englishName) {
@@ -118,9 +172,13 @@ public class PaymentController {
         public void setEnglishName(String englishName) { this.englishName = englishName; }
     }
 
+    @Schema(description = "Payment method response")
     public static class PaymentMethodResponse {
+        @Schema(description = "Payment method code", example = "CASH")
         private String code;
+        @Schema(description = "Arabic name", example = "نقداً")
         private String arabicName;
+        @Schema(description = "English name", example = "Cash")
         private String englishName;
 
         public PaymentMethodResponse(String code, String arabicName, String englishName) {
@@ -138,8 +196,11 @@ public class PaymentController {
         public void setEnglishName(String englishName) { this.englishName = englishName; }
     }
 
+    @Schema(description = "Payment validation request")
     public static class PaymentValidationRequest {
+        @Schema(description = "Payment type", example = "CASH")
         private PaymentType paymentType;
+        @Schema(description = "Payment method", example = "CASH")
         private PaymentMethod paymentMethod;
 
         // Getters and setters
@@ -149,8 +210,11 @@ public class PaymentController {
         public void setPaymentMethod(PaymentMethod paymentMethod) { this.paymentMethod = paymentMethod; }
     }
 
+    @Schema(description = "Payment validation response")
     public static class PaymentValidationResponse {
+        @Schema(description = "Validation result", example = "true")
         private boolean valid;
+        @Schema(description = "Validation message", example = "the payment is valid")
         private String message;
 
         // Getters and setters

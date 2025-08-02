@@ -1,5 +1,6 @@
 package com.Teryaq.user.dto;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -9,8 +10,21 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
+@Schema(description = "Pay Debt Request", example = """
+{
+  "debtId": 1,
+  "paymentAmount": 100.00,
+  "notes": "Partial payment"
+}
+""")
 public class PayDebtDTORequest {
+    
+    @Schema(description = "Debt ID to pay", example = "1")
     private Long debtId;
+    
+    @Schema(description = "Payment amount", example = "100.00")
     private Float paymentAmount;
+    
+    @Schema(description = "Payment notes", example = "Partial payment")
     private String notes;
 } 

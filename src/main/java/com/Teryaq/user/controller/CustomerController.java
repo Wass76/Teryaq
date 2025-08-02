@@ -105,7 +105,7 @@ public class CustomerController {
         description = "Create a new customer. If name is not provided, 'cash customer' will be used as default."
     )
     public ResponseEntity<CustomerDTOResponse> createCustomer(
-            @Parameter(description = "Customer creation request") 
+            @Parameter(description = "Customer data", required = true)
             @RequestBody CustomerDTORequest dto) {
         logger.info("Creating new customer with name: {}", dto.getName());
         CustomerDTOResponse customer = customerService.createCustomer(dto);
@@ -118,8 +118,8 @@ public class CustomerController {
     public ResponseEntity<CustomerDTOResponse> updateCustomer(
             @Parameter(description = "Customer ID", example = "1") 
             @PathVariable Long id,
-            @Parameter(description = "Updated customer data") 
-                                              @RequestBody CustomerDTORequest dto) {
+            @Parameter(description = "Updated customer data", required = true)
+            @RequestBody CustomerDTORequest dto) {
         logger.info("Updating customer with ID: {}", id);
         CustomerDTOResponse customer = customerService.updateCustomer(id, dto);
         logger.info("Successfully updated customer: {}", customer.getName());

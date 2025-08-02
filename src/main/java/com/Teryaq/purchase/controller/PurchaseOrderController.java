@@ -9,54 +9,161 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import com.Teryaq.product.Enum.OrderStatus;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/api/purchase-orders")
 @RequiredArgsConstructor
+@Tag(name = "Purchase Order Management", description = "APIs for managing purchase orders")
+@SecurityRequirement(name = "BearerAuth")
+@CrossOrigin("*")
 public class PurchaseOrderController {
     private final PurchaseOrderService purchaseOrderService;
 
     @PostMapping
-    public ResponseEntity<PurchaseOrderDTOResponse> create(@RequestBody PurchaseOrderDTORequest request, @RequestParam(defaultValue = "ar") String language) {
+    @Operation(
+        summary = "Create new purchase order",
+        description = "Creates a new purchase order with the given request"
+    )
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Successfully created purchase order",
+            content = @Content(mediaType = "application/json",
+            schema = @Schema(implementation = PurchaseOrderDTOResponse.class))),
+        @ApiResponse(responseCode = "400", description = "Invalid purchase order data"),
+        @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
+    public ResponseEntity<PurchaseOrderDTOResponse> create(
+            @Parameter(description = "Purchase order data", required = true)
+            @Valid @RequestBody PurchaseOrderDTORequest request, 
+            @Parameter(description = "Language code", example = "ar") 
+            @RequestParam(defaultValue = "ar") String language) {
         return ResponseEntity.ok(purchaseOrderService.create(request, language));
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<PurchaseOrderDTOResponse> getById(@PathVariable Long id, @RequestParam(defaultValue = "ar") String language) {
+    @Operation(
+        summary = "Get purchase order by ID",
+        description = "Retrieves a specific purchase order by ID"
+    )
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Successfully retrieved purchase order",
+            content = @Content(mediaType = "application/json",
+            schema = @Schema(implementation = PurchaseOrderDTOResponse.class))),
+        @ApiResponse(responseCode = "404", description = "Purchase order not found"),
+        @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
+    public ResponseEntity<PurchaseOrderDTOResponse> getById(
+            @Parameter(description = "Purchase order ID", example = "1") @PathVariable Long id, 
+            @Parameter(description = "Language code", example = "ar") 
+            @RequestParam(defaultValue = "ar") String language) {
         return ResponseEntity.ok(purchaseOrderService.getById(id, language));
     }
 
     @GetMapping
-    public ResponseEntity<List<PurchaseOrderDTOResponse>> listAll(@RequestParam(defaultValue = "ar") String language) {
+    @Operation(
+        summary = "Get all purchase orders",
+        description = "Retrieves all purchase orders"
+    )
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Successfully retrieved all purchase orders",
+            content = @Content(mediaType = "application/json",
+            schema = @Schema(implementation = PurchaseOrderDTOResponse.class))),
+        @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
+    public ResponseEntity<List<PurchaseOrderDTOResponse>> listAll(
+            @Parameter(description = "Language code", example = "ar") 
+            @RequestParam(defaultValue = "ar") String language) {
         return ResponseEntity.ok(purchaseOrderService.listAll(language));
     }
 
     @GetMapping("/paginated")
+    @Operation(
+        summary = "Get paginated purchase orders",
+        description = "Retrieves purchase orders with pagination support"
+    )
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Successfully retrieved paginated purchase orders",
+            content = @Content(mediaType = "application/json",
+            schema = @Schema(implementation = PaginationDTO.class))),
+        @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
     public ResponseEntity<PaginationDTO<PurchaseOrderDTOResponse>> listAllPaginated(
+            @Parameter(description = "Page number (0-based)", example = "0") 
             @RequestParam(defaultValue = "0") int page,
+            @Parameter(description = "Number of items per page", example = "10") 
             @RequestParam(defaultValue = "10") int size,
+            @Parameter(description = "Language code", example = "ar") 
             @RequestParam(defaultValue = "ar") String language) {
         return ResponseEntity.ok(purchaseOrderService.listAllPaginated(page, size, language));
     }
 
     @GetMapping("/status/{status}")
+    @Operation(
+        summary = "Get purchase orders by status",
+        description = "Retrieves purchase orders filtered by status"
+    )
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Successfully retrieved purchase orders by status",
+            content = @Content(mediaType = "application/json",
+            schema = @Schema(implementation = PurchaseOrderDTOResponse.class))),
+        @ApiResponse(responseCode = "400", description = "Invalid status"),
+        @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
     public ResponseEntity<List<PurchaseOrderDTOResponse>> getByStatus(
+            @Parameter(description = "Order status", example = "PENDING", 
+                      schema = @Schema(allowableValues = {"PENDING", "APPROVED", "REJECTED", "CANCELLED"})) 
             @PathVariable OrderStatus status,
+            @Parameter(description = "Language code", example = "ar") 
             @RequestParam(defaultValue = "ar") String language) {
         return ResponseEntity.ok(purchaseOrderService.getByStatus(status, language));
     }
 
     @GetMapping("/status/{status}/paginated")
+    @Operation(
+        summary = "Get paginated purchase orders by status",
+        description = "Retrieves paginated purchase orders filtered by status"
+    )
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Successfully retrieved paginated purchase orders by status",
+            content = @Content(mediaType = "application/json",
+            schema = @Schema(implementation = PaginationDTO.class))),
+        @ApiResponse(responseCode = "400", description = "Invalid status"),
+        @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
     public ResponseEntity<PaginationDTO<PurchaseOrderDTOResponse>> getByStatusPaginated(
+            @Parameter(description = "Order status", example = "PENDING", 
+                      schema = @Schema(allowableValues = {"PENDING", "APPROVED", "REJECTED", "CANCELLED"})) 
             @PathVariable OrderStatus status,
+            @Parameter(description = "Page number (0-based)", example = "0") 
             @RequestParam(defaultValue = "0") int page,
+            @Parameter(description = "Number of items per page", example = "10") 
             @RequestParam(defaultValue = "10") int size,
+            @Parameter(description = "Language code", example = "ar") 
             @RequestParam(defaultValue = "ar") String language) {
         return ResponseEntity.ok(purchaseOrderService.getByStatusPaginated(status, page, size, language));
     }
 
     @PostMapping("/{id}/cancel")
-    public ResponseEntity<Void> cancel(@PathVariable Long id) {
+    @Operation(
+        summary = "Cancel purchase order",
+        description = "Cancels a purchase order"
+    )
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Successfully cancelled purchase order"),
+        @ApiResponse(responseCode = "404", description = "Purchase order not found"),
+        @ApiResponse(responseCode = "409", description = "Purchase order already cancelled"),
+        @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
+    public ResponseEntity<Void> cancel(
+            @Parameter(description = "Purchase order ID", example = "1") @PathVariable Long id) {
         purchaseOrderService.cancel(id);
         return ResponseEntity.ok().build();
     }

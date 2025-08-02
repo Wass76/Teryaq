@@ -39,7 +39,7 @@ public class CustomerDebtController {
         @ApiResponse(responseCode = "500", description = "Internal server error")
     })
     public ResponseEntity<CustomerDebtDTOResponse> createDebt(
-            @Parameter(description = "Debt creation request") 
+            @Parameter(description = "Debt data", required = true)
             @RequestBody CustomerDebtDTORequest request) {
         CustomerDebtDTOResponse response = customerDebtService.createDebt(request);
         return ResponseEntity.ok(response);
@@ -130,7 +130,7 @@ public class CustomerDebtController {
         @ApiResponse(responseCode = "500", description = "Internal server error")
     })
     public ResponseEntity<CustomerDebtDTOResponse> payDebt(
-            @Parameter(description = "Payment request") 
+            @Parameter(description = "Payment data", required = true)
             @RequestBody PayDebtDTORequest request) {
         CustomerDebtDTOResponse response = customerDebtService.payDebt(request);
         return ResponseEntity.ok(response);

@@ -12,9 +12,20 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 
 @RestController
 @RequestMapping("api/v1/pharmacy_products")
+@Tag(name = "Pharmacy Product Management", description = "APIs for managing pharmacy-specific products")
+@SecurityRequirement(name = "BearerAuth")
+@CrossOrigin("*")
 public class PharmacyProductController {
 
     private final PharmacyProductService pharmacyProductService;
@@ -24,12 +35,28 @@ public class PharmacyProductController {
     }
     
 
-        @GetMapping
-    public ResponseEntity<?> getAllPharmacyProducts(@RequestParam(name = "lang", defaultValue = "en") String lang ,
-                                                  @RequestParam(defaultValue = "0") int page,
-                                                  @RequestParam(defaultValue = "10") int size,
-                                                  @RequestParam(defaultValue = "createdAt") String sortBy,
-                                                  @RequestParam(defaultValue = "desc") String direction) {
+    @GetMapping
+    @Operation(
+        summary = "Get all pharmacy products",
+        description = "Retrieves all pharmacy products with pagination and sorting support"
+    )
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Successfully retrieved pharmacy products",
+            content = @Content(mediaType = "application/json")),
+        @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
+    public ResponseEntity<?> getAllPharmacyProducts(
+            @Parameter(description = "Language code", example = "en") 
+            @RequestParam(name = "lang", defaultValue = "en") String lang,
+            @Parameter(description = "Page number (0-based)", example = "0") 
+            @RequestParam(defaultValue = "0") int page,
+            @Parameter(description = "Number of items per page", example = "10") 
+            @RequestParam(defaultValue = "10") int size,
+            @Parameter(description = "Sort field", example = "createdAt") 
+            @RequestParam(defaultValue = "createdAt") String sortBy,
+            @Parameter(description = "Sort direction", example = "desc", 
+                      schema = @Schema(allowableValues = {"asc", "desc"})) 
+            @RequestParam(defaultValue = "desc") String direction) {
         Sort.Direction sortDirection = Sort.Direction.fromString(direction.toUpperCase());
         Pageable pageable = PageRequest.of(page , size , Sort.by(sortDirection,sortBy));
         return ResponseEntity.ok(pharmacyProductService.getPharmacyProduct(lang, pageable));
@@ -37,38 +64,105 @@ public class PharmacyProductController {
 
     @PreAuthorize("hasRole('PLATFORM_ADMIN')")
     @GetMapping("pharmacy/{pharmacyId}")
-    public ResponseEntity<?> getPharmacyProductsByPharmacyId(@PathVariable Long pharmacyId,
-                                                           @RequestParam(name = "lang", defaultValue = "en") String lang,
-                                                           @RequestParam(defaultValue = "0") int page,
-                                                           @RequestParam(defaultValue = "10") int size,
-                                                           @RequestParam(defaultValue = "createdAt") String sortBy,
-                                                           @RequestParam(defaultValue = "desc") String direction) {
+    @Operation(
+        summary = "Get pharmacy products by pharmacy ID",
+        description = "Retrieves all products for a specific pharmacy. Requires PLATFORM_ADMIN role."
+    )
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Successfully retrieved pharmacy products",
+            content = @Content(mediaType = "application/json")),
+        @ApiResponse(responseCode = "403", description = "Access denied - insufficient permissions"),
+        @ApiResponse(responseCode = "404", description = "Pharmacy not found"),
+        @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
+    public ResponseEntity<?> getPharmacyProductsByPharmacyId(
+            @Parameter(description = "Pharmacy ID", example = "1") @PathVariable Long pharmacyId,
+            @Parameter(description = "Language code", example = "en") 
+            @RequestParam(name = "lang", defaultValue = "en") String lang,
+            @Parameter(description = "Page number (0-based)", example = "0") 
+            @RequestParam(defaultValue = "0") int page,
+            @Parameter(description = "Number of items per page", example = "10") 
+            @RequestParam(defaultValue = "10") int size,
+            @Parameter(description = "Sort field", example = "createdAt") 
+            @RequestParam(defaultValue = "createdAt") String sortBy,
+            @Parameter(description = "Sort direction", example = "desc", 
+                      schema = @Schema(allowableValues = {"asc", "desc"})) 
+            @RequestParam(defaultValue = "desc") String direction) {
         Sort.Direction sortDirection = Sort.Direction.fromString(direction.toUpperCase());
         Pageable pageable = PageRequest.of(page, size, Sort.by(sortDirection, sortBy));
         return ResponseEntity.ok(pharmacyProductService.getPharmacyProductByPharmacyId(pharmacyId, lang, pageable));
     }
 
     @GetMapping("{id}")
-    public ResponseEntity<?> getPharmacyProductById(@PathVariable Long id,
-                                                   @RequestParam(name = "lang", defaultValue = "en") String lang) {
+    @Operation(
+        summary = "Get pharmacy product by ID",
+        description = "Retrieves a specific pharmacy product by ID"
+    )
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Successfully retrieved pharmacy product",
+            content = @Content(mediaType = "application/json")),
+        @ApiResponse(responseCode = "404", description = "Pharmacy product not found"),
+        @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
+    public ResponseEntity<?> getPharmacyProductById(
+            @Parameter(description = "Pharmacy product ID", example = "1") @PathVariable Long id,
+            @Parameter(description = "Language code", example = "en") 
+            @RequestParam(name = "lang", defaultValue = "en") String lang) {
         return ResponseEntity.ok(pharmacyProductService.getByID(id, lang));
     }
 
     @PostMapping
-    public ResponseEntity<?> createPharmacyProduct(@Valid @RequestBody PharmacyProductDTORequest pharmacyProduct, 
-                                                   @RequestParam(name = "lang", defaultValue = "en") String lang ) {
+    @Operation(
+        summary = "Create new pharmacy product",
+        description = "Creates a new pharmacy product"
+    )
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Successfully created pharmacy product",
+            content = @Content(mediaType = "application/json")),
+        @ApiResponse(responseCode = "400", description = "Invalid pharmacy product data"),
+        @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
+    public ResponseEntity<?> createPharmacyProduct(
+            @Parameter(description = "Pharmacy product data", required = true)
+            @Valid @RequestBody PharmacyProductDTORequest pharmacyProduct, 
+            @Parameter(description = "Language code", example = "en") 
+            @RequestParam(name = "lang", defaultValue = "en") String lang) {
         return ResponseEntity.ok(pharmacyProductService.insertPharmacyProduct(pharmacyProduct, lang));
     }
 
     @PutMapping("{id}")
-    public ResponseEntity<?> updatePharmacyProductById(@PathVariable Long id,
-                                                      @RequestBody PharmacyProductDTORequest pharmacyProduct, 
-                                                      @RequestParam(name = "lang", defaultValue = "en") String lang) {
+    @Operation(
+        summary = "Update pharmacy product",
+        description = "Updates an existing pharmacy product"
+    )
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Successfully updated pharmacy product",
+            content = @Content(mediaType = "application/json")),
+        @ApiResponse(responseCode = "400", description = "Invalid pharmacy product data"),
+        @ApiResponse(responseCode = "404", description = "Pharmacy product not found"),
+        @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
+    public ResponseEntity<?> updatePharmacyProductById(
+            @Parameter(description = "Pharmacy product ID", example = "1") @PathVariable Long id,
+            @Parameter(description = "Updated pharmacy product data", required = true)
+            @RequestBody PharmacyProductDTORequest pharmacyProduct, 
+            @Parameter(description = "Language code", example = "en") 
+            @RequestParam(name = "lang", defaultValue = "en") String lang) {
         return ResponseEntity.ok(pharmacyProductService.editPharmacyProduct(id, pharmacyProduct, lang));
     }
 
     @DeleteMapping("{id}")
-    public ResponseEntity<Void> deletePharmacyProductById(@PathVariable Long id) {
+    @Operation(
+        summary = "Delete pharmacy product",
+        description = "Deletes a pharmacy product"
+    )
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "204", description = "Successfully deleted pharmacy product"),
+        @ApiResponse(responseCode = "404", description = "Pharmacy product not found"),
+        @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
+    public ResponseEntity<Void> deletePharmacyProductById(
+            @Parameter(description = "Pharmacy product ID", example = "1") @PathVariable Long id) {
         pharmacyProductService.deletePharmacyProduct(id);
         return new ResponseEntity<>(HttpStatus.NO_CONTENT);
     }
