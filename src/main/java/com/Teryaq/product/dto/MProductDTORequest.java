@@ -10,10 +10,37 @@ import lombok.NoArgsConstructor;
 
 import java.util.Set;
 
+import io.swagger.v3.oas.annotations.media.Schema;
+
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
+@Schema(description = "Product Request", example = """
+{
+  "tradeName": "Omeprazole",
+  "scientificName": "Omeprazole Magnesium",
+  "concentration": "20mg",
+  "size": "14 capsules",
+  "refPurchasePrice": 150.0,
+  "refSellingPrice": 300.0,
+  "notes": "مثبط مضخة البروتون - يستخدم لعلاج قرحة المعدة والارتجاع المريئي",
+  "tax": 15.0,
+  "barcode": "3210987654321",
+  "requiresPrescription": true,
+  "typeId": 1,
+  "formId": 2,
+  "manufacturerId": 1,
+  "categoryIds": [1, 2],
+  "translations": [
+    {
+      "tradeName": "أوميبرازول",
+      "scientificName": "أوميبرازول ماغنيسيوم",
+      "languageCode": "ar"
+    }
+  ]
+}
+""")
 public class MProductDTORequest {
 
 

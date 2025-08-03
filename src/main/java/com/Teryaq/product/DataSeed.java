@@ -4,21 +4,14 @@ import com.Teryaq.language.Language;
 import com.Teryaq.language.LanguageRepo;
 import com.Teryaq.product.repo.*;
 import com.Teryaq.product.entity.*;
-import com.Teryaq.user.Enum.Currency;
 import com.Teryaq.user.Enum.PharmacyType;
-import com.Teryaq.user.Enum.UserStatus;
-import com.Teryaq.user.entity.Supplier;
 import com.Teryaq.user.entity.Customer;
 import com.Teryaq.user.entity.Pharmacy;
-import com.Teryaq.user.entity.Employee;
-import com.Teryaq.user.entity.Role;
 import com.Teryaq.user.repository.*;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
-import java.time.LocalDate;
 import java.util.List;
 
 
@@ -35,12 +28,8 @@ public class DataSeed {
     private final TypeTranslationRepo typeTranslationRepo;
     private final ManufacturerRepo manufacturerRepo;
     private final ManufacturerTranslationRepo manufacturerTranslationRepo;
-    private final SupplierRepository supplierRepo;
     private final CustomerRepo customerRepository;
     private final PharmacyRepository pharmacyRepository;
-    private final EmployeeRepository employeeRepository;
-    private final RoleRepository roleRepository;
-    private final PasswordEncoder passwordEncoder;
     
   
 
@@ -51,10 +40,8 @@ public class DataSeed {
         seedForms();
         seedTypes();
         seedManufacturers();
-//        seedSuppliers();
         seedCustomers();
         seedPharmacy();
-//        seedEmployee();
 
     }
 
