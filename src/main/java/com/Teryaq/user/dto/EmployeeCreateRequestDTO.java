@@ -26,7 +26,7 @@ public class EmployeeCreateRequestDTO {
     @Schema(description = "Employee's phone number", example = "1234567890")
     private String phoneNumber;
     
-    @ValidEnum(enumClass = UserStatus.class)
+//    @ValidEnum(enumClass = UserStatus.class)
     @Schema(description = "Employee's status", example = "ACTIVE")
     private UserStatus status;
     
