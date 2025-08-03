@@ -53,6 +53,7 @@ public class SaleInvoiceDTORequest {
     private PaymentMethod paymentMethod;
     
     @Schema(description = "Currency", example = "SYP", allowableValues = {"SYP", "USD"}, defaultValue = "SYP")
+    @Builder.Default
     private Currency currency = Currency.SYP;
     
     // الخصم على الفاتورة كاملة
