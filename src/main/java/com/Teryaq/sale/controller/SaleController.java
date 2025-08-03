@@ -18,6 +18,7 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/sales")
@@ -29,7 +30,7 @@ public class SaleController {
     
     private final SaleService saleService;
    
-//    @PreAuthorize("hasRole('EMPLOYEE')")
+    @PreAuthorize("hasRole('PHARMACY_MANAGER')")
     @Operation(
         summary = "Create a new sale invoice", 
         description = "Creates a new sale invoice with the given request. Requires EMPLOYEE role."
@@ -52,7 +53,25 @@ public class SaleController {
         return ResponseEntity.ok(response);
     }
 
-//    @PreAuthorize("hasRole('EMPLOYEE')")
+    @PreAuthorize("hasRole('PHARMACY_MANAGER')")
+    @Operation(
+        summary = "Get all sale invoices", 
+        description = "Retrieves all sale invoices for the current pharmacy. Requires EMPLOYEE role."
+    )
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Successfully retrieved sale invoices",
+            content = @Content(mediaType = "application/json",
+            schema = @Schema(implementation = SaleInvoiceDTOResponse.class))),
+        @ApiResponse(responseCode = "403", description = "Access denied - insufficient permissions"),
+        @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
+    @GetMapping
+    public ResponseEntity<List<SaleInvoiceDTOResponse>> getAllSales() {
+        List<SaleInvoiceDTOResponse> response = saleService.getAllSales();
+        return ResponseEntity.ok(response);
+    }
+
+    @PreAuthorize("hasRole('PHARMACY_MANAGER')")
     @Operation(
         summary = "Get a sale invoice by ID", 
         description = "Retrieves a sale invoice by its ID. Requires EMPLOYEE role."
@@ -73,7 +92,7 @@ public class SaleController {
         return ResponseEntity.ok(response);
     }
 
-//    @PreAuthorize("hasRole('EMPLOYEE')")
+    @PreAuthorize("hasRole('PHARMACY_MANAGER')")
     @Operation(
         summary = "Cancel a sale invoice", 
         description = "Cancels a sale invoice and restores stock quantities. Requires EMPLOYEE role."

@@ -18,6 +18,11 @@ public interface SaleInvoiceRepository extends JpaRepository<SaleInvoice, Long> 
     List<SaleInvoice> findByPharmacyId(Long pharmacyId);
     
     /**
+     * Find all sale invoices by pharmacy ID ordered by invoice date descending
+     */
+    List<SaleInvoice> findByPharmacyIdOrderByInvoiceDateDesc(Long pharmacyId);
+    
+    /**
      * Find all sale invoices by pharmacy ID with pagination
      */
     Page<SaleInvoice> findByPharmacyId(Long pharmacyId, Pageable pageable);
@@ -30,5 +35,4 @@ public interface SaleInvoiceRepository extends JpaRepository<SaleInvoice, Long> 
     /**
      * Check if sale invoice exists by ID and pharmacy ID
      */
-
 }

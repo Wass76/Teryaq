@@ -3,6 +3,7 @@ package com.Teryaq.sale.dto;
 import com.Teryaq.product.Enum.DiscountType;
 import com.Teryaq.product.Enum.PaymentType;
 import com.Teryaq.product.Enum.PaymentMethod;
+import com.Teryaq.user.Enum.Currency;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -26,6 +27,7 @@ public class SaleInvoiceDTOResponse {
     private float totalAmount;
     private PaymentType paymentType;
     private PaymentMethod paymentMethod;
+    private Currency currency;
     private float discount;
     private DiscountType discountType;
     private float paidAmount;

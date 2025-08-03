@@ -119,7 +119,7 @@ public class CustomerController {
             @Parameter(description = "Customer ID", example = "1") 
             @PathVariable Long id,
             @Parameter(description = "Updated customer data", required = true)
-            @RequestBody CustomerDTORequest dto) {
+                                              @RequestBody CustomerDTORequest dto) {
         logger.info("Updating customer with ID: {}", id);
         CustomerDTOResponse customer = customerService.updateCustomer(id, dto);
         logger.info("Successfully updated customer: {}", customer.getName());

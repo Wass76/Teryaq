@@ -100,13 +100,8 @@ public class SaleService extends BaseSecurityService {
             throw new ConflictException("the paid amount cannot be negative");
         }
         
-        // للدفع النقدي، إذا لم يتم تحديد المبلغ المدفوع، استخدم الإجمالي
-        if (requestDTO.getPaymentType() == PaymentType.CASH && paidAmount == 0) {
-            // سيتم ضبط paidAmount بعد حساب الإجمالي
-        }
-        
         // إنشاء فاتورة البيع باستخدام Mapper
-        SaleInvoice invoice = saleMapper.toEntityWithCustomerAndDate(requestDTO, customer);
+        SaleInvoice invoice = saleMapper.toEntityWithCustomerAndDate(requestDTO, customer, currentPharmacy);
         
         // الحصول على جميع StockItems المطلوبة
         List<Long> stockItemIds = requestDTO.getItems().stream()
@@ -174,6 +169,11 @@ public class SaleService extends BaseSecurityService {
         
         invoice.setTotalAmount(total - invoiceDiscount);
         
+        // للدفع النقدي، إذا لم يتم تحديد المبلغ المدفوع أو كان 0، استخدم الإجمالي
+        if (requestDTO.getPaymentType() == PaymentType.CASH && paidAmount == 0) {
+            paidAmount = invoice.getTotalAmount();
+        }
+        
         // التحقق من المبلغ المدفوع بعد حساب الإجمالي
         if (!paymentValidationService.validatePaidAmount(invoice.getTotalAmount(), paidAmount, requestDTO.getPaymentType())) {
             throw new RequestNotValidException("the paid amount is not valid for payment type: " + requestDTO.getPaymentType());
@@ -184,18 +184,13 @@ public class SaleService extends BaseSecurityService {
         
         // للدفع النقدي، يجب أن يكون المبلغ المتبقي 0
         if (requestDTO.getPaymentType() == PaymentType.CASH) {
-            // إذا لم يتم تحديد المبلغ المدفوع أو كان 0، استخدم الإجمالي
-            if (paidAmount == 0) {
-                paidAmount = invoice.getTotalAmount();
-                invoice.setPaidAmount(paidAmount);
-            }
-            
             if (remainingAmount > 0) {
                 throw new RequestNotValidException("Cash payment must be complete. Remaining amount: " + remainingAmount);
             }
             remainingAmount = 0; // ضبط المبلغ المتبقي على 0 للدفع النقدي
         }
         
+        invoice.setPaidAmount(paidAmount);
         invoice.setRemainingAmount(remainingAmount);
         
         invoice.setItems(items);
@@ -285,5 +280,20 @@ public class SaleService extends BaseSecurityService {
 
         // حذف الفاتورة
         saleInvoiceRepository.delete(saleInvoice);
+    }
+
+    /**
+     * الحصول على جميع فواتير البيع للصيدلية الحالية
+     */
+    public List<SaleInvoiceDTOResponse> getAllSales() {
+        // Get current user's pharmacy ID for security
+        Long currentPharmacyId = getCurrentUserPharmacyId();
+        
+        // البحث عن جميع فواتير البيع للصيدلية الحالية
+        List<SaleInvoice> saleInvoices = saleInvoiceRepository.findByPharmacyIdOrderByInvoiceDateDesc(currentPharmacyId);
+        
+        return saleInvoices.stream()
+                .map(saleMapper::toResponse)
+                .collect(Collectors.toList());
     }
 } 

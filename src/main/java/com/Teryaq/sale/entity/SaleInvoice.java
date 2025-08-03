@@ -11,6 +11,7 @@ import java.util.List;
 import com.Teryaq.product.Enum.DiscountType;
 import com.Teryaq.product.Enum.PaymentMethod;
 import com.Teryaq.product.Enum.PaymentType;
+import com.Teryaq.user.Enum.Currency;
 import com.Teryaq.user.entity.Customer;
 import com.Teryaq.user.entity.Pharmacy;
 import com.Teryaq.utils.entity.AuditedEntity;
@@ -48,6 +49,9 @@ public class SaleInvoice extends AuditedEntity{
 
     private float remainingAmount;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private Currency currency = Currency.SYP; // افتراضي الليرة السورية
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "pharmacy_id", nullable = false)

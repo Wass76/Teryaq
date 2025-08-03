@@ -1,6 +1,8 @@
 package com.Teryaq.product.dto;
 
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Min;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -27,13 +29,17 @@ public class MProductDTORequest {
     @NotBlank(message = "size is required")
     private String size;
 
-    @NotBlank(message = "Purchase Price is required")
+    @NotNull(message = "Purchase Price is required")
+    @Min(value = 0, message = "Purchase Price must be greater than or equal to 0")
     private float refPurchasePrice;
 
-    @NotBlank(message = "Selling Price is required")
+    @NotNull(message = "Selling Price is required")
+    @Min(value = 0, message = "Selling Price must be greater than or equal to 0")
     private float refSellingPrice;
 
     private String notes;
+    
+    @Min(value = 0, message = "Tax must be greater than or equal to 0")
     private float tax;
 
     @NotBlank(message = "Barcode is required")

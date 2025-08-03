@@ -49,14 +49,14 @@ public class PharmacyProductController {
             @Parameter(description = "Language code", example = "en") 
             @RequestParam(name = "lang", defaultValue = "en") String lang,
             @Parameter(description = "Page number (0-based)", example = "0") 
-            @RequestParam(defaultValue = "0") int page,
+                                                  @RequestParam(defaultValue = "0") int page,
             @Parameter(description = "Number of items per page", example = "10") 
-            @RequestParam(defaultValue = "10") int size,
+                                                  @RequestParam(defaultValue = "10") int size,
             @Parameter(description = "Sort field", example = "createdAt") 
-            @RequestParam(defaultValue = "createdAt") String sortBy,
+                                                  @RequestParam(defaultValue = "createdAt") String sortBy,
             @Parameter(description = "Sort direction", example = "desc", 
                       schema = @Schema(allowableValues = {"asc", "desc"})) 
-            @RequestParam(defaultValue = "desc") String direction) {
+                                                  @RequestParam(defaultValue = "desc") String direction) {
         Sort.Direction sortDirection = Sort.Direction.fromString(direction.toUpperCase());
         Pageable pageable = PageRequest.of(page , size , Sort.by(sortDirection,sortBy));
         return ResponseEntity.ok(pharmacyProductService.getPharmacyProduct(lang, pageable));
@@ -78,16 +78,16 @@ public class PharmacyProductController {
     public ResponseEntity<?> getPharmacyProductsByPharmacyId(
             @Parameter(description = "Pharmacy ID", example = "1") @PathVariable Long pharmacyId,
             @Parameter(description = "Language code", example = "en") 
-            @RequestParam(name = "lang", defaultValue = "en") String lang,
+                                                           @RequestParam(name = "lang", defaultValue = "en") String lang,
             @Parameter(description = "Page number (0-based)", example = "0") 
-            @RequestParam(defaultValue = "0") int page,
+                                                           @RequestParam(defaultValue = "0") int page,
             @Parameter(description = "Number of items per page", example = "10") 
-            @RequestParam(defaultValue = "10") int size,
+                                                           @RequestParam(defaultValue = "10") int size,
             @Parameter(description = "Sort field", example = "createdAt") 
-            @RequestParam(defaultValue = "createdAt") String sortBy,
+                                                           @RequestParam(defaultValue = "createdAt") String sortBy,
             @Parameter(description = "Sort direction", example = "desc", 
                       schema = @Schema(allowableValues = {"asc", "desc"})) 
-            @RequestParam(defaultValue = "desc") String direction) {
+                                                           @RequestParam(defaultValue = "desc") String direction) {
         Sort.Direction sortDirection = Sort.Direction.fromString(direction.toUpperCase());
         Pageable pageable = PageRequest.of(page, size, Sort.by(sortDirection, sortBy));
         return ResponseEntity.ok(pharmacyProductService.getPharmacyProductByPharmacyId(pharmacyId, lang, pageable));
@@ -107,7 +107,7 @@ public class PharmacyProductController {
     public ResponseEntity<?> getPharmacyProductById(
             @Parameter(description = "Pharmacy product ID", example = "1") @PathVariable Long id,
             @Parameter(description = "Language code", example = "en") 
-            @RequestParam(name = "lang", defaultValue = "en") String lang) {
+                                                     @RequestParam(name = "lang", defaultValue = "en") String lang) {
         return ResponseEntity.ok(pharmacyProductService.getByID(id, lang));
     }
 
@@ -145,9 +145,9 @@ public class PharmacyProductController {
     public ResponseEntity<?> updatePharmacyProductById(
             @Parameter(description = "Pharmacy product ID", example = "1") @PathVariable Long id,
             @Parameter(description = "Updated pharmacy product data", required = true)
-            @RequestBody PharmacyProductDTORequest pharmacyProduct, 
+                                                        @RequestBody PharmacyProductDTORequest pharmacyProduct, 
             @Parameter(description = "Language code", example = "en") 
-            @RequestParam(name = "lang", defaultValue = "en") String lang) {
+                                                        @RequestParam(name = "lang", defaultValue = "en") String lang) {
         return ResponseEntity.ok(pharmacyProductService.editPharmacyProduct(id, pharmacyProduct, lang));
     }
 

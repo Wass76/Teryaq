@@ -3,6 +3,7 @@ package com.Teryaq.sale.dto;
 import com.Teryaq.product.Enum.DiscountType;
 import com.Teryaq.product.Enum.PaymentType;
 import com.Teryaq.product.Enum.PaymentMethod;
+import com.Teryaq.user.Enum.Currency;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -24,6 +25,7 @@ import java.util.List;
   "customerId": 1,
   "paymentType": "CASH",
   "paymentMethod": "CASH",
+  "currency": "SYP",
   "invoiceDiscountType": "PERCENTAGE",
   "invoiceDiscountValue": 10.0,
   "paidAmount": null,
@@ -49,6 +51,9 @@ public class SaleInvoiceDTORequest {
     @NotNull(message = "Payment method is required")
     @Schema(description = "Payment Method", example = "CASH", allowableValues = {"CASH", "BANK_ACCOUNT"})
     private PaymentMethod paymentMethod;
+    
+    @Schema(description = "Currency", example = "SYP", allowableValues = {"SYP", "USD"}, defaultValue = "SYP")
+    private Currency currency = Currency.SYP;
     
     // الخصم على الفاتورة كاملة
     @Schema(description = "Invoice Discount Type", example = "PERCENTAGE", allowableValues = {"PERCENTAGE", "FIXED_AMOUNT"})

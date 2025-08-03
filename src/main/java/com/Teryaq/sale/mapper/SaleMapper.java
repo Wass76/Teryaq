@@ -5,6 +5,8 @@ import com.Teryaq.sale.entity.*;
 import com.Teryaq.product.entity.StockItem;
 import com.Teryaq.product.service.StockManagementService;
 import com.Teryaq.user.entity.Customer;
+import com.Teryaq.user.entity.Pharmacy;
+import com.Teryaq.user.Enum.Currency;
 
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
@@ -22,6 +24,7 @@ public class SaleMapper {
         SaleInvoice invoice = new SaleInvoice();
         invoice.setPaymentType(dto.getPaymentType());
         invoice.setPaymentMethod(dto.getPaymentMethod());
+        invoice.setCurrency(dto.getCurrency() != null ? dto.getCurrency() : Currency.SYP);
         invoice.setDiscount(dto.getInvoiceDiscountValue() != null ? dto.getInvoiceDiscountValue() : 0);
         invoice.setDiscountType(dto.getInvoiceDiscountType());
         invoice.setPaidAmount(dto.getPaidAmount() != null ? dto.getPaidAmount() : 0);
@@ -34,9 +37,10 @@ public class SaleMapper {
         return invoice;
     }
     
-    public SaleInvoice toEntityWithCustomerAndDate(SaleInvoiceDTORequest dto, Customer customer) {
+    public SaleInvoice toEntityWithCustomerAndDate(SaleInvoiceDTORequest dto, Customer customer, Pharmacy pharmacy) {
         SaleInvoice invoice = toEntity(dto);
         invoice.setCustomer(customer);
+        invoice.setPharmacy(pharmacy);
         invoice.setInvoiceDate(java.time.LocalDate.now());
         return invoice;
     }
@@ -103,6 +107,7 @@ public class SaleMapper {
         dto.setTotalAmount(invoice.getTotalAmount());
         dto.setPaymentType(invoice.getPaymentType());
         dto.setPaymentMethod(invoice.getPaymentMethod());
+        dto.setCurrency(invoice.getCurrency());
         dto.setDiscount(invoice.getDiscount());
         dto.setDiscountType(invoice.getDiscountType());
         dto.setPaidAmount(invoice.getPaidAmount());
