@@ -1,6 +1,7 @@
 package com.Teryaq.user.controller;
 
 import com.Teryaq.user.dto.EmployeeCreateRequestDTO;
+import com.Teryaq.user.dto.EmployeeUpdateRequestDTO;
 import com.Teryaq.user.dto.EmployeeResponseDTO;
 import com.Teryaq.user.dto.CreateWorkingHoursRequestDTO;
 import com.Teryaq.user.service.EmployeeService;
@@ -74,7 +75,7 @@ public class EmployeeController {
     @PreAuthorize("hasRole('PHARMACY_MANAGER')")
     @Operation(
         summary = "Update employee",
-        description = "Updates an existing employee's information. Requires PHARMACY_MANAGER role."
+        description = "Updates an existing employee's information. Password cannot be updated for security reasons. Requires PHARMACY_MANAGER role."
     )
     @ApiResponses(value = {
         @ApiResponse(responseCode = "200", description = "Successfully updated employee",
@@ -87,8 +88,8 @@ public class EmployeeController {
     })
     public ResponseEntity<EmployeeResponseDTO> updateEmployeeInPharmacy(
             @Parameter(description = "Employee ID", example = "1") @PathVariable Long employeeId, 
-            @Parameter(description = "Updated employee data", required = true)
-            @Valid @RequestBody EmployeeCreateRequestDTO dto) {
+            @Parameter(description = "Updated employee data (password cannot be updated)", required = true)
+            @Valid @RequestBody EmployeeUpdateRequestDTO dto) {
         return ResponseEntity.ok(employeeService.updateEmployeeInPharmacy(employeeId, dto));
     }
 

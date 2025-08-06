@@ -5,6 +5,7 @@ import com.Teryaq.user.dto.EmployeeResponseDTO;
 import com.Teryaq.user.dto.EmployeeWorkingHoursDTO;
 import com.Teryaq.user.dto.CreateWorkingHoursRequestDTO;
 import com.Teryaq.user.dto.WorkShiftDTO;
+import com.Teryaq.user.dto.EmployeeUpdateRequestDTO;
 import com.Teryaq.user.entity.Employee;
 import com.Teryaq.user.entity.EmployeeWorkingHours;
 import com.Teryaq.user.entity.Pharmacy;
@@ -107,7 +108,7 @@ public class EmployeeService extends BaseSecurityService {
                 .collect(java.util.stream.Collectors.toList());
     }
     
-    public EmployeeResponseDTO updateEmployeeInPharmacy(Long employeeId, EmployeeCreateRequestDTO dto) {
+    public EmployeeResponseDTO updateEmployeeInPharmacy(Long employeeId, EmployeeUpdateRequestDTO dto) {
         // Validate that the current user is a pharmacy manager
         User currentUser = getCurrentUser();
         if (!(currentUser instanceof Employee)) {
@@ -125,7 +126,7 @@ public class EmployeeService extends BaseSecurityService {
         // Validate and get employee
         Employee employee = validateAndGetEmployee(employeeId, managerPharmacyId);
         
-        // Update employee fields using mapper
+        // Update employee fields using mapper (password is not updated for security)
         updateEmployeeFields(employee, dto);
         
         // Handle working hours update (support both legacy and new format)
@@ -279,36 +280,19 @@ public class EmployeeService extends BaseSecurityService {
         return employee;
     }
     
-    private void updateEmployeeFields(Employee employee, EmployeeCreateRequestDTO dto) {
+    private void updateEmployeeFields(Employee employee, EmployeeUpdateRequestDTO dto) {
         logger.info("Updating employee fields...");
         
-        if (dto.getFirstName() != null) {
-            employee.setFirstName(dto.getFirstName());
-            logger.info("Updated firstName to: " + dto.getFirstName());
-        }
-        if (dto.getLastName() != null) {
-            employee.setLastName(dto.getLastName());
-            logger.info("Updated lastName to: " + dto.getLastName());
-        }
-        if (dto.getPhoneNumber() != null) {
-            employee.setPhoneNumber(dto.getPhoneNumber());
-            logger.info("Updated phoneNumber to: " + dto.getPhoneNumber());
-        }
-        if (dto.getStatus() != null) {
-            employee.setStatus(dto.getStatus());
-            logger.info("Updated status to: " + dto.getStatus());
-        }
-        if (dto.getDateOfHire() != null) {
-            employee.setDateOfHire(dto.getDateOfHire());
-            logger.info("Updated dateOfHire to: " + dto.getDateOfHire());
-        }
+        // Use the mapper to update the entity
+        EmployeeMapper.updateEntity(employee, dto);
+        
+        // Handle role update separately
         if(dto.getRoleId() != null) {
             Role role = roleRepository.findById(dto.getRoleId()).orElseThrow(
                     () -> new ResourceNotFoundException("Invalid role id: " + dto.getRoleId())
             );
             employee.setRole(role);
         }
-
     }
     
     private void updateEmployeeWorkingHours(Employee employee, List<EmployeeWorkingHoursDTO> workingHoursDTOs) {
