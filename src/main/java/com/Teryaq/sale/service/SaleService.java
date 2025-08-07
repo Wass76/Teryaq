@@ -147,15 +147,8 @@ public class SaleService extends BaseSecurityService {
             // ربط العنصر بالفاتورة
             item.setSaleInvoice(invoice);
             
-            // حساب المجاميع مع الخصم الجديد
-            float originalItemTotal = item.getUnitPrice() * item.getQuantity();
-            float itemDiscount = discountCalculationService.calculateDiscount(
-                originalItemTotal, 
-                item.getDiscountType(), 
-                item.getDiscount()
-            );
-            
-            float subTotal = originalItemTotal - itemDiscount;
+            // حساب المجاميع بدون خصم على مستوى العنصر
+            float subTotal = item.getUnitPrice() * item.getQuantity();
             item.setSubTotal(subTotal);
             total += subTotal;
         }

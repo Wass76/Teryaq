@@ -1,6 +1,6 @@
 package com.Teryaq.sale.entity;
 
-import com.Teryaq.product.Enum.DiscountType;
+//import com.Teryaq.product.Enum.DiscountType;
 import com.Teryaq.product.entity.StockItem;
 import com.Teryaq.utils.entity.AuditedEntity;
 
@@ -30,10 +30,10 @@ public class SaleInvoiceItem extends AuditedEntity{
 
     private Float unitPrice;
 
-    private Float discount;
+    // private Float discount;
     
-    @Enumerated(EnumType.STRING)
-    private DiscountType discountType;
+    // @Enumerated(EnumType.STRING)
+    // private DiscountType discountType;
 
     private Float subTotal;
 

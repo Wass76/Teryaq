@@ -35,9 +35,8 @@ public class SaleInvoiceItemDTORequest {
     
     @Min(value = 0, message = "Unit price must be non-negative")
     @Schema(description = "Unit Price (optional - will use stock price if not provided)", example = "800.0")
-    private Float unitPrice; // سعر الوحدة (اختياري - إذا لم يتم تحديده سيتم أخذه من المخزون)
+    private Float unitPrice; 
     
-    // // الخصم على هذا العنصر
     // @Schema(description = "Discount Type", example = "FIXED_AMOUNT", allowableValues = {"PERCENTAGE", "FIXED_AMOUNT"})
     // private DiscountType discountType;
     

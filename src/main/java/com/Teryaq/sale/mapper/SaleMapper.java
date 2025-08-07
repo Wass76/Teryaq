@@ -49,8 +49,8 @@ public class SaleMapper {
         SaleInvoiceItem item = new SaleInvoiceItem();
         item.setStockItem(stockItem);
         item.setQuantity(dto.getQuantity());
-        item.setDiscount(dto.getDiscountValue() != null ? dto.getDiscountValue() : 0);
-        item.setDiscountType(dto.getDiscountType());
+        // item.setDiscount(dto.getDiscountValue() != null ? dto.getDiscountValue() : 0);
+        // item.setDiscountType(dto.getDiscountType());
         
         // تعيين سعر الوحدة
         if (dto.getUnitPrice() != null) {
@@ -92,8 +92,8 @@ public class SaleMapper {
         
         dto.setQuantity(item.getQuantity());
         dto.setUnitPrice(item.getUnitPrice());
-        dto.setDiscount(item.getDiscount());
-        dto.setDiscountType(item.getDiscountType());
+        // dto.setDiscount(item.getDiscount());
+        // dto.setDiscountType(item.getDiscountType());
         dto.setSubTotal(item.getSubTotal());
         return dto;
     }
