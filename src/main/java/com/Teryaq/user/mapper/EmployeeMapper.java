@@ -1,6 +1,7 @@
 package com.Teryaq.user.mapper;
 
 import com.Teryaq.user.dto.EmployeeCreateRequestDTO;
+import com.Teryaq.user.dto.EmployeeUpdateRequestDTO;
 import com.Teryaq.user.dto.EmployeeResponseDTO;
 import com.Teryaq.user.dto.EmployeeWorkingHoursDTO;
 import com.Teryaq.user.entity.Employee;
@@ -10,6 +11,8 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 public class EmployeeMapper {
+    
+    // Map from CreateRequestDTO to new Employee entity
     public static Employee toEntity(EmployeeCreateRequestDTO dto) {
         if (dto == null) return null;
         Employee employee = new Employee();
@@ -24,6 +27,28 @@ public class EmployeeMapper {
         return employee;
     }
 
+    // Update existing Employee entity from UpdateRequestDTO
+    public static void updateEntity(Employee employee, EmployeeUpdateRequestDTO dto) {
+        if (dto == null || employee == null) return;
+        
+        if (dto.getFirstName() != null) {
+            employee.setFirstName(dto.getFirstName());
+        }
+        if (dto.getLastName() != null) {
+            employee.setLastName(dto.getLastName());
+        }
+        if (dto.getPhoneNumber() != null) {
+            employee.setPhoneNumber(dto.getPhoneNumber());
+        }
+        if (dto.getStatus() != null) {
+            employee.setStatus(dto.getStatus());
+        }
+        if (dto.getDateOfHire() != null) {
+            employee.setDateOfHire(dto.getDateOfHire());
+        }
+    }
+
+    // Map from Employee entity to ResponseDTO
     public static EmployeeResponseDTO toResponseDTO(Employee entity) {
         if (entity == null) return null;
         EmployeeResponseDTO dto = new EmployeeResponseDTO();
@@ -45,6 +70,7 @@ public class EmployeeMapper {
         return dto;
     }
     
+    // Create working hours from DTO list
     public static List<EmployeeWorkingHours> createWorkingHoursFromDTO(Employee employee, List<EmployeeWorkingHoursDTO> workingHoursDTOs) {
         if (workingHoursDTOs == null || workingHoursDTOs.isEmpty()) {
             return null;

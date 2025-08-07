@@ -30,8 +30,6 @@ public class Employee extends User {
     @OneToMany(mappedBy = "employee", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<EmployeeWorkingHours> employeeWorkingHoursList;
 
-
-
     // Add more fields as needed for pharmacy context
     @Override
     protected String getSequenceName() {
