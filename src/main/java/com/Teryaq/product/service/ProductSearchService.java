@@ -10,7 +10,6 @@ import com.Teryaq.product.repo.PharmacyProductRepo;
 import com.Teryaq.user.repository.UserRepository;
 import com.Teryaq.user.service.BaseSecurityService;
 
-import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
@@ -34,45 +33,45 @@ public class ProductSearchService extends BaseSecurityService {
     }
 
 
-    public List<ProductSearchDTO> searchProducts(String keyword, String languageCode) {
+    public List<ProductSearchDTO> searchProducts(String keyword, String lang) {
         List<ProductSearchDTO> results = new ArrayList<>();
 
         // Get current user's pharmacy ID for filtering
         Long currentPharmacyId = getCurrentUserPharmacyId();
 
         // البحث في منتجات الماستر باستخدام الـ repository المحسن
-        Page<MasterProduct> masterProductsPage = masterProductRepo.search(keyword, languageCode, PageRequest.of(0, 1000));
+        Page<MasterProduct> masterProductsPage = masterProductRepo.search(keyword, lang, PageRequest.of(0, 1000));
         List<MasterProduct> masterProducts = masterProductsPage.getContent();
 
         // البحث في منتجات الصيدلية باستخدام الـ repository المحسن - مع فلتر الصيدلية
-        Page<PharmacyProduct> pharmacyProductsPage = pharmacyProductRepo.searchByPharmacyId(keyword, languageCode, currentPharmacyId, PageRequest.of(0, 1000));
+        Page<PharmacyProduct> pharmacyProductsPage = pharmacyProductRepo.searchByPharmacyId(keyword, lang, currentPharmacyId, PageRequest.of(0, 1000));
         List<PharmacyProduct> pharmacyProducts = pharmacyProductsPage.getContent();
 
         // تحويل منتجات الماستر
         results.addAll(masterProducts.stream()
-                .map(product -> convertMasterProductToUnifiedDTO(product, languageCode))
+                .map(product -> convertMasterProductToUnifiedDTO(product, lang))
                 .collect(Collectors.toList()));
 
         // تحويل منتجات الصيدلية
         results.addAll(pharmacyProducts.stream()
-                .map(product -> convertPharmacyProductToUnifiedDTO(product, languageCode))
+                .map(product -> convertPharmacyProductToUnifiedDTO(product, lang))
                 .collect(Collectors.toList()));
 
         return results;
     }
 
-    public List<ProductSearchDTO> getAllProducts(String languageCode) {
-        return searchProducts("", languageCode);
+    public List<ProductSearchDTO> getAllProducts(String lang) {
+        return searchProducts("", lang);
     }
 
 
 
-    private ProductSearchDTO convertMasterProductToUnifiedDTO(MasterProduct product, String languageCode) {
+    private ProductSearchDTO convertMasterProductToUnifiedDTO(MasterProduct product, String lang) {
         // الحصول على الترجمة
         String translatedTradeName = product.getTranslations() != null
                 ? product.getTranslations().stream()
                 .filter(t -> t.getLanguage() != null && t.getLanguage().getCode() != null)
-                .filter(t -> t.getLanguage().getCode().trim().equalsIgnoreCase(languageCode))
+                .filter(t -> t.getLanguage().getCode().trim().equalsIgnoreCase(lang))
                 .findFirst()
                 .map(t -> t.getTradeName())
                 .orElse(product.getTradeName())
@@ -81,7 +80,7 @@ public class ProductSearchService extends BaseSecurityService {
         String translatedScientificName = product.getTranslations() != null
                 ? product.getTranslations().stream()
                 .filter(t -> t.getLanguage() != null && t.getLanguage().getCode() != null)
-                .filter(t -> t.getLanguage().getCode().trim().equalsIgnoreCase(languageCode))
+                .filter(t -> t.getLanguage().getCode().trim().equalsIgnoreCase(lang))
                 .findFirst()
                 .map(t -> t.getScientificName())
                 .orElse(product.getScientificName())
@@ -95,7 +94,7 @@ public class ProductSearchService extends BaseSecurityService {
                 .scientificName(translatedScientificName)
                 .barcodes(product.getBarcode() != null ? Set.of(product.getBarcode()) : new HashSet<>())               
                 //.productType(ProductType.MASTER)
-                .productTypeName(ProductType.MASTER.getTranslatedName(languageCode))
+                .productTypeName(ProductType.MASTER.getTranslatedName(lang))
                 .requiresPrescription(product.getRequiresPrescription())
                 .concentration(product.getConcentration())
                 .size(product.getSize())
@@ -105,21 +104,21 @@ public class ProductSearchService extends BaseSecurityService {
                 .tax(product.getTax())
                 .type(product.getType() != null
                         ? product.getType().getTranslations().stream()
-                        .filter(t -> languageCode.equalsIgnoreCase(t.getLanguage().getCode()))
+                        .filter(t -> lang.equalsIgnoreCase(t.getLanguage().getCode()))
                         .findFirst()
                         .map(com.Teryaq.product.entity.TypeTranslation::getName)
                         .orElse(product.getType().getName())
                         : null)
                 .form(product.getForm() != null
                         ? product.getForm().getTranslations().stream()
-                        .filter(t -> languageCode.equalsIgnoreCase(t.getLanguage().getCode()))
+                        .filter(t -> lang.equalsIgnoreCase(t.getLanguage().getCode()))
                         .findFirst()
                         .map(com.Teryaq.product.entity.FormTranslation::getName)
                         .orElse(product.getForm().getName())
                         : null)
                 .manufacturer(product.getManufacturer() != null
                         ? product.getManufacturer().getTranslations().stream()
-                        .filter(t -> languageCode.equalsIgnoreCase(t.getLanguage().getCode()))
+                        .filter(t -> lang.equalsIgnoreCase(t.getLanguage().getCode()))
                         .findFirst()
                         .map(com.Teryaq.product.entity.ManufacturerTranslation::getName)
                         .orElse(product.getManufacturer().getName())
@@ -127,12 +126,12 @@ public class ProductSearchService extends BaseSecurityService {
                 .build();
     }
 
-    private ProductSearchDTO convertPharmacyProductToUnifiedDTO(PharmacyProduct product, String languageCode) {
+    private ProductSearchDTO convertPharmacyProductToUnifiedDTO(PharmacyProduct product, String lang) {
         // الحصول على الترجمة
         String translatedTradeName = product.getTranslations() != null
                 ? product.getTranslations().stream()
                 .filter(t -> t.getLanguage() != null && t.getLanguage().getCode() != null)
-                .filter(t -> t.getLanguage().getCode().trim().equalsIgnoreCase(languageCode))
+                .filter(t -> t.getLanguage().getCode().trim().equalsIgnoreCase(lang))
                 .findFirst()
                 .map(t -> t.getTradeName())
                 .orElse(product.getTradeName())
@@ -141,7 +140,7 @@ public class ProductSearchService extends BaseSecurityService {
         String translatedScientificName = product.getTranslations() != null
                 ? product.getTranslations().stream()
                 .filter(t -> t.getLanguage() != null && t.getLanguage().getCode() != null)
-                .filter(t -> t.getLanguage().getCode().trim().equalsIgnoreCase(languageCode))
+                .filter(t -> t.getLanguage().getCode().trim().equalsIgnoreCase(lang))
                 .findFirst()
                 .map(t -> t.getScientificName())
                 .orElse(product.getScientificName())
@@ -157,7 +156,7 @@ public class ProductSearchService extends BaseSecurityService {
                     ? product.getBarcodes().stream().map(PharmacyProductBarcode::getBarcode).collect(Collectors.toSet()) 
                     : new HashSet<>())
                 //.productType(ProductType.PHARMACY)
-                .productTypeName(ProductType.PHARMACY.getTranslatedName(languageCode))
+                .productTypeName(ProductType.PHARMACY.getTranslatedName(lang))
                 .requiresPrescription(product.getRequiresPrescription())
                 .concentration(product.getConcentration())
                 .size(product.getSize())
@@ -167,21 +166,21 @@ public class ProductSearchService extends BaseSecurityService {
                 .tax(product.getTax())
                 .type(product.getType() != null
                         ? product.getType().getTranslations().stream()
-                        .filter(t -> languageCode.equalsIgnoreCase(t.getLanguage().getCode()))
+                        .filter(t -> lang.equalsIgnoreCase(t.getLanguage().getCode()))
                         .findFirst()
                         .map(com.Teryaq.product.entity.TypeTranslation::getName)
                         .orElse(product.getType().getName())
                         : null)
                 .form(product.getForm() != null
                         ? product.getForm().getTranslations().stream()
-                        .filter(t -> languageCode.equalsIgnoreCase(t.getLanguage().getCode()))
+                        .filter(t -> lang.equalsIgnoreCase(t.getLanguage().getCode()))
                         .findFirst()
                         .map(com.Teryaq.product.entity.FormTranslation::getName)
                         .orElse(product.getForm().getName())
                         : null)
                 .manufacturer(product.getManufacturer() != null
                         ? product.getManufacturer().getTranslations().stream()
-                        .filter(t -> languageCode.equalsIgnoreCase(t.getLanguage().getCode()))
+                        .filter(t -> lang.equalsIgnoreCase(t.getLanguage().getCode()))
                         .findFirst()
                         .map(com.Teryaq.product.entity.ManufacturerTranslation::getName)
                         .orElse(product.getManufacturer().getName())

@@ -29,18 +29,18 @@ public class ProductSearchController {
     @Operation(summary = "Search products by keyword", description = "Search for products using a keyword in both master and pharmacy products")
     public ResponseEntity<List<ProductSearchDTO>> searchProducts(
             @RequestParam String keyword,
-            @RequestParam(defaultValue = "en") String languageCode) {
+            @RequestParam(defaultValue = "ar") String lang) {
         
-        List<ProductSearchDTO> results = ProductSearchService.searchProducts(keyword, languageCode);
+        List<ProductSearchDTO> results = ProductSearchService.searchProducts(keyword, lang);
         return ResponseEntity.ok(results);
     }
 
     @GetMapping("/all-products")
     @Operation(summary = "Get all products", description = "Get all products from both master and pharmacy products")
     public ResponseEntity<List<ProductSearchDTO>> getAllProducts(
-            @RequestParam(defaultValue = "en") String languageCode) {
+            @RequestParam(defaultValue = "ar") String lang) {
         
-        List<ProductSearchDTO> results = ProductSearchService.getAllProducts(languageCode);
+        List<ProductSearchDTO> results = ProductSearchService.getAllProducts(lang);
         return ResponseEntity.ok(results);
     }
 } 

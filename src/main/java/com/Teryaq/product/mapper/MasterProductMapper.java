@@ -53,10 +53,10 @@ public class MasterProductMapper {
         return product;
     }
 
-    public MProductDTOResponse toResponse(MasterProduct product, String languageCode) {
+    public MProductDTOResponse toResponse(MasterProduct product, String lang) {
         MasterProductTranslation translation = product.getTranslations() != null
                 ? product.getTranslations().stream()
-                .filter(t -> languageCode.equalsIgnoreCase(t.getLanguage().getCode()))
+                .filter(t -> lang.equalsIgnoreCase(t.getLanguage().getCode()))
                 .findFirst()
                 .orElse(null)
                 : null;
@@ -79,7 +79,7 @@ public class MasterProductMapper {
                 .notes(product.getNotes())
                 .tax(product.getTax())
                 .barcode(product.getBarcode())
-                .productTypeName(ProductType.MASTER.getTranslatedName(languageCode))
+                .productTypeName(ProductType.MASTER.getTranslatedName(lang))
                 .requiresPrescription(product.getRequiresPrescription())
 
                 .categories(
@@ -87,7 +87,7 @@ public class MasterProductMapper {
                             .map(category -> {
                                 if (category.getTranslations() == null) return category.getName();
                                 return category.getTranslations().stream()
-                                        .filter(t -> languageCode.equalsIgnoreCase(t.getLanguage().getCode()))
+                                        .filter(t -> lang.equalsIgnoreCase(t.getLanguage().getCode()))
                                         .findFirst()
                                         .map(com.Teryaq.product.entity.CategoryTranslation::getName)
                                         .orElse(category.getName());
@@ -98,7 +98,7 @@ public class MasterProductMapper {
                 .type(
                         product.getType() != null
                                 ? product.getType().getTranslations().stream()
-                                .filter(t -> languageCode.equalsIgnoreCase(t.getLanguage().getCode()))
+                                .filter(t -> lang.equalsIgnoreCase(t.getLanguage().getCode()))
                                 .findFirst()
                                 .map(TypeTranslation::getName)
                                 .orElse(product.getType().getName())
@@ -108,7 +108,7 @@ public class MasterProductMapper {
                 .form(
                         product.getForm() != null
                                 ? product.getForm().getTranslations().stream()
-                                .filter(t -> languageCode.equalsIgnoreCase(t.getLanguage().getCode()))
+                                .filter(t -> lang.equalsIgnoreCase(t.getLanguage().getCode()))
                                 .findFirst()
                                 .map(FormTranslation::getName)
                                 .orElse(product.getForm().getName())
@@ -118,7 +118,7 @@ public class MasterProductMapper {
                 .manufacturer(
                         product.getManufacturer() != null
                                 ? product.getManufacturer().getTranslations().stream()
-                                .filter(t -> languageCode.equalsIgnoreCase(t.getLanguage().getCode()))
+                                .filter(t -> lang.equalsIgnoreCase(t.getLanguage().getCode()))
                                 .findFirst()
                                 .map(ManufacturerTranslation::getName)
                                 .orElse(product.getManufacturer().getName())

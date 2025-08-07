@@ -15,11 +15,11 @@ import java.util.Set;
 @Schema(description = "Product Type Request", example = """
 {
   "name": "Medicine",
-  "languageCode": "en",
+  "lang": "en",
   "translations": [
     {
       "name": "دواء",
-      "languageCode": "ar"
+      "lang": "ar"
     }
   ]
 }
@@ -30,7 +30,7 @@ public class TypeDTORequest {
     private String name;
     
     @Schema(description = "Language code", example = "en")
-    private String languageCode;
+    private String lang;
 
     @Schema(description = "Product type translations for different languages")
     private Set<TypeTranslationDTORequest> translations;

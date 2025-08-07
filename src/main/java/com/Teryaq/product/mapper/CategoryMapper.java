@@ -9,16 +9,16 @@ import org.springframework.stereotype.Component;
 @Component
 public class CategoryMapper {
 
-    public CategoryDTOResponse toResponse(Category category, String langCode) {
+    public CategoryDTOResponse toResponse(Category category, String lang) {
         if (category == null) return null;
 
-        String sanitizedLangCode = langCode == null ? "en" : langCode.trim().toLowerCase();
+        String sanitizedlang = lang == null ? "en" : lang.trim().toLowerCase();
         
 
 
         String translatedName = category.getTranslations().stream()
                 .filter(t -> t.getLanguage() != null && t.getLanguage().getCode() != null)
-                .filter(t -> t.getLanguage().getCode().trim().equalsIgnoreCase(sanitizedLangCode))
+                .filter(t -> t.getLanguage().getCode().trim().equalsIgnoreCase(sanitizedlang))
                 .map(CategoryTranslation::getName)
                 .findFirst()
                 .orElse(category.getName());

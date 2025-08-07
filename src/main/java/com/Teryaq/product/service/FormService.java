@@ -38,8 +38,8 @@ public class FormService {
         this.formTranslationRepo = formTranslationRepo;
     }
 
-    public List<FormDTOResponse> getForms(String langCode) {
-        log.info("Getting forms with langCode: {}", langCode);
+    public List<FormDTOResponse> getForms(String lang) {
+        log.info("Getting forms with lang: {}", lang);
         List<Form> forms = formRepo.findAllWithTranslations();
         log.info("Found {} forms", forms.size());
         
@@ -47,18 +47,18 @@ public class FormService {
                 .map(form -> {
                     log.info("Processing form: {} with {} translations", form.getName(),
                             form.getTranslations() != null ? form.getTranslations().size() : 0);
-                    return formMapper.toResponse(form, langCode);
+                    return formMapper.toResponse(form, lang);
                 })
                 .toList();
     }
 
-    public FormDTOResponse getByID(long id, String langCode) {
+    public FormDTOResponse getByID(long id, String lang) {
         Form form = formRepo.findByIdWithTranslations(id)
                 .orElseThrow(() -> new EntityNotFoundException("Form with ID " + id + " not found"));
-        return formMapper.toResponse(form, langCode);
+        return formMapper.toResponse(form, lang);
     }
 
-    public FormDTOResponse insertForm(FormDTORequest dto, String langCode) {
+    public FormDTOResponse insertForm(FormDTORequest dto, String lang) {
         if (formRepo.existsByName(dto.getName())) {
             throw new ConflictException("Form with name '" + dto.getName() + "' already exists");
         }
@@ -69,19 +69,19 @@ public class FormService {
 
         List<FormTranslation> translations = dto.getTranslations().stream()
             .map(t -> {
-                Language lang = languageRepo.findByCode(t.getLanguageCode())
-                        .orElseThrow(() -> new EntityNotFoundException("Language not found: " + t.getLanguageCode()));
-                return new FormTranslation(t.getName(), savedForm, lang);
+                Language language = languageRepo.findByCode(t.getLang())
+                        .orElseThrow(() -> new EntityNotFoundException("Language not found: " + t.getLang()));
+                return new FormTranslation(t.getName(), savedForm, language);
             })
             .collect(Collectors.toList());
 
         formTranslationRepo.saveAll(translations);
         savedForm.setTranslations(new HashSet<>(translations));
 
-        return formMapper.toResponse(savedForm, langCode);
+        return formMapper.toResponse(savedForm, lang);
     }
 
-    public FormDTOResponse editForm(Long id, FormDTORequest dto, String langCode) {
+    public FormDTOResponse editForm(Long id, FormDTORequest dto, String lang) {
         return formRepo.findByIdWithTranslations(id).map(existing -> {
             if (!existing.getName().equals(dto.getName()) && formRepo.existsByName(dto.getName())) {
                 throw new ConflictException("Form with name '" + dto.getName() + "' already exists");
@@ -95,9 +95,9 @@ public class FormService {
 
                 List<FormTranslation> translations = dto.getTranslations().stream()
                         .map(t -> {
-                            Language lang = languageRepo.findByCode(t.getLanguageCode())
-                                    .orElseThrow(() -> new EntityNotFoundException("Language not found: " + t.getLanguageCode()));
-                            return new FormTranslation(t.getName(), saved, lang);
+                            Language language = languageRepo.findByCode(t.getLang())
+                                    .orElseThrow(() -> new EntityNotFoundException("Language not found: " + t.getLang()));
+                            return new FormTranslation(t.getName(), saved, language);
                         })
                         .toList();
 
@@ -108,7 +108,7 @@ public class FormService {
             Form updated = formRepo.findByIdWithTranslations(saved.getId())
                     .orElseThrow(() -> new EntityNotFoundException("Updated form not found"));
 
-            return formMapper.toResponse(updated, langCode);
+            return formMapper.toResponse(updated, lang);
 
         }).orElseThrow(() -> new EntityNotFoundException("Form with ID " + id + " not found"));
     }

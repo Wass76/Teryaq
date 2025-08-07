@@ -13,5 +13,5 @@ import lombok.NoArgsConstructor;
 public class SearchDTORequest {
 
     private String keyword;
-    private String languageCode;
+    private String lang;
 }

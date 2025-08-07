@@ -13,13 +13,13 @@ import lombok.NoArgsConstructor;
 @Schema(description = "Product Type Translation Request", example = """
 {
   "name": "دواء",
-  "languageCode": "ar"
+  "lang": "ar"
 }
 """)
 public class TypeTranslationDTORequest {
 
     @Schema(description = "Language code for the translation", example = "ar")
-    private String languageCode;
+    private String lang;
     
     @Schema(description = "Product type name in the target language", example = "دواء")
     private String name;

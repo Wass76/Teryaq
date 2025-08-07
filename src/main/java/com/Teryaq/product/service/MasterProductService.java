@@ -34,29 +34,29 @@ public class MasterProductService {
     private final LanguageRepo languageRepo;
 
 
-    public Page<MProductDTOResponse> getMasterProduct(String langCode , Pageable pageable) {
+    public Page<MProductDTOResponse> getMasterProduct(String lang , Pageable pageable) {
         return masterProductRepo.findAll(pageable).map(
-                product -> masterProductMapper.toResponse(product, langCode)
+                product -> masterProductMapper.toResponse(product, lang)
         );
     }
 
-    public MProductDTOResponse getByID(long id, String langCode) {
+    public MProductDTOResponse getByID(long id, String lang) {
         MasterProduct product = masterProductRepo.findByIdWithTranslations(id)
                 .orElseThrow(() -> new EntityNotFoundException("Master Product with ID " + id + " not found"));
-        return masterProductMapper.toResponse(product, langCode);
+        return masterProductMapper.toResponse(product, lang);
     }
 
 
     public Page<MProductDTOResponse> search(SearchDTORequest requestDTO , Pageable pageable) {
         Page<MasterProduct> products = masterProductRepo.search(
                 requestDTO.getKeyword(),
-                requestDTO.getLanguageCode(),
+                requestDTO.getLang(),
                 pageable
         );
-        return products.map(product -> masterProductMapper.toResponse(product, requestDTO.getLanguageCode()));
+        return products.map(product -> masterProductMapper.toResponse(product, requestDTO.getLang()));
     }
 
-    public MProductDTOResponse insertMasterProduct(MProductDTORequest requestDTO, String langCode) {
+    public MProductDTOResponse insertMasterProduct(MProductDTORequest requestDTO, String lang) {
         if(masterProductRepo.findByBarcode(requestDTO.getBarcode()).isPresent()) {
             throw new ConflictException("Barcode already exists");
         }
@@ -67,16 +67,16 @@ public class MasterProductService {
         if (requestDTO.getTranslations() != null && !requestDTO.getTranslations().isEmpty()) {
             Set<MasterProductTranslation> translations = requestDTO.getTranslations().stream()
                 .map(t -> {
-                    Language lang = null;
-                    if (t.getLanguageCode() != null) {
-                        lang = languageRepo.findByCode(t.getLanguageCode())
-                                .orElseThrow(() -> new EntityNotFoundException("Language not found: " + t.getLanguageCode()));
+                    Language language = null;
+                    if (t.getLang() != null) {
+                        language = languageRepo.findByCode(t.getLang())
+                                .orElseThrow(() -> new EntityNotFoundException("Language not found: " + t.getLang()));
                     } 
                     MasterProductTranslation translation = new MasterProductTranslation();
                     translation.setTradeName(t.getTradeName());
                     translation.setScientificName(t.getScientificName());
                     translation.setProduct(saved);
-                    translation.setLanguage(lang);
+                    translation.setLanguage(language);
                     return translation;
                 })
                 .collect(java.util.stream.Collectors.toSet());
@@ -84,16 +84,16 @@ public class MasterProductService {
             saved.setTranslations(translations);
         }
 
-        return masterProductMapper.toResponse(saved, langCode);
+        return masterProductMapper.toResponse(saved, lang);
     }
 
 
-    public MProductDTOResponse editMasterProduct(Long id, MProductDTORequest requestDTO, String langCode) {
+    public MProductDTOResponse editMasterProduct(Long id, MProductDTORequest requestDTO, String lang) {
         return masterProductRepo.findByIdWithTranslations(id).map(existing -> {
             MasterProduct updated = masterProductMapper.updateRequestToEntity(requestDTO);
             updated.setId(existing.getId());
             MasterProduct saved = masterProductRepo.save(updated);
-            return masterProductMapper.toResponse(saved, langCode);
+            return masterProductMapper.toResponse(saved, lang);
         }).orElseThrow(() -> new EntityNotFoundException("Master Product with ID " + id + " not found"));
     }
 

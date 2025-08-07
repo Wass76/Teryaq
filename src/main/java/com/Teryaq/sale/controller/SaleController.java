@@ -20,7 +20,7 @@ import jakarta.validation.constraints.Min;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/sales")
+@RequestMapping("/api/v1/sales")
 @Tag(name = "Sale Management", description = "APIs for managing sales and invoices")
 @RequiredArgsConstructor
 @SecurityRequirement(name = "BearerAuth")

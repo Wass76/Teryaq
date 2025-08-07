@@ -36,7 +36,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
     {
       "tradeName": "أوميبرازول",
       "scientificName": "أوميبرازول ماغنيسيوم",
-      "languageCode": "ar"
+      "lang": "ar"
     }
   ]
 }

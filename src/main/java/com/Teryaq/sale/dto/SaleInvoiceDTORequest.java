@@ -56,7 +56,6 @@ public class SaleInvoiceDTORequest {
     @Builder.Default
     private Currency currency = Currency.SYP;
     
-    // الخصم على الفاتورة كاملة
     @Schema(description = "Invoice Discount Type", example = "PERCENTAGE", allowableValues = {"PERCENTAGE", "FIXED_AMOUNT"})
     private DiscountType invoiceDiscountType;
     
@@ -65,7 +64,6 @@ public class SaleInvoiceDTORequest {
     @Schema(description = "Invoice Discount Value", example = "10.0")
     private Float invoiceDiscountValue;
     
-    // للتوافق مع الـ JSON القديم
     @Min(value = 0, message = "Discount value must be non-negative")
     @Max(value = 100, message = "Discount percentage cannot exceed 100%")
     @Schema(description = "Discount (Legacy field)", example = "10.0")
@@ -81,7 +79,6 @@ public class SaleInvoiceDTORequest {
     @Schema(description = "Sale Items", example = "[]")
     private List<SaleInvoiceItemDTORequest> items;
     
-    // للتوافق مع الكود القديم
     public Float getInvoiceDiscountValue() {
         if (discount != null) {
             return discount;

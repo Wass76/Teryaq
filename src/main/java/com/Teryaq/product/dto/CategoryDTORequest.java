@@ -14,11 +14,11 @@ import lombok.NoArgsConstructor;
 @Schema(description = "Category Request", example = """
 {
   "name": "Pain Relief",
-  "languageCode": "en",
+  "lang": "en",
   "translations": [
     {
       "name": "مسكنات الألم",
-      "languageCode": "ar"
+      "lang": "ar"
     }
   ]
 }
@@ -29,7 +29,7 @@ public class CategoryDTORequest {
     private String name;
     
     @Schema(description = "Language code", example = "en")
-    private String languageCode;
+    private String lang;
 
     @Schema(description = "Category translations for different languages")
     private Set<CategoryTranslationDTORequest> translations;

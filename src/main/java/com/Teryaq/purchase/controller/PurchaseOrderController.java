@@ -20,7 +20,7 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import jakarta.validation.Valid;
 
 @RestController
-@RequestMapping("/api/purchase-orders")
+@RequestMapping("/api/v1/purchase-orders")
 @RequiredArgsConstructor
 @Tag(name = "Purchase Order Management", description = "APIs for managing purchase orders")
 @SecurityRequirement(name = "BearerAuth")

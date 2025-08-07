@@ -31,7 +31,7 @@ public interface PharmacyProductRepo extends JpaRepository<PharmacyProduct, Long
         LOWER(p.tradeName) LIKE LOWER(CONCAT('%', :keyword, '%')) OR
         LOWER(p.scientificName) LIKE LOWER(CONCAT('%', :keyword, '%')) OR
         LOWER(pb.barcode) LIKE LOWER(CONCAT('%', :keyword, '%')) OR
-        (pt.language.code = :languageCode AND (
+        (pt.language.code = :lang AND (
             LOWER(pt.tradeName) LIKE LOWER(CONCAT('%', :keyword, '%')) OR
             LOWER(pt.scientificName) LIKE LOWER(CONCAT('%', :keyword, '%'))
         ))
@@ -39,7 +39,7 @@ public interface PharmacyProductRepo extends JpaRepository<PharmacyProduct, Long
     """)
     Page<PharmacyProduct> search(
             @Param("keyword") String keyword,
-            @Param("languageCode") String languageCode,
+            @Param("lang") String lang,
             Pageable pageable);
     
     @Query("""
@@ -50,7 +50,7 @@ public interface PharmacyProductRepo extends JpaRepository<PharmacyProduct, Long
         LOWER(p.tradeName) LIKE LOWER(CONCAT('%', :keyword, '%')) OR
         LOWER(p.scientificName) LIKE LOWER(CONCAT('%', :keyword, '%')) OR
         LOWER(pb.barcode) LIKE LOWER(CONCAT('%', :keyword, '%')) OR
-        (pt.language.code = :languageCode AND (
+        (pt.language.code = :lang AND (
             LOWER(pt.tradeName) LIKE LOWER(CONCAT('%', :keyword, '%')) OR
             LOWER(pt.scientificName) LIKE LOWER(CONCAT('%', :keyword, '%'))
         ))
@@ -58,7 +58,7 @@ public interface PharmacyProductRepo extends JpaRepository<PharmacyProduct, Long
     """)
     Page<PharmacyProduct> searchByPharmacyId(
             @Param("keyword") String keyword,
-            @Param("languageCode") String languageCode,
+            @Param("lang") String lang,
             @Param("pharmacyId") Long pharmacyId,
             Pageable pageable);
     

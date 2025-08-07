@@ -20,7 +20,7 @@ public enum PaymentMethod {
         return englishName;
     }
     
-    public String getTranslatedName(String languageCode) {
-        return "ar".equalsIgnoreCase(languageCode) ? arabicName : englishName;
+    public String getTranslatedName(String lang) {
+        return "ar".equalsIgnoreCase(lang) ? arabicName : englishName;
     }
 } 

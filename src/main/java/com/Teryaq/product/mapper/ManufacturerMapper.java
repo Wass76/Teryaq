@@ -9,16 +9,16 @@ import org.springframework.stereotype.Component;
 @Component
 public class ManufacturerMapper {
 
-    public ManufacturerDTOResponse toResponse(Manufacturer manufacturer, String langCode) {
+    public ManufacturerDTOResponse toResponse(Manufacturer manufacturer, String lang) {
         if (manufacturer == null) return null;
 
-        String sanitizedLangCode = langCode == null ? "en" : langCode.trim().toLowerCase();
+        String sanitizedlang = lang == null ? "en" : lang.trim().toLowerCase();
         
 
 
         String translatedName = manufacturer.getTranslations().stream()
                 .filter(t -> t.getLanguage() != null && t.getLanguage().getCode() != null)
-                .filter(t -> t.getLanguage().getCode().trim().equalsIgnoreCase(sanitizedLangCode))
+                .filter(t -> t.getLanguage().getCode().trim().equalsIgnoreCase(sanitizedlang))
                 .map(ManufacturerTranslation::getName)
                 .findFirst()
                 .orElse(manufacturer.getName());

@@ -11,14 +11,14 @@ import org.springframework.stereotype.Component;
 public class TypeMapper {
 
 
-    public TypeDTOResponse toResponse(Type type, String langCode) {
+    public TypeDTOResponse toResponse(Type type, String lang) {
         if (type == null) return null;
     
-        String sanitizedLangCode = langCode == null ? "en" : langCode.trim().toLowerCase();
+        String sanitizedlang = lang == null ? "en" : lang.trim().toLowerCase();
     
         String translatedName = type.getTranslations().stream()
                 .filter(t -> t.getLanguage() != null && t.getLanguage().getCode() != null)
-                .filter(t -> t.getLanguage().getCode().trim().equalsIgnoreCase(sanitizedLangCode))
+                .filter(t -> t.getLanguage().getCode().trim().equalsIgnoreCase(sanitizedlang))
                 .map(TypeTranslation::getName)
                 .findFirst()
                 .orElse(type.getName());

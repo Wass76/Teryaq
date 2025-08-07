@@ -15,7 +15,7 @@ import lombok.NoArgsConstructor;
 {
   "tradeName": "باراسيتامول",
   "scientificName": "أسيتامينوفين",
-  "languageCode": "ar"
+  "lang": "ar"
 }
 """)
 public class PharmacyProductTranslationDTORequest {
@@ -29,5 +29,5 @@ public class PharmacyProductTranslationDTORequest {
     private String scientificName;
 
     @Schema(description = "Language code for the translation", example = "ar")
-    private String languageCode;
+    private String lang;
 } 

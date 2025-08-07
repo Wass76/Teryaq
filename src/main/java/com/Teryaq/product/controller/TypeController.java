@@ -10,7 +10,6 @@ import org.springframework.web.bind.annotation.*;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
-import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -42,7 +41,7 @@ public class TypeController {
     })
     public ResponseEntity<?> getAll(
             @Parameter(description = "Language code", example = "en") 
-            @RequestParam(name = "lang", defaultValue = "en") String lang) {
+            @RequestParam(name = "lang", defaultValue = "ar") String lang) {
         return ResponseEntity.ok(typeService.getTypes(lang));
     }
 
@@ -60,7 +59,7 @@ public class TypeController {
     public ResponseEntity<?> getById(
             @Parameter(description = "Product type ID", example = "1") @PathVariable Long id,  
             @Parameter(description = "Language code", example = "en") 
-            @RequestParam(name = "lang", defaultValue = "en") String lang) {
+            @RequestParam(name = "lang", defaultValue = "ar") String lang) {
         return ResponseEntity.ok(typeService.getByID(id, lang));
     }
 
@@ -82,7 +81,7 @@ public class TypeController {
             @Parameter(description = "Product type data", required = true)
             @Valid @RequestBody TypeDTORequest type,
             @Parameter(description = "Language code", example = "en") 
-            @RequestParam(name = "lang", defaultValue = "en") String lang) {
+            @RequestParam(name = "lang", defaultValue = "ar") String lang) {
         return ResponseEntity.ok(typeService.insertType(type, lang));
     }
 
@@ -105,7 +104,7 @@ public class TypeController {
             @Parameter(description = "Updated product type data", required = true)
             @Valid @RequestBody TypeDTORequest type,
             @Parameter(description = "Language code", example = "en") 
-            @RequestParam(name = "lang", defaultValue = "en") String lang) {
+            @RequestParam(name = "lang", defaultValue = "ar") String lang) {
         return ResponseEntity.ok(typeService.editType(id, type, lang));
     }
 

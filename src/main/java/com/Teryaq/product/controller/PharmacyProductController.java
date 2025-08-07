@@ -47,7 +47,7 @@ public class PharmacyProductController {
     })
     public ResponseEntity<?> getAllPharmacyProducts(
             @Parameter(description = "Language code", example = "en") 
-            @RequestParam(name = "lang", defaultValue = "en") String lang,
+            @RequestParam(name = "lang", defaultValue = "ar") String lang,
             @Parameter(description = "Page number (0-based)", example = "0") 
                                                   @RequestParam(defaultValue = "0") int page,
             @Parameter(description = "Number of items per page", example = "10") 
@@ -78,7 +78,7 @@ public class PharmacyProductController {
     public ResponseEntity<?> getPharmacyProductsByPharmacyId(
             @Parameter(description = "Pharmacy ID", example = "1") @PathVariable Long pharmacyId,
             @Parameter(description = "Language code", example = "en") 
-                                                           @RequestParam(name = "lang", defaultValue = "en") String lang,
+                                                           @RequestParam(name = "lang", defaultValue = "ar") String lang,
             @Parameter(description = "Page number (0-based)", example = "0") 
                                                            @RequestParam(defaultValue = "0") int page,
             @Parameter(description = "Number of items per page", example = "10") 
@@ -107,7 +107,7 @@ public class PharmacyProductController {
     public ResponseEntity<?> getPharmacyProductById(
             @Parameter(description = "Pharmacy product ID", example = "1") @PathVariable Long id,
             @Parameter(description = "Language code", example = "en") 
-                                                     @RequestParam(name = "lang", defaultValue = "en") String lang) {
+                                                     @RequestParam(name = "lang", defaultValue = "ar") String lang) {
         return ResponseEntity.ok(pharmacyProductService.getByID(id, lang));
     }
 
@@ -126,7 +126,7 @@ public class PharmacyProductController {
             @Parameter(description = "Pharmacy product data", required = true)
             @Valid @RequestBody PharmacyProductDTORequest pharmacyProduct, 
             @Parameter(description = "Language code", example = "en") 
-            @RequestParam(name = "lang", defaultValue = "en") String lang) {
+            @RequestParam(name = "lang", defaultValue = "ar") String lang) {
         return ResponseEntity.ok(pharmacyProductService.insertPharmacyProduct(pharmacyProduct, lang));
     }
 
@@ -147,7 +147,7 @@ public class PharmacyProductController {
             @Parameter(description = "Updated pharmacy product data", required = true)
                                                         @RequestBody PharmacyProductDTORequest pharmacyProduct, 
             @Parameter(description = "Language code", example = "en") 
-                                                        @RequestParam(name = "lang", defaultValue = "en") String lang) {
+                                                        @RequestParam(name = "lang", defaultValue = "ar") String lang) {
         return ResponseEntity.ok(pharmacyProductService.editPharmacyProduct(id, pharmacyProduct, lang));
     }
 

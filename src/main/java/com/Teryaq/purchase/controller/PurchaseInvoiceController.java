@@ -21,7 +21,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 
 @RestController
-@RequestMapping("/api/purchase-invoices")
+@RequestMapping("/api/v1/purchase-invoices")
 @RequiredArgsConstructor
 @Tag(name = "Purchase Invoice Management", description = "APIs for managing purchase invoices")
 @SecurityRequirement(name = "BearerAuth")

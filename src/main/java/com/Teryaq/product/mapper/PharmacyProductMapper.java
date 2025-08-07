@@ -80,14 +80,14 @@ public class PharmacyProductMapper {
         return product;
     }
 
-    public PharmacyProductDTOResponse toResponse(PharmacyProduct product, String languageCode) {
-        String sanitizedLangCode = languageCode == null ? "en" : languageCode.trim().toLowerCase();
+    public PharmacyProductDTOResponse toResponse(PharmacyProduct product, String lang) {
+        String sanitizedlang = lang == null ? "en" : lang.trim().toLowerCase();
         
         // الحصول على الترجمة المطلوبة
         PharmacyProductTranslation translation = product.getTranslations() != null
                 ? product.getTranslations().stream()
                 .filter(t -> t.getLanguage() != null && t.getLanguage().getCode() != null)
-                .filter(t -> t.getLanguage().getCode().trim().equalsIgnoreCase(sanitizedLangCode))
+                .filter(t -> t.getLanguage().getCode().trim().equalsIgnoreCase(sanitizedlang))
                 .findFirst()
                 .orElse(null)
                 : null;
@@ -113,7 +113,7 @@ public class PharmacyProductMapper {
                         .map(PharmacyProductBarcode::getBarcode)
                         .collect(Collectors.toSet()) : new HashSet<>())
                 // .productType(ProductType.PHARMACY)
-                .productTypeName(ProductType.PHARMACY.getTranslatedName(sanitizedLangCode))
+                .productTypeName(ProductType.PHARMACY.getTranslatedName(sanitizedlang))
                 .requiresPrescription(product.getRequiresPrescription())
                
 
@@ -125,7 +125,7 @@ public class PharmacyProductMapper {
                                 .map(category -> {
                                     if (category.getTranslations() == null) return category.getName();
                                     return category.getTranslations().stream()
-                                            .filter(t -> sanitizedLangCode.equalsIgnoreCase(t.getLanguage().getCode()))
+                                            .filter(t -> sanitizedlang.equalsIgnoreCase(t.getLanguage().getCode()))
                                             .findFirst()
                                             .map(com.Teryaq.product.entity.CategoryTranslation::getName)
                                             .orElse(category.getName());
@@ -136,7 +136,7 @@ public class PharmacyProductMapper {
                 .type(
                         product.getType() != null
                                 ? product.getType().getTranslations().stream()
-                                .filter(t -> sanitizedLangCode.equalsIgnoreCase(t.getLanguage().getCode()))
+                                .filter(t -> sanitizedlang.equalsIgnoreCase(t.getLanguage().getCode()))
                                 .findFirst()
                                 .map(com.Teryaq.product.entity.TypeTranslation::getName)
                                 .orElse(product.getType().getName())
@@ -146,7 +146,7 @@ public class PharmacyProductMapper {
                 .form(
                         product.getForm() != null
                                 ? product.getForm().getTranslations().stream()
-                                .filter(t -> sanitizedLangCode.equalsIgnoreCase(t.getLanguage().getCode()))
+                                .filter(t -> sanitizedlang.equalsIgnoreCase(t.getLanguage().getCode()))
                                 .findFirst()
                                 .map(com.Teryaq.product.entity.FormTranslation::getName)
                                 .orElse(product.getForm().getName())
@@ -156,7 +156,7 @@ public class PharmacyProductMapper {
                 .manufacturer(
                         product.getManufacturer() != null
                                 ? product.getManufacturer().getTranslations().stream()
-                                .filter(t -> sanitizedLangCode.equalsIgnoreCase(t.getLanguage().getCode()))
+                                .filter(t -> sanitizedlang.equalsIgnoreCase(t.getLanguage().getCode()))
                                 .findFirst()
                                 .map(com.Teryaq.product.entity.ManufacturerTranslation::getName)
                                 .orElse(product.getManufacturer().getName())
@@ -238,12 +238,12 @@ public class PharmacyProductMapper {
         }
     }
 
-    public PharmacyProductListDTO toListDTO(PharmacyProduct product, String languageCode) {
-        String sanitizedLangCode = languageCode == null ? "en" : languageCode.trim().toLowerCase();
+    public PharmacyProductListDTO toListDTO(PharmacyProduct product, String lang) {
+        String sanitizedlang = lang == null ? "en" : lang.trim().toLowerCase();
         PharmacyProductTranslation translation = product.getTranslations() != null
                 ? product.getTranslations().stream()
                 .filter(t -> t.getLanguage() != null && t.getLanguage().getCode() != null)
-                .filter(t -> t.getLanguage().getCode().trim().equalsIgnoreCase(sanitizedLangCode))
+                .filter(t -> t.getLanguage().getCode().trim().equalsIgnoreCase(sanitizedlang))
                 .findFirst()
                 .orElse(null)
                 : null;
@@ -259,7 +259,7 @@ public class PharmacyProductMapper {
                         .map(PharmacyProductBarcode::getBarcode)
                         .collect(Collectors.toSet()) : new HashSet<>())
                 //.productType(ProductType.PHARMACY)
-                .productTypeName(ProductType.PHARMACY.getTranslatedName(sanitizedLangCode))
+                .productTypeName(ProductType.PHARMACY.getTranslatedName(sanitizedlang))
                 .pharmacyId(product.getPharmacy() != null ? product.getPharmacy().getId() : null)
                 .pharmacyName(product.getPharmacy() != null ? product.getPharmacy().getName() : null)
                 .build();

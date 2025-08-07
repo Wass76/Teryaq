@@ -45,7 +45,7 @@ public class FormController {
     })
     public ResponseEntity<?> geForms(
             @Parameter(description = "Language code", example = "en") 
-            @RequestParam(name = "lang", defaultValue = "en") String lang) {
+            @RequestParam(name = "lang", defaultValue = "ar") String lang) {
         return ResponseEntity.ok(formService.getForms(lang));
     }
 
@@ -64,7 +64,7 @@ public class FormController {
     public ResponseEntity<?> getById(
             @Parameter(description = "Product form ID", example = "1") @PathVariable Long id,
             @Parameter(description = "Language code", example = "en") 
-            @RequestParam(name = "lang", defaultValue = "en") String lang) {
+            @RequestParam(name = "lang", defaultValue = "ar") String lang) {
         return ResponseEntity.ok(formService.getByID(id, lang));
     }
 
@@ -86,7 +86,7 @@ public class FormController {
             @Parameter(description = "Product form data", required = true)
             @Valid @RequestBody FormDTORequest dto,
             @Parameter(description = "Language code", example = "en") 
-            @RequestParam(name = "lang", defaultValue = "en") String lang) {
+            @RequestParam(name = "lang", defaultValue = "ar") String lang) {
         FormDTOResponse response = formService.insertForm(dto, lang);
         return new ResponseEntity<>(response, HttpStatus.CREATED);
     }
@@ -111,7 +111,7 @@ public class FormController {
             @Parameter(description = "Updated product form data", required = true)
             @Valid @RequestBody FormDTORequest Form,
             @Parameter(description = "Language code", example = "en") 
-            @RequestParam(name = "lang", defaultValue = "en") String lang) {
+            @RequestParam(name = "lang", defaultValue = "ar") String lang) {
         return ResponseEntity.ok(formService.editForm(id, Form, lang));
     }   
 

@@ -7,7 +7,6 @@ import com.Teryaq.product.repo.PharmacyProductRepo;
 import com.Teryaq.product.repo.MasterProductRepo;
 import com.Teryaq.user.repository.UserRepository;
 import com.Teryaq.user.service.BaseSecurityService;
-import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;

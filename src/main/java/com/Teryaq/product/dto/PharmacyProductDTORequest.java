@@ -32,7 +32,7 @@ import java.util.Set;
     {
       "tradeName": "باراسيتامول",
       "scientificName": "أسيتامينوفين",
-      "languageCode": "ar"
+      "lang": "ar"
     }
   ]
 }

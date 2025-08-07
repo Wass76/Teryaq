@@ -46,7 +46,7 @@ public class ManufacturerController {
     })
     public ResponseEntity<?> getManufacturers(
             @Parameter(description = "Language code", example = "en") 
-            @RequestParam(name = "lang", defaultValue = "en") String lang) {
+            @RequestParam(name = "lang", defaultValue = "ar") String lang) {
         return ResponseEntity.ok(manufacturerService.getManufacturers(lang));
     }
 
@@ -65,7 +65,7 @@ public class ManufacturerController {
     public ResponseEntity<?> getById(
             @Parameter(description = "Manufacturer ID", example = "1") @PathVariable Long id, 
             @Parameter(description = "Language code", example = "en") 
-            @RequestParam(name = "lang", defaultValue = "en") String lang) {
+            @RequestParam(name = "lang", defaultValue = "ar") String lang) {
         return ResponseEntity.ok(manufacturerService.getByID(id, lang));
     }
 
@@ -87,7 +87,7 @@ public class ManufacturerController {
             @Parameter(description = "Manufacturer data", required = true)
             @Valid @RequestBody ManufacturerDTORequest dto,
             @Parameter(description = "Language code", example = "en") 
-            @RequestParam(name = "lang", defaultValue = "en") String lang) {
+            @RequestParam(name = "lang", defaultValue = "ar") String lang) {
         ManufacturerDTOResponse response = manufacturerService.insertManufacturer(dto, lang);
         return new ResponseEntity<>(response, HttpStatus.CREATED);
     }
@@ -112,7 +112,7 @@ public class ManufacturerController {
             @Parameter(description = "Updated manufacturer data", required = true)
             @Valid @RequestBody ManufacturerDTORequest manufacturer,
             @Parameter(description = "Language code", example = "en") 
-            @RequestParam(name = "lang", defaultValue = "en") String lang) {
+            @RequestParam(name = "lang", defaultValue = "ar") String lang) {
         return ResponseEntity.ok(manufacturerService.editManufacturer(id, manufacturer, lang));
     }
 

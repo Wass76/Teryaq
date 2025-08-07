@@ -15,11 +15,11 @@ import java.util.Set;
 @Schema(description = "Product Form Request", example = """
 {
   "name": "Tablet",
-  "languageCode": "en",
+  "lang": "en",
   "translations": [
     {
       "name": "قرص",
-      "languageCode": "ar"
+      "lang": "ar"
     }
   ]
 }
@@ -30,7 +30,7 @@ public class FormDTORequest {
     private String name;
     
     @Schema(description = "Language code", example = "en")
-    private String languageCode;
+    private String lang;
 
     @Schema(description = "Product form translations for different languages")
     private Set<FormTranslationDTORequest> translations;

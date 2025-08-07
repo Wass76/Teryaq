@@ -46,7 +46,7 @@ public class MasterProductController {
     })
     public ResponseEntity<?> getAllMasterProducts(
             @Parameter(description = "Language code", example = "en") 
-            @RequestParam(name = "lang", defaultValue = "en") String lang,
+            @RequestParam(name = "lang", defaultValue = "ar") String lang,
             @Parameter(description = "Page number (0-based)", example = "0") 
             @RequestParam(defaultValue = "0") int page,
             @Parameter(description = "Number of items per page", example = "10") 
@@ -75,7 +75,7 @@ public class MasterProductController {
     public ResponseEntity<?> getMasterProductById(
             @Parameter(description = "Master product ID", example = "1") @PathVariable Long id,
             @Parameter(description = "Language code", example = "en") 
-            @RequestParam(name = "lang", defaultValue = "en") String lang) {
+            @RequestParam(name = "lang", defaultValue = "ar") String lang) {
         return ResponseEntity.ok(masterProductService.getByID(id, lang));
     }
 
@@ -102,7 +102,7 @@ public class MasterProductController {
             @Parameter(description = "Master product data", required = true)
             @Valid @RequestBody MProductDTORequest masterProduct,
             @Parameter(description = "Language code", example = "en") 
-            @RequestParam(name = "lang", defaultValue = "en") String lang) {
+            @RequestParam(name = "lang", defaultValue = "ar") String lang) {
        return ResponseEntity.ok(masterProductService.insertMasterProduct(masterProduct, lang));
     }
 
@@ -125,7 +125,7 @@ public class MasterProductController {
             @Parameter(description = "Updated master product data", required = true)
             @Valid @RequestBody MProductDTORequest masterProduct, 
             @Parameter(description = "Language code", example = "en") 
-            @RequestParam(name = "lang", defaultValue = "en") String lang) {
+            @RequestParam(name = "lang", defaultValue = "ar") String lang) {
         return ResponseEntity.ok(masterProductService.editMasterProduct(id, masterProduct, lang));
     }
 

@@ -45,7 +45,7 @@ public class CategoryController {
     })
     public ResponseEntity<?> getCategories(
             @Parameter(description = "Language code", example = "en") 
-            @RequestParam(name = "lang", defaultValue = "en") String lang) {
+            @RequestParam(name = "lang", defaultValue = "ar") String lang) {
         return ResponseEntity.ok(categoryService.getCategories(lang));
     }
 
@@ -64,7 +64,7 @@ public class CategoryController {
     public ResponseEntity<?> getById(
             @Parameter(description = "Product category ID", example = "1") @PathVariable Long id, 
             @Parameter(description = "Language code", example = "en") 
-            @RequestParam(name = "lang", defaultValue = "en") String lang) {
+            @RequestParam(name = "lang", defaultValue = "ar") String lang) {
         return ResponseEntity.ok(categoryService.getByID(id, lang));
     }
 
@@ -86,7 +86,7 @@ public class CategoryController {
             @Parameter(description = "Product category data", required = true)
             @Valid @RequestBody CategoryDTORequest dto,
             @Parameter(description = "Language code", example = "en") 
-            @RequestParam(name = "lang", defaultValue = "en") String lang) {
+            @RequestParam(name = "lang", defaultValue = "ar") String lang) {
         CategoryDTOResponse response = categoryService.insertCategory(dto, lang);
         return new ResponseEntity<>(response, HttpStatus.CREATED);
     }
@@ -111,7 +111,7 @@ public class CategoryController {
             @Parameter(description = "Updated product category data", required = true)
             @Valid @RequestBody CategoryDTORequest category,
             @Parameter(description = "Language code", example = "en") 
-            @RequestParam(name = "lang", defaultValue = "en") String lang) {
+            @RequestParam(name = "lang", defaultValue = "ar") String lang) {
         return ResponseEntity.ok(categoryService.editCategory(id, category, lang));
     }
 

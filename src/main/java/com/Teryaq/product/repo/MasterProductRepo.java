@@ -17,7 +17,7 @@ WHERE (
     LOWER(p.tradeName) LIKE LOWER(CONCAT('%', :keyword, '%')) OR
     LOWER(p.scientificName) LIKE LOWER(CONCAT('%', :keyword, '%')) OR
     LOWER(p.barcode) LIKE LOWER(CONCAT('%', :keyword, '%')) OR
-    (pt.language.code = :languageCode AND (
+    (pt.language.code = :lang AND (
         LOWER(pt.tradeName) LIKE LOWER(CONCAT('%', :keyword, '%')) OR
         LOWER(pt.scientificName) LIKE LOWER(CONCAT('%', :keyword, '%'))
     ))
@@ -25,7 +25,7 @@ WHERE (
 """)
     Page<MasterProduct> search(
             @Param("keyword") String keyword,
-            @Param("languageCode") String languageCode,
+            @Param("lang") String lang,
             Pageable pageable);
 
 

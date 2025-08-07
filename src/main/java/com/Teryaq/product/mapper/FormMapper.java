@@ -10,16 +10,16 @@ import org.springframework.stereotype.Component;
 public class FormMapper {
 
 
-   public FormDTOResponse toResponse(Form form, String langCode) {
+   public FormDTOResponse toResponse(Form form, String lang) {
        if (form == null) return null;
 
-       String sanitizedLangCode = langCode == null ? "en" : langCode.trim().toLowerCase();
+       String sanitizedlang = lang == null ? "en" : lang.trim().toLowerCase();
        
        
 
        String translatedName = form.getTranslations().stream()
                .filter(t -> t.getLanguage() != null && t.getLanguage().getCode() != null)
-               .filter(t -> t.getLanguage().getCode().trim().equalsIgnoreCase(sanitizedLangCode))
+               .filter(t -> t.getLanguage().getCode().trim().equalsIgnoreCase(sanitizedlang))
                .map(FormTranslation::getName)
                .findFirst()
                .orElse(form.getName());

@@ -37,8 +37,8 @@ public class CategoryService {
         this.categoryTranslationRepo = categoryTranslationRepo;
     }
 
-    public List<CategoryDTOResponse> getCategories(String langCode) {
-        log.info("Getting categories with langCode: {}", langCode);
+    public List<CategoryDTOResponse> getCategories(String lang) {
+        log.info("Getting categories with lang: {}", lang);
         List<Category> categories = categoryRepo.findAllWithTranslations();
         log.info("Found {} categories", categories.size());
         
@@ -46,18 +46,18 @@ public class CategoryService {
                 .map(category -> {
                     log.info("Processing category: {} with {} translations", category.getName(),
                             category.getTranslations() != null ? category.getTranslations().size() : 0);
-                    return categoryMapper.toResponse(category, langCode);
+                    return categoryMapper.toResponse(category, lang);
                 })
                 .toList();
     }
 
-    public CategoryDTOResponse getByID(long id, String langCode) {
+    public CategoryDTOResponse getByID(long id, String lang) {
         Category category = categoryRepo.findByIdWithTranslations(id)
                 .orElseThrow(() -> new EntityNotFoundException("Category with ID " + id + " not found"));
-        return categoryMapper.toResponse(category, langCode);
+        return categoryMapper.toResponse(category, lang);
     }
 
-    public CategoryDTOResponse insertCategory(CategoryDTORequest dto, String langCode) {
+    public CategoryDTOResponse insertCategory(CategoryDTORequest dto, String lang) {
         if (categoryRepo.existsByName(dto.getName())) {
             throw new ConflictException("Category with name '" + dto.getName() + "' already exists");
         }
@@ -68,19 +68,19 @@ public class CategoryService {
 
         List<CategoryTranslation> translations = dto.getTranslations().stream()
             .map(t -> {
-                Language lang = languageRepo.findByCode(t.getLanguageCode())
-                        .orElseThrow(() -> new EntityNotFoundException("Language not found: " + t.getLanguageCode()));
-                return new CategoryTranslation(t.getName(), savedCategory, lang);
+                Language language = languageRepo.findByCode(t.getLang())
+                        .orElseThrow(() -> new EntityNotFoundException("Language not found: " + t.getLang()));
+                return new CategoryTranslation(t.getName(), savedCategory, language);
             })
             .collect(Collectors.toList());
 
         categoryTranslationRepo.saveAll(translations);
         savedCategory.setTranslations(new HashSet<>(translations));
 
-        return categoryMapper.toResponse(savedCategory, langCode);
+        return categoryMapper.toResponse(savedCategory, lang);
     }
 
-    public CategoryDTOResponse editCategory(Long id, CategoryDTORequest dto, String langCode) {
+    public CategoryDTOResponse editCategory(Long id, CategoryDTORequest dto, String lang) {
         return categoryRepo.findByIdWithTranslations(id).map(existing -> {
             if (!existing.getName().equals(dto.getName()) && categoryRepo.existsByName(dto.getName())) {
                 throw new ConflictException("Category with name '" + dto.getName() + "' already exists");
@@ -94,9 +94,9 @@ public class CategoryService {
 
                 List<CategoryTranslation> translations = dto.getTranslations().stream()
                         .map(t -> {
-                            Language lang = languageRepo.findByCode(t.getLanguageCode())
-                                    .orElseThrow(() -> new EntityNotFoundException("Language not found: " + t.getLanguageCode()));
-                            return new CategoryTranslation(t.getName(), saved, lang);
+                            Language language = languageRepo.findByCode(t.getLang())
+                                    .orElseThrow(() -> new EntityNotFoundException("Language not found: " + t.getLang()));
+                            return new CategoryTranslation(t.getName(), saved, language);
                         })
                         .toList();
 
@@ -107,7 +107,7 @@ public class CategoryService {
             Category updated = categoryRepo.findByIdWithTranslations(saved.getId())
                     .orElseThrow(() -> new EntityNotFoundException("Updated category not found"));
 
-            return categoryMapper.toResponse(updated, langCode);
+            return categoryMapper.toResponse(updated, lang);
 
         }).orElseThrow(() -> new EntityNotFoundException("Category with ID " + id + " not found"));
     }

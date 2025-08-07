@@ -12,7 +12,6 @@ import com.Teryaq.product.repo.PharmacyProductTranslationRepo;
 import com.Teryaq.product.repo.MasterProductRepo;
 import com.Teryaq.user.entity.Employee;
 import com.Teryaq.user.entity.User;
-import com.Teryaq.user.repository.PharmacyRepository;
 import com.Teryaq.user.repository.UserRepository;
 import com.Teryaq.user.service.BaseSecurityService;
 import com.Teryaq.utils.exception.ConflictException;
@@ -37,7 +36,6 @@ public class PharmacyProductService extends BaseSecurityService {
     private final PharmacyProductRepo pharmacyProductRepo;
     private final PharmacyProductBarcodeRepo pharmacyProductBarcodeRepo;
     private final PharmacyProductMapper pharmacyProductMapper;
-    private final PharmacyRepository pharmacyRepository;
     private final LanguageRepo languageRepo;
     private final PharmacyProductTranslationRepo pharmacyProductTranslationRepo;
     private final MasterProductRepo masterProductRepo;
@@ -45,7 +43,6 @@ public class PharmacyProductService extends BaseSecurityService {
     public PharmacyProductService(PharmacyProductRepo pharmacyProductRepo,
                                 PharmacyProductBarcodeRepo pharmacyProductBarcodeRepo,
                                 PharmacyProductMapper pharmacyProductMapper,
-                                PharmacyRepository pharmacyRepository,
                                 LanguageRepo languageRepo,
                                 PharmacyProductTranslationRepo pharmacyProductTranslationRepo,
                                 MasterProductRepo masterProductRepo,
@@ -54,36 +51,35 @@ public class PharmacyProductService extends BaseSecurityService {
         this.pharmacyProductRepo = pharmacyProductRepo;
         this.pharmacyProductBarcodeRepo = pharmacyProductBarcodeRepo;
         this.pharmacyProductMapper = pharmacyProductMapper;
-        this.pharmacyRepository = pharmacyRepository;
         this.languageRepo = languageRepo;
         this.pharmacyProductTranslationRepo = pharmacyProductTranslationRepo;
         this.masterProductRepo = masterProductRepo;
     }
 
-//    public Page<PharmacyProductListDTO> getPharmacyProduct(String langCode, Pageable pageable) {
+//    public Page<PharmacyProductListDTO> getPharmacyProduct(String lang, Pageable pageable) {
 //        Long currentPharmacyId = getCurrentUserPharmacyId();
 //        return pharmacyProductRepo.findByPharmacyId(currentPharmacyId, pageable).map(
-//                product -> pharmacyProductMapper.toListDTO(product, langCode)
+//                product -> pharmacyProductMapper.toListDTO(product, lang)
 //        );
 //    }
 
-    public Page<PharmacyProductListDTO> getPharmacyProductByPharmacyId(Long pharmacyId, String langCode, Pageable pageable) {
+    public Page<PharmacyProductListDTO> getPharmacyProductByPharmacyId(Long pharmacyId, String lang, Pageable pageable) {
         // Validate that the user has access to the requested pharmacy
         validatePharmacyAccess(pharmacyId);
         return pharmacyProductRepo.findByPharmacyId(pharmacyId, pageable).map(
-                product -> pharmacyProductMapper.toListDTO(product, langCode)
+                product -> pharmacyProductMapper.toListDTO(product, lang)
         );
     }
 
-    public Page<PharmacyProductDTOResponse> getPharmacyProductByPharmacyIdWithTranslation(Long pharmacyId, String langCode, Pageable pageable) {
+    public Page<PharmacyProductDTOResponse> getPharmacyProductByPharmacyIdWithTranslation(Long pharmacyId, String lang, Pageable pageable) {
         // Validate that the user has access to the requested pharmacy
         validatePharmacyAccess(pharmacyId);
         return pharmacyProductRepo.findByPharmacyId(pharmacyId, pageable).map(
-                product -> pharmacyProductMapper.toResponse(product, langCode)
+                product -> pharmacyProductMapper.toResponse(product, lang)
         );
     }
 
-    public Page<PharmacyProductListDTO> getPharmacyProduct(String langCode, Pageable pageable) {
+    public Page<PharmacyProductListDTO> getPharmacyProduct(String lang, Pageable pageable) {
         // Validate that the current user is an employee
         User currentUser = getCurrentUser();
         if (!(currentUser instanceof Employee)) {
@@ -97,11 +93,11 @@ public class PharmacyProductService extends BaseSecurityService {
         
         Long currentPharmacyId = employee.getPharmacy().getId();
         return pharmacyProductRepo.findByPharmacyId(currentPharmacyId, pageable).map(
-                product -> pharmacyProductMapper.toListDTO(product, langCode)
+                product -> pharmacyProductMapper.toListDTO(product, lang)
         );
     }
 
-    public PharmacyProductDTOResponse getByID(long id, String langCode) {
+    public PharmacyProductDTOResponse getByID(long id, String lang) {
         // Validate that the current user is an employee
         User currentUser = getCurrentUser();
         if (!(currentUser instanceof Employee)) {
@@ -116,11 +112,11 @@ public class PharmacyProductService extends BaseSecurityService {
         Long currentPharmacyId = employee.getPharmacy().getId();
         PharmacyProduct product = pharmacyProductRepo.findByIdAndPharmacyIdWithTranslations(id, currentPharmacyId)
                 .orElseThrow(() -> new EntityNotFoundException("Pharmacy Product with ID " + id + " not found"));
-        return pharmacyProductMapper.toResponse(product, langCode);
+        return pharmacyProductMapper.toResponse(product, lang);
     }
 
     public PharmacyProductDTOResponse insertPharmacyProduct(PharmacyProductDTORequest requestDTO, 
-                                                            String langCode) {
+                                                            String lang) {
         // Validate that the current user is an employee
         User currentUser = getCurrentUser();
         if (!(currentUser instanceof Employee)) {
@@ -134,13 +130,11 @@ public class PharmacyProductService extends BaseSecurityService {
         
         Long currentPharmacyId = employee.getPharmacy().getId();
         
-        // تحقق من الباركودات إذا كانت موجودة مسبقاً
         if (requestDTO.getBarcodes() != null && !requestDTO.getBarcodes().isEmpty()) {
             for (String barcode : requestDTO.getBarcodes()) {
                 if (pharmacyProductRepo.existsByBarcodeAndPharmacyId(barcode, currentPharmacyId)) {
                     throw new ConflictException("Barcode " + barcode + " already exists in this pharmacy");
                 }
-                // تحقق من عدم وجود الباركود في الماستر
                 if (masterProductRepo.findByBarcode(barcode).isPresent()) {
                     throw new ConflictException("Barcode " + barcode + " already exists in master products");
                 }
@@ -150,13 +144,12 @@ public class PharmacyProductService extends BaseSecurityService {
         PharmacyProduct product = pharmacyProductMapper.toEntity(requestDTO, currentPharmacyId);
         PharmacyProduct saved = pharmacyProductRepo.save(product);
 
-        // حفظ الترجمات
         if (requestDTO.getTranslations() != null && !requestDTO.getTranslations().isEmpty()) {
             List<PharmacyProductTranslation> translations = requestDTO.getTranslations().stream()
                 .map(t -> {
-                    Language lang = languageRepo.findByCode(t.getLanguageCode())
-                            .orElseThrow(() -> new EntityNotFoundException("Language not found: " + t.getLanguageCode()));
-                    return new PharmacyProductTranslation(t.getTradeName(), t.getScientificName(), saved, lang);
+                    Language language = languageRepo.findByCode(t.getLang())
+                            .orElseThrow(() -> new EntityNotFoundException("Language not found: " + t.getLang()));
+                    return new PharmacyProductTranslation(t.getTradeName(), t.getScientificName(), saved, language);
                 })
                 .collect(Collectors.toList());
 
@@ -164,12 +157,12 @@ public class PharmacyProductService extends BaseSecurityService {
             saved.setTranslations(new HashSet<>(translations));
         }
 
-        return pharmacyProductMapper.toResponse(saved, langCode);
+        return pharmacyProductMapper.toResponse(saved, lang);
     }
 
     public PharmacyProductDTOResponse editPharmacyProduct(Long id,
                                                          PharmacyProductDTORequest requestDTO,
-                                                         String langCode) {
+                                                         String lang) {
         // Validate that the current user is an employee
         User currentUser = getCurrentUser();
         if (!(currentUser instanceof Employee)) {
@@ -199,23 +192,18 @@ public class PharmacyProductService extends BaseSecurityService {
                 }
             }
             
-            // استخدام دالة المابير لتحديث الكائن
             pharmacyProductMapper.updateEntityFromRequest(existing, requestDTO, currentPharmacyId);
             
-            // حفظ الكائن الرئيسي أولاً
             PharmacyProduct saved = pharmacyProductRepo.save(existing);
             
-            // تحديث الترجمات بشكل منفصل لتجنب مشاكل Cascade
             if (requestDTO.getTranslations() != null && !requestDTO.getTranslations().isEmpty()) {
-                // حذف الترجمات القديمة
                 pharmacyProductTranslationRepo.deleteByProduct(saved);
                 
-                // إنشاء الترجمات الجديدة
                 List<PharmacyProductTranslation> newTranslations = requestDTO.getTranslations().stream()
                     .map(t -> {
-                        Language lang = languageRepo.findByCode(t.getLanguageCode())
-                                .orElseThrow(() -> new EntityNotFoundException("Language not found: " + t.getLanguageCode()));
-                        return new PharmacyProductTranslation(t.getTradeName(), t.getScientificName(),  saved, lang);
+                        Language language = languageRepo.findByCode(t.getLang())
+                                .orElseThrow(() -> new EntityNotFoundException("Language not found: " + t.getLang()));
+                        return new PharmacyProductTranslation(t.getTradeName(), t.getScientificName(),  saved, language);
                     })
                     .collect(Collectors.toList());
 
@@ -223,7 +211,7 @@ public class PharmacyProductService extends BaseSecurityService {
             }
             
             // إعادة تحميل الكائن مع الترجمات
-            return pharmacyProductMapper.toResponse(pharmacyProductRepo.findByIdWithTranslations(saved.getId()).orElse(saved), langCode);
+            return pharmacyProductMapper.toResponse(pharmacyProductRepo.findByIdWithTranslations(saved.getId()).orElse(saved), lang);
         }).orElseThrow(() -> new EntityNotFoundException("Pharmacy Product with ID " + id + " not found"));
     }
 

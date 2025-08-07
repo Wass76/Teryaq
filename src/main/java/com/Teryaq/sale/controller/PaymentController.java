@@ -20,7 +20,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @RestController
-@RequestMapping("/api/payment")
+@RequestMapping("/api/v1/payment")
 @Tag(name = "Payment Management", description = "APIs for payment validation and methods")
 @CrossOrigin(origins = "*")
 @SecurityRequirement(name = "BearerAuth")

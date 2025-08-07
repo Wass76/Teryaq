@@ -12,8 +12,8 @@ public enum ProductType {
         this.arabicName = arabicName;
     }
     
-    public String getTranslatedName(String languageCode) {
-        return "ar".equalsIgnoreCase(languageCode) ? arabicName : englishName;
+    public String getTranslatedName(String lang) {
+        return "ar".equalsIgnoreCase(lang) ? arabicName : englishName;
     }
     
     public String getEnglishName() {

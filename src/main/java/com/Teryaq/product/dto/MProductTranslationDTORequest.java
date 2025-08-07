@@ -21,5 +21,5 @@ public class MProductTranslationDTORequest {
 
 
 
-    private String languageCode;
+    private String lang;
 }

@@ -37,8 +37,8 @@ public class TypeService {
         this.typeTranslationRepo = typeTranslationRepo;
     }
 
-    public List<TypeDTOResponse> getTypes(String langCode) {
-        log.info("Getting types with langCode: {}", langCode);
+    public List<TypeDTOResponse> getTypes(String lang) {
+        log.info("Getting types with lang: {}", lang);
         
         List<Type> types = typeRepo.findAllWithTranslations();
         log.info("Found {} types", types.size());
@@ -48,18 +48,18 @@ public class TypeService {
                     log.info("Processing type: {} with {} translations", type.getName(),
                             type.getTranslations() != null ? type.getTranslations().size() : 0);
     
-                    return typeMapper.toResponse(type, langCode);
+                    return typeMapper.toResponse(type, lang);
                 })
                 .toList();
     }
     
-    public TypeDTOResponse getByID(long id, String langCode) {
+    public TypeDTOResponse getByID(long id, String lang) {
         Type type = typeRepo.findByIdWithTranslations(id)
                 .orElseThrow(() -> new EntityNotFoundException("Type with ID " + id + " not found"));
-        return typeMapper.toResponse(type, langCode);
+        return typeMapper.toResponse(type, lang);
     }
 
-    public TypeDTOResponse insertType(TypeDTORequest dto, String langCode) {
+    public TypeDTOResponse insertType(TypeDTORequest dto, String lang) {
     
             if (typeRepo.existsByName(dto.getName())) {
                 throw new ConflictException("Type with name '" + dto.getName() + "' already exists");
@@ -71,9 +71,9 @@ public class TypeService {
     
             List<TypeTranslation> translations = dto.getTranslations().stream()
                 .map(t -> {
-                    Language lang = languageRepo.findByCode(t.getLanguageCode())
-                            .orElseThrow(() -> new EntityNotFoundException("Language not found: " + t.getLanguageCode()));
-                    return new TypeTranslation(t.getName(), savedType, lang);
+                    Language language = languageRepo.findByCode(t.getLang())
+                            .orElseThrow(() -> new EntityNotFoundException("Language not found: " + t.getLang()));
+                    return new TypeTranslation(t.getName(), savedType, language);
                 })
                 .collect(Collectors.toList());
     
@@ -81,13 +81,13 @@ public class TypeService {
     
             savedType.setTranslations(new HashSet<>(translations));
     
-            return typeMapper.toResponse(savedType, langCode);
+            return typeMapper.toResponse(savedType, lang);
             
     }
 
     
     
-    public TypeDTOResponse editType(Long id, TypeDTORequest dto, String langCode) {
+    public TypeDTOResponse editType(Long id, TypeDTORequest dto, String lang) {
     return typeRepo.findByIdWithTranslations(id).map(existing -> {
         if (!existing.getName().equals(dto.getName()) && typeRepo.existsByName(dto.getName())) {
             throw new ConflictException("Type with name '" + dto.getName() + "' already exists");
@@ -101,9 +101,9 @@ public class TypeService {
 
             List<TypeTranslation> translations = dto.getTranslations().stream()
                     .map(t -> {
-                        Language lang = languageRepo.findByCode(t.getLanguageCode())
-                                .orElseThrow(() -> new EntityNotFoundException("Language not found: " + t.getLanguageCode()));
-                        return new TypeTranslation(t.getName(), saved, lang);
+                        Language language = languageRepo.findByCode(t.getLang())
+                                .orElseThrow(() -> new EntityNotFoundException("Language not found: " + t.getLang()));
+                        return new TypeTranslation(t.getName(), saved, language);
                     })
                     .toList();
 
@@ -114,7 +114,7 @@ public class TypeService {
         Type updated = typeRepo.findByIdWithTranslations(saved.getId())
                 .orElseThrow(() -> new EntityNotFoundException("Updated type not found"));
 
-        return typeMapper.toResponse(updated, langCode);
+        return typeMapper.toResponse(updated, lang);
 
     }).orElseThrow(() -> new EntityNotFoundException("Type with ID " + id + " not found"));
 }

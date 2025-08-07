@@ -17,7 +17,7 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import jakarta.validation.Valid;
 
 @RestController
-@RequestMapping("/api/suppliers")
+@RequestMapping("/api/v1/suppliers")
 @Tag(name = "Supplier Management", description = "APIs for managing suppliers and their information")
 @SecurityRequirement(name = "BearerAuth")
 @CrossOrigin("*")

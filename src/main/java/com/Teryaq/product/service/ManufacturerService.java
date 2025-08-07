@@ -40,8 +40,8 @@ public class ManufacturerService {
         this.manufacturerTranslationRepo = manufacturerTranslationRepo;
     }
 
-    public List<ManufacturerDTOResponse> getManufacturers(String langCode) {
-        log.info("Getting manufacturers with langCode: {}", langCode);
+    public List<ManufacturerDTOResponse> getManufacturers(String lang) {
+        log.info("Getting manufacturers with lang: {}", lang);
         List<Manufacturer> manufacturers = manufacturerRepo.findAllWithTranslations();
         log.info("Found {} manufacturers", manufacturers.size());
         
@@ -49,19 +49,19 @@ public class ManufacturerService {
                 .map(manufacturer -> {
                     log.info("Processing manufacturer: {} with {} translations", manufacturer.getName(),
                             manufacturer.getTranslations() != null ? manufacturer.getTranslations().size() : 0);
-                    return manufacturerMapper.toResponse(manufacturer, langCode);
+                    return manufacturerMapper.toResponse(manufacturer, lang);
                 })
                 .toList();
     }
 
-    public ManufacturerDTOResponse getByID(long id, String langCode) {
+    public ManufacturerDTOResponse getByID(long id, String lang) {
         Manufacturer manufacturer = manufacturerRepo.findByIdWithTranslations(id)
                 .orElseThrow(() -> new EntityNotFoundException("Manufacturer with ID " + id + " not found"));
-        return manufacturerMapper.toResponse(manufacturer, langCode);
+        return manufacturerMapper.toResponse(manufacturer, lang);
     }
 
     public ManufacturerDTOResponse insertManufacturer(ManufacturerDTORequest dto,
-                                                      String langCode) {
+                                                      String lang) {
         if (manufacturerRepo.existsByName(dto.getName())) {
             throw new ConflictException("Manufacturer with name '" + dto.getName() + "' already exists");
         }
@@ -72,20 +72,20 @@ public class ManufacturerService {
 
         List<ManufacturerTranslation> translations = dto.getTranslations().stream()
             .map(t -> {
-                Language lang = languageRepo.findByCode(t.getLanguageCode())
-                        .orElseThrow(() -> new EntityNotFoundException("Language not found: " + t.getLanguageCode()));
-                return new ManufacturerTranslation(t.getName(), savedManufacturer, lang);
+                Language language = languageRepo.findByCode(t.getLang())
+                        .orElseThrow(() -> new EntityNotFoundException("Language not found: " + t.getLang()));
+                return new ManufacturerTranslation(t.getName(), savedManufacturer, language);
             })
             .collect(Collectors.toList());
 
         manufacturerTranslationRepo.saveAll(translations);
         savedManufacturer.setTranslations(new HashSet<>(translations));
 
-        return manufacturerMapper.toResponse(savedManufacturer, langCode);
+        return manufacturerMapper.toResponse(savedManufacturer, lang);
     }
 
     public ManufacturerDTOResponse editManufacturer(Long id, ManufacturerDTORequest dto,
-                                                    String langCode) {
+                                                    String lang) {
         return manufacturerRepo.findByIdWithTranslations(id).map(existing -> {
             if (!existing.getName().equals(dto.getName()) && manufacturerRepo.existsByName(dto.getName())) {
                 throw new ConflictException("Manufacturer with name '" + dto.getName() + "' already exists");
@@ -99,9 +99,9 @@ public class ManufacturerService {
 
                 List<ManufacturerTranslation> translations = dto.getTranslations().stream()
                         .map(t -> {
-                            Language lang = languageRepo.findByCode(t.getLanguageCode())
-                                    .orElseThrow(() -> new EntityNotFoundException("Language not found: " + t.getLanguageCode()));
-                            return new ManufacturerTranslation(t.getName(), saved, lang);
+                            Language language = languageRepo.findByCode(t.getLang())
+                                    .orElseThrow(() -> new EntityNotFoundException("Language not found: " + t.getLang()));
+                            return new ManufacturerTranslation(t.getName(), saved, language);
                         })
                         .toList();
 
@@ -112,7 +112,7 @@ public class ManufacturerService {
             Manufacturer updated = manufacturerRepo.findByIdWithTranslations(saved.getId())
                     .orElseThrow(() -> new EntityNotFoundException("Updated manufacturer not found"));
 
-            return manufacturerMapper.toResponse(updated, langCode);
+            return manufacturerMapper.toResponse(updated, lang);
 
         }).orElseThrow(() -> new EntityNotFoundException("Manufacturer with ID " + id + " not found"));
     }

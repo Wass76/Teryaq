@@ -14,7 +14,7 @@ public enum DiscountType {
         return arabicName;
     }
     
-    public String getTranslatedName(String languageCode) {
-        return "ar".equalsIgnoreCase(languageCode) ? arabicName : this.name();
+    public String getTranslatedName(String lang) {
+        return "ar".equalsIgnoreCase(lang) ? arabicName : this.name();
     }
 } 
