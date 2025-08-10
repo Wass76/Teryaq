@@ -7,8 +7,8 @@ import lombok.NoArgsConstructor;
 
 @Data
 @Builder
-@AllArgsConstructor
 @NoArgsConstructor
+@AllArgsConstructor
 public class UserAuthenticationResponse {
     private String token;
     private String email;
@@ -16,4 +16,7 @@ public class UserAuthenticationResponse {
     private String lastName;
 //    private String username;
     private String role;
+    
+    // Account activation status
+    private Boolean isActive;
 } 

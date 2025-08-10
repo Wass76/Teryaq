@@ -175,6 +175,36 @@ public class EmployeeService extends BaseSecurityService {
                 .orElseThrow(() -> new ResourceNotFoundException("Employee not found"));
     }
     
+    /**
+     * Get employee by ID with authorization check to ensure the current user has access to this employee
+     * (same pharmacy)
+     * @param employeeId The ID of the employee to retrieve
+     * @return EmployeeResponseDTO of the employee
+     * @throws UnAuthorizedException if the current user doesn't have access to this employee
+     */
+    public EmployeeResponseDTO getEmployeeByIdWithAuth(Long employeeId) {
+        // Get current user and validate they are an employee
+        User currentUser = getCurrentUser();
+        if (!(currentUser instanceof Employee)) {
+            throw new UnAuthorizedException("Only pharmacy employees can access employee data");
+        }
+        
+        Employee currentEmployee = (Employee) currentUser;
+        if (currentEmployee.getPharmacy() == null) {
+            throw new UnAuthorizedException("Employee is not associated with any pharmacy");
+        }
+        
+        Long currentPharmacyId = currentEmployee.getPharmacy().getId();
+        
+        // Get the employee and validate pharmacy access
+        Employee employee = getEmployeeById(employeeId);
+        if (!employee.getPharmacy().getId().equals(currentPharmacyId)) {
+            throw new UnAuthorizedException("You can only access employees in your own pharmacy");
+        }
+        
+        return EmployeeMapper.toResponseDTO(employee);
+    }
+
     public Employee getEmployeeByEmail(String email) {
         return employeeRepository.findByEmail(email)
                 .orElseThrow(() -> new ResourceNotFoundException("Employee not found"));

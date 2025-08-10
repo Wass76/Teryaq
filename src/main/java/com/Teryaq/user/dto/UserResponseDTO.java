@@ -24,4 +24,11 @@ public class UserResponseDTO {
     private LocalDateTime updatedAt;
     private Long createdBy;
     private Long updatedBy;
+    
+    // Pharmacy information for employees
+    private Long pharmacyId;
+    private String pharmacyName;
+    
+    // Account activation status
+    private Boolean isAccountActive;
 } 

@@ -36,6 +36,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import java.util.List;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
+import com.Teryaq.utils.exception.UnAuthorizedException;
 
 @Service
 public class PharmacyService {
@@ -80,6 +81,10 @@ public class PharmacyService {
         pharmacy.setLicenseNumber(dto.getLicenseNumber());
         pharmacy.setPhoneNumber(dto.getPhoneNumber());
         pharmacy.setType(PharmacyType.MAIN);
+        
+        // Set initial isActive status (false until registration is completed)
+        pharmacy.setIsActive(false);
+        
         pharmacy = pharmacyRepository.save(pharmacy);
         logger.info("Pharmacy saved with ID: " + pharmacy.getId());
 
@@ -111,13 +116,27 @@ public class PharmacyService {
     public PharmacyResponseDTO completeRegistration(String newPassword, String location, String managerFirstName, String managerLastName, String pharmacyPhone, String pharmacyEmail, String openingHours) {
         Employee manager = (Employee) userService.getCurrentUser();
         Pharmacy pharmacy = manager.getPharmacy();
-        // Update only non-null fields for address, email, openingHours
-        PharmacyMapper.updatePharmacyFromRequest(pharmacy, location, pharmacyEmail, openingHours);
+        
+        // Update pharmacy fields
+        if (location != null && !location.isEmpty()) {
+            pharmacy.setAddress(location);
+        }
+        if (pharmacyEmail != null && !pharmacyEmail.isEmpty()) {
+            pharmacy.setEmail(pharmacyEmail);
+        }
+        if (openingHours != null && !openingHours.isEmpty()) {
+            pharmacy.setOpeningHours(openingHours);
+        }
         if (pharmacyPhone != null && !pharmacyPhone.isEmpty()) {
             pharmacy.setPhoneNumber(pharmacyPhone);
         }
+        
+        // Update the isActive status based on registration completion
+        PharmacyMapper.updatePharmacyActiveStatus(pharmacy);
+        
         pharmacyRepository.save(pharmacy);
-        // Optionally update manager info
+        
+        // Update manager info
         manager.setPassword(passwordEncoder.encode(newPassword));
         if(managerFirstName != null && !managerFirstName.isEmpty()) {
             manager.setFirstName(managerFirstName);
@@ -127,6 +146,8 @@ public class PharmacyService {
         }
         manager.setPharmacy(pharmacy);
         employeeRepository.save(manager);
+        
+        logger.info("Pharmacy registration completed. isActive: " + pharmacy.getIsActive());
         return PharmacyMapper.toResponseDTO(pharmacy, manager);
     }
 
@@ -163,6 +184,10 @@ public class PharmacyService {
             response.setFirstName(user.getFirstName());
             response.setLastName(user.getLastName());
             response.setRole(user.getRole().getName());
+            
+            // Platform admin accounts are always active
+            response.setIsActive(true);
+            
             return response;
         } else {
             rateLimiterConfig.blockIP(userIp);
@@ -198,6 +223,20 @@ public class PharmacyService {
             response.setFirstName(employee.getFirstName());
             response.setLastName(employee.getLastName());
             response.setRole(employee.getRole().getName());
+            
+            // Set isActive based on pharmacy registration completion
+            Boolean isActive = false;
+            if (employee.getPharmacy() != null) {
+                Pharmacy pharmacy = employee.getPharmacy();
+                if (pharmacy.getIsActive() != null) {
+                    isActive = pharmacy.getIsActive();
+                } else {
+                    // Fallback to calculated value if isActive is not set
+                    isActive = PharmacyMapper.isPharmacyAccountActive(pharmacy);
+                }
+            }
+            response.setIsActive(isActive);
+            
             return response;
         } else {
             rateLimiterConfig.blockIP(userIp);
@@ -216,6 +255,65 @@ public class PharmacyService {
                     return PharmacyMapper.toResponseDTO(pharmacy, manager);
                 })
                 .collect(Collectors.toList());
+    }
+    
+    /**
+     * Get pharmacy by ID with authorization check to ensure the current user has access to this pharmacy
+     * @param pharmacyId The ID of the pharmacy to retrieve
+     * @return PharmacyResponseDTO of the pharmacy
+     * @throws UnAuthorizedException if the current user doesn't have access to this pharmacy
+     */
+    public PharmacyResponseDTO getPharmacyByIdWithAuth(Long pharmacyId) {
+        // Get current user and validate they are an employee
+        User currentUser = userService.getCurrentUser();
+        if (!(currentUser instanceof Employee)) {
+            throw new UnAuthorizedException("Only pharmacy employees can access pharmacy data");
+        }
+        
+        Employee currentEmployee = (Employee) currentUser;
+        if (currentEmployee.getPharmacy() == null) {
+            throw new UnAuthorizedException("Employee is not associated with any pharmacy");
+        }
+        
+        Long currentPharmacyId = currentEmployee.getPharmacy().getId();
+        
+        // Check if the requested pharmacy ID matches the current user's pharmacy
+        if (!currentPharmacyId.equals(pharmacyId)) {
+            throw new UnAuthorizedException("You can only access your own pharmacy");
+        }
+        
+        // Get the pharmacy and find its manager
+        Pharmacy pharmacy = pharmacyRepository.findById(pharmacyId)
+                .orElseThrow(() -> new ResourceNotFoundException("Pharmacy not found"));
+        
+        // Find manager for this pharmacy
+        Employee manager = employeeRepository.findAll().stream()
+            .filter(e -> e.getPharmacy() != null && e.getPharmacy().getId().equals(pharmacy.getId()) && e.getRole() != null && "PHARMACY_MANAGER".equals(e.getRole().getName()))
+            .findFirst().orElse(null);
+        
+        return PharmacyMapper.toResponseDTO(pharmacy, manager);
+    }
+    
+    /**
+     * Update the isActive status for all pharmacies based on their registration completion
+     * This method is useful for data migration or bulk updates
+     */
+    @Transactional
+    public void updateAllPharmacyActiveStatus() {
+        List<Pharmacy> pharmacies = pharmacyRepository.findAll();
+        int updatedCount = 0;
+        
+        for (Pharmacy pharmacy : pharmacies) {
+            boolean wasActive = pharmacy.getIsActive() != null ? pharmacy.getIsActive() : false;
+            PharmacyMapper.updatePharmacyActiveStatus(pharmacy);
+            
+            if (pharmacy.getIsActive() != wasActive) {
+                updatedCount++;
+            }
+        }
+        
+        pharmacyRepository.saveAll(pharmacies);
+        logger.info("Updated isActive status for " + updatedCount + " pharmacies");
     }
 
 
