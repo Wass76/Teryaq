@@ -104,15 +104,21 @@ public class PurchaseOrderService extends BaseSecurityService {
         validateOrderCanBeEdited(order);
         
         Supplier supplier = getSupplier(request.getSupplierId());
-        List<PurchaseOrderItem> items = createOrderItems(request);
+        List<PurchaseOrderItem> newItems = createOrderItems(request);
+        
+        // Set the purchaseOrder reference on each new item
+        newItems.forEach(item -> item.setPurchaseOrder(order));
         
         // Update order properties
         order.setSupplier(supplier);
         order.setCurrency(request.getCurrency());
-        order.setItems(items);
+        
+        // Properly manage the items collection to avoid Hibernate cascade issues
+        order.getItems().clear();
+        order.getItems().addAll(newItems);
         
         // Recalculate total
-        double total = items.stream()
+        double total = newItems.stream()
             .mapToDouble(item -> item.getQuantity() * item.getPrice())
             .sum();
         order.setTotal(total);

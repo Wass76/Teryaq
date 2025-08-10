@@ -126,11 +126,17 @@ public class PurchaseInvoiceService extends BaseSecurityService {
         Supplier supplier = getSupplier(request.getSupplierId());
         List<PurchaseInvoiceItem> items = validateAndCreateInvoiceItems(request);
         
+        // Set the purchaseInvoice reference on each new item
+        items.forEach(item -> item.setPurchaseInvoice(invoice));
+        
         // Update invoice properties
         invoice.setPurchaseOrder(order);
         invoice.setSupplier(supplier);
         invoice.setCurrency(request.getCurrency());
-        invoice.setItems(items);
+        
+        // Properly manage the items collection to avoid Hibernate cascade issues
+        invoice.getItems().clear();
+        invoice.getItems().addAll(items);
         
         // Recalculate total
         double total = items.stream()
