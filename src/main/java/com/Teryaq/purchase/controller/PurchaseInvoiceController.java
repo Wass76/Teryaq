@@ -7,7 +7,7 @@ import com.Teryaq.purchase.service.PurchaseInvoiceService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import java.util.List;
+
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Max;
@@ -69,22 +69,30 @@ public class PurchaseInvoiceController {
         return ResponseEntity.ok(purchaseInvoiceService.getById(id, language));
     }
 
-    @GetMapping
+    @PutMapping("/{id}")
     @Operation(
-        summary = "Get all purchase invoices",
-        description = "Retrieves all purchase invoices"
+        summary = "Edit purchase invoice",
+        description = "Updates an existing purchase invoice with the given request"
     )
     @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "Successfully retrieved all purchase invoices",
+        @ApiResponse(responseCode = "200", description = "Successfully updated purchase invoice",
             content = @Content(mediaType = "application/json",
             schema = @Schema(implementation = PurchaseInvoiceDTOResponse.class))),
+        @ApiResponse(responseCode = "400", description = "Invalid purchase invoice data"),
+        @ApiResponse(responseCode = "404", description = "Purchase invoice not found"),
+        @ApiResponse(responseCode = "409", description = "Purchase invoice cannot be edited"),
         @ApiResponse(responseCode = "500", description = "Internal server error")
     })
-    public ResponseEntity<List<PurchaseInvoiceDTOResponse>> listAll(
+    public ResponseEntity<PurchaseInvoiceDTOResponse> edit(
+            @Parameter(description = "Purchase invoice ID", example = "1") 
+            @Min(1) @PathVariable Long id,
+            @Parameter(description = "Updated purchase invoice data", required = true)
+            @Valid @RequestBody PurchaseInvoiceDTORequest request, 
             @Parameter(description = "Language code", example = "ar") 
             @RequestParam(defaultValue = "ar") String language) {
-        return ResponseEntity.ok(purchaseInvoiceService.listAll(language));
+        return ResponseEntity.ok(purchaseInvoiceService.edit(id, request, language));
     }
+
 
     @GetMapping("/paginated")
     @Operation(
