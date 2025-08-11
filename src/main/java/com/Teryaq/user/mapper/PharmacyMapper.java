@@ -41,7 +41,44 @@ public class PharmacyMapper {
             dto.setManagerFirstName(manager.getFirstName());
             dto.setManagerLastName(manager.getLastName());
         }
+        
+        // Set isActive from entity field, fallback to calculated value if null
+        if (pharmacy.getIsActive() != null) {
+            dto.setIsActive(pharmacy.getIsActive());
+        } else {
+            dto.setIsActive(isPharmacyAccountActive(pharmacy));
+        }
+        
         return dto;
+    }
+    
+    /**
+     * Determines if a pharmacy account is active based on completion of registration data
+     * @param pharmacy The pharmacy entity
+     * @return true if the pharmacy has complete registration data
+     */
+    public static boolean isPharmacyAccountActive(Pharmacy pharmacy) {
+        if (pharmacy == null) {
+            return false;
+        }
+        
+        // Check if essential pharmacy data is complete
+        // A pharmacy is considered active if it has basic required information
+        return pharmacy.getName() != null && !pharmacy.getName().trim().isEmpty() &&
+               pharmacy.getLicenseNumber() != null && !pharmacy.getLicenseNumber().trim().isEmpty() &&
+               pharmacy.getAddress() != null && !pharmacy.getAddress().trim().isEmpty() &&
+               pharmacy.getPhoneNumber() != null && !pharmacy.getPhoneNumber().trim().isEmpty();
+    }
+    
+    /**
+     * Updates the isActive field of a pharmacy based on registration completion
+     * @param pharmacy The pharmacy entity to update
+     */
+    public static void updatePharmacyActiveStatus(Pharmacy pharmacy) {
+        if (pharmacy != null) {
+            boolean isActive = isPharmacyAccountActive(pharmacy);
+            pharmacy.setIsActive(isActive);
+        }
     }
 
     public static void updatePharmacyFromRequest(Pharmacy pharmacy, String address, String email, String openingHours) {

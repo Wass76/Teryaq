@@ -208,7 +208,32 @@ public class UserService {
         userAuthenticationResponse.setFirstName(user.getFirstName());
         userAuthenticationResponse.setLastName(user.getLastName());
         userAuthenticationResponse.setRole(user.getRole().getName());
+        
+        // Set isActive based on user type and role
+        Boolean isActive = determineUserActiveStatus(user);
+        userAuthenticationResponse.setIsActive(isActive);
+        
         return userAuthenticationResponse;
+    }
+    
+    private Boolean determineUserActiveStatus(User user) {
+        // For admin users (PLATFORM_ADMIN), check user status
+        if (user.getRole().getName().equals("PLATFORM_ADMIN")) {
+            return user.getStatus() == com.Teryaq.user.Enum.UserStatus.ACTIVE;
+        }
+        
+        // For regular employees, check if they are an Employee and their pharmacy is active
+        if (user instanceof com.Teryaq.user.entity.Employee) {
+            com.Teryaq.user.entity.Employee employee = (com.Teryaq.user.entity.Employee) user;
+            if (employee.getPharmacy() != null) {
+                return employee.getPharmacy().getIsActive() != null ? 
+                       employee.getPharmacy().getIsActive() : 
+                       employee.getStatus() == com.Teryaq.user.Enum.UserStatus.ACTIVE;
+            }
+        }
+        
+        // Fallback to user status for other cases
+        return user.getStatus() == com.Teryaq.user.Enum.UserStatus.ACTIVE;
     }
 
     public User getCurrentUser() {

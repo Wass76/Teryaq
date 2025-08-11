@@ -71,6 +71,25 @@ public class EmployeeController {
         return ResponseEntity.ok(employeeService.getAllEmployeesInPharmacy());
     }
 
+    @GetMapping("/{employeeId}")
+    @PreAuthorize("hasRole('PHARMACY_MANAGER')")
+    @Operation(
+        summary = "Get employee by ID",
+        description = "Retrieves a specific employee by ID. Requires PHARMACY_MANAGER role and employee must belong to the same pharmacy."
+    )
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Successfully retrieved employee",
+            content = @Content(mediaType = "application/json",
+            schema = @Schema(implementation = EmployeeResponseDTO.class))),
+        @ApiResponse(responseCode = "403", description = "Access denied - insufficient permissions or employee not in same pharmacy"),
+        @ApiResponse(responseCode = "404", description = "Employee not found"),
+        @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
+    public ResponseEntity<EmployeeResponseDTO> getEmployeeById(
+            @Parameter(description = "Employee ID", example = "1") @PathVariable Long employeeId) {
+        return ResponseEntity.ok(employeeService.getEmployeeByIdWithAuth(employeeId));
+    }
+
     @PutMapping("/{employeeId}")
     @PreAuthorize("hasRole('PHARMACY_MANAGER')")
     @Operation(

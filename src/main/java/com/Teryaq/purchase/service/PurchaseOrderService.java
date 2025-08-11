@@ -5,6 +5,7 @@ import com.Teryaq.product.Enum.ProductType;
 import com.Teryaq.product.dto.*;
 import com.Teryaq.purchase.dto.PurchaseOrderDTORequest;
 import com.Teryaq.purchase.dto.PurchaseOrderDTOResponse;
+import com.Teryaq.purchase.dto.PurchaseOrderItemDTORequest;
 import com.Teryaq.purchase.entity.PurchaseOrder;
 import com.Teryaq.purchase.entity.PurchaseOrderItem;
 import com.Teryaq.product.entity.PharmacyProduct;
@@ -60,60 +61,17 @@ public class PurchaseOrderService extends BaseSecurityService {
 
     @Transactional
     public PurchaseOrderDTOResponse create(PurchaseOrderDTORequest request, String language) {
-        // Validate that the current user is a pharmacy employee
-        User currentUser = getCurrentUser();
-        if (!(currentUser instanceof Employee)) {
-            throw new UnAuthorizedException("Only pharmacy employees can create purchase orders");
-        }
-        
-        Employee employee = (Employee) currentUser;
-        if (employee.getPharmacy() == null) {
-            throw new UnAuthorizedException("Employee is not associated with any pharmacy");
-        }
-        
+        Employee employee = validateAndGetEmployee();
         Pharmacy pharmacy = employee.getPharmacy();
+        Supplier supplier = getSupplier(request.getSupplierId());
+        List<PurchaseOrderItem> items = createOrderItems(request);
         
-        Supplier supplier = supplierRepository.findById(request.getSupplierId())
-                .orElseThrow(() -> new ResourceNotFoundException("Supplier not found"));
-        List<PurchaseOrderItem> items = request.getItems().stream().map(itemDto -> {
-            String barcode = itemDto.getBarcode();
-            Double price = itemDto.getPrice();
-            if (itemDto.getProductType() == ProductType.PHARMACY) {
-                PharmacyProduct product = pharmacyProductRepo.findById(itemDto.getProductId())
-                    .orElseThrow(() -> new ResourceNotFoundException("PharmacyProduct not found: " + itemDto.getProductId()));
-                if (barcode == null || barcode.isBlank()) {
-                    barcode = product.getBarcodes().stream().findFirst().map(b -> b.getBarcode()).orElse(null);
-                }
-                if (price == null) {
-                    price = (double) product.getRefPurchasePrice();
-                }
-            } else if (itemDto.getProductType() == ProductType.MASTER) {
-                MasterProduct product = masterProductRepo.findById(itemDto.getProductId())
-                    .orElseThrow(() -> new ResourceNotFoundException("MasterProduct not found: " + itemDto.getProductId()));
-                if (barcode == null || barcode.isBlank()) {
-                    barcode = product.getBarcode();
-                }
-                // Always use master product price
-                price = (double) product.getRefPurchasePrice();
-            } else {
-                throw new ConflictException("Invalid productType: " + itemDto.getProductType());
-            }
-            return purchaseOrderMapper.toItemEntity(itemDto, barcode, price);
-        }).collect(Collectors.toList());
-        if (items.isEmpty()) throw new ConflictException("Order must have at least one item");
         PurchaseOrder order = purchaseOrderMapper.toEntity(request, supplier, pharmacy, items);
         PurchaseOrder saved = purchaseOrderRepo.save(order);
-        // Fetch product lists for mapping
-        List<Long> pharmacyProductIds = saved.getItems().stream()
-            .filter(i -> i.getProductType() == ProductType.PHARMACY)
-            .map(PurchaseOrderItem::getProductId)
-            .toList();
-        List<Long> masterProductIds = saved.getItems().stream()
-            .filter(i -> i.getProductType() == ProductType.MASTER)
-            .map(PurchaseOrderItem::getProductId)
-            .toList();
-        List<PharmacyProduct> pharmacyProducts = pharmacyProductRepo.findAllById(pharmacyProductIds);
-        List<MasterProduct> masterProducts = masterProductRepo.findAllById(masterProductIds);
+        
+        List<PharmacyProduct> pharmacyProducts = getPharmacyProducts(saved);
+        List<MasterProduct> masterProducts = getMasterProducts(saved);
+        
         return purchaseOrderMapper.toResponse(saved, pharmacyProducts, masterProducts, language);
     }
 
@@ -122,40 +80,14 @@ public class PurchaseOrderService extends BaseSecurityService {
     }
 
     public PurchaseOrderDTOResponse getById(Long id, String language) {
-        // Validate that the current user is a pharmacy employee
-        User currentUser = getCurrentUser();
-        if (!(currentUser instanceof Employee)) {
-            throw new UnAuthorizedException("Only pharmacy employees can access purchase orders");
-        }
-        
-        Employee employee = (Employee) currentUser;
-        if (employee.getPharmacy() == null) {
-            throw new UnAuthorizedException("Employee is not associated with any pharmacy");
-        }
-        
+        Employee employee = validateAndGetEmployee();
         Long pharmacyId = employee.getPharmacy().getId();
         
-        PurchaseOrder order = purchaseOrderRepo.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Purchase order not found"));
+        PurchaseOrder order = getOrderByIdAndValidatePharmacy(id, pharmacyId);
         
-        // Validate that the order belongs to the current user's pharmacy
-        if (!order.getPharmacy().getId().equals(pharmacyId)) {
-            throw new UnAuthorizedException("You can only access purchase orders from your own pharmacy");
-        }
-        // Fetch product names for all items
-        List<PharmacyProduct> pharmacyProducts = pharmacyProductRepo.findAllById(
-            order.getItems().stream()
-                .filter(i -> i.getProductType() == ProductType.PHARMACY)
-                .map(PurchaseOrderItem::getProductId)
-                .toList()
-        );
-        List<MasterProduct> masterProducts = masterProductRepo.findAllById(
-            order.getItems().stream()
-                .filter(i -> i.getProductType() == ProductType.MASTER)
-                .map(PurchaseOrderItem::getProductId)
-                .toList()
-        );
-        // Merge names for mapping
+        List<PharmacyProduct> pharmacyProducts = getPharmacyProducts(order);
+        List<MasterProduct> masterProducts = getMasterProducts(order);
+        
         return purchaseOrderMapper.toResponse(order, pharmacyProducts, masterProducts, language);
     }
 
@@ -163,83 +95,56 @@ public class PurchaseOrderService extends BaseSecurityService {
         return getById(id, "ar");
     }
 
-    public List<PurchaseOrderDTOResponse> listAll(String language) {
-        // Validate that the current user is a pharmacy employee
-        User currentUser = getCurrentUser();
-        if (!(currentUser instanceof Employee)) {
-            throw new UnAuthorizedException("Only pharmacy employees can access purchase orders");
-        }
-        
-        Employee employee = (Employee) currentUser;
-        if (employee.getPharmacy() == null) {
-            throw new UnAuthorizedException("Employee is not associated with any pharmacy");
-        }
-        
+    @Transactional
+    public PurchaseOrderDTOResponse edit(Long id, PurchaseOrderDTORequest request, String language) {
+        Employee employee = validateAndGetEmployee();
         Long pharmacyId = employee.getPharmacy().getId();
         
-        List<PurchaseOrder> orders = purchaseOrderRepo.findByPharmacyId(pharmacyId);
+        PurchaseOrder order = getOrderByIdAndValidatePharmacy(id, pharmacyId);
+        validateOrderCanBeEdited(order);
         
-        // Collect all product IDs efficiently
-        List<Long> allPharmacyProductIds = orders.stream()
-            .flatMap(order -> order.getItems().stream())
-            .filter(item -> item.getProductType() == ProductType.PHARMACY)
-            .map(PurchaseOrderItem::getProductId)
-            .distinct()
-            .toList();
-            
-        List<Long> allMasterProductIds = orders.stream()
-            .flatMap(order -> order.getItems().stream())
-            .filter(item -> item.getProductType() == ProductType.MASTER)
-            .map(PurchaseOrderItem::getProductId)
-            .distinct()
-            .toList();
+        Supplier supplier = getSupplier(request.getSupplierId());
+        List<PurchaseOrderItem> newItems = createOrderItems(request);
         
-        // Fetch all products once
-        List<PharmacyProduct> allPharmacyProducts = pharmacyProductRepo.findAllById(allPharmacyProductIds);
-        List<MasterProduct> allMasterProducts = masterProductRepo.findAllById(allMasterProductIds);
+        // Set the purchaseOrder reference on each new item
+        newItems.forEach(item -> item.setPurchaseOrder(order));
         
-        return orders.stream()
-            .map(order -> purchaseOrderMapper.toResponse(order, allPharmacyProducts, allMasterProducts, language))
-            .toList();
+        // Update order properties
+        order.setSupplier(supplier);
+        order.setCurrency(request.getCurrency());
+        
+        // Properly manage the items collection to avoid Hibernate cascade issues
+        order.getItems().clear();
+        order.getItems().addAll(newItems);
+        
+        // Recalculate total
+        double total = newItems.stream()
+            .mapToDouble(item -> item.getQuantity() * item.getPrice())
+            .sum();
+        order.setTotal(total);
+        
+        PurchaseOrder saved = purchaseOrderRepo.save(order);
+        
+        List<PharmacyProduct> pharmacyProducts = getPharmacyProducts(saved);
+        List<MasterProduct> masterProducts = getMasterProducts(saved);
+        
+        return purchaseOrderMapper.toResponse(saved, pharmacyProducts, masterProducts, language);
+    }
+
+    public PurchaseOrderDTOResponse edit(Long id, PurchaseOrderDTORequest request) {
+        return edit(id, request, "ar");
     }
 
     public PaginationDTO<PurchaseOrderDTOResponse> listAllPaginated(int page, int size, String language) {
-        // Validate that the current user is a pharmacy employee
-        User currentUser = getCurrentUser();
-        if (!(currentUser instanceof Employee)) {
-            throw new UnAuthorizedException("Only pharmacy employees can access purchase orders");
-        }
-        
-        Employee employee = (Employee) currentUser;
-        if (employee.getPharmacy() == null) {
-            throw new UnAuthorizedException("Employee is not associated with any pharmacy");
-        }
-        
+        Employee employee = validateAndGetEmployee();
         Long pharmacyId = employee.getPharmacy().getId();
         
         Pageable pageable = PageRequest.of(page, size);
         Page<PurchaseOrder> orderPage = purchaseOrderRepo.findByPharmacyId(pharmacyId, pageable);
         
         List<PurchaseOrder> orders = orderPage.getContent();
-        
-        // Collect all product IDs efficiently
-        List<Long> allPharmacyProductIds = orders.stream()
-            .flatMap(order -> order.getItems().stream())
-            .filter(item -> item.getProductType() == ProductType.PHARMACY)
-            .map(PurchaseOrderItem::getProductId)
-            .distinct()
-            .toList();
-            
-        List<Long> allMasterProductIds = orders.stream()
-            .flatMap(order -> order.getItems().stream())
-            .filter(item -> item.getProductType() == ProductType.MASTER)
-            .map(PurchaseOrderItem::getProductId)
-            .distinct()
-            .toList();
-        
-        // Fetch all products once
-        List<PharmacyProduct> allPharmacyProducts = pharmacyProductRepo.findAllById(allPharmacyProductIds);
-        List<MasterProduct> allMasterProducts = masterProductRepo.findAllById(allMasterProductIds);
+        List<PharmacyProduct> allPharmacyProducts = getAllPharmacyProducts(orders);
+        List<MasterProduct> allMasterProducts = getAllMasterProducts(orders);
         
         List<PurchaseOrderDTOResponse> responses = orders.stream()
             .map(order -> purchaseOrderMapper.toResponse(order, allPharmacyProducts, allMasterProducts, language))
@@ -252,87 +157,18 @@ public class PurchaseOrderService extends BaseSecurityService {
         return listAllPaginated(page, size, "ar");
     }
 
-    public List<PurchaseOrderDTOResponse> getByStatus(OrderStatus status, String language) {
-        // Validate that the current user is a pharmacy employee
-        User currentUser = getCurrentUser();
-        if (!(currentUser instanceof Employee)) {
-            throw new UnAuthorizedException("Only pharmacy employees can access purchase orders");
-        }
-        
-        Employee employee = (Employee) currentUser;
-        if (employee.getPharmacy() == null) {
-            throw new UnAuthorizedException("Employee is not associated with any pharmacy");
-        }
-        
-        Long pharmacyId = employee.getPharmacy().getId();
-        
-        List<PurchaseOrder> orders = purchaseOrderRepo.findByPharmacyIdAndStatus(pharmacyId, status);
-        
-        // Collect all product IDs efficiently
-        List<Long> allPharmacyProductIds = orders.stream()
-            .flatMap(order -> order.getItems().stream())
-            .filter(item -> item.getProductType() == ProductType.PHARMACY)
-            .map(PurchaseOrderItem::getProductId)
-            .distinct()
-            .toList();
-            
-        List<Long> allMasterProductIds = orders.stream()
-            .flatMap(order -> order.getItems().stream())
-            .filter(item -> item.getProductType() == ProductType.MASTER)
-            .map(PurchaseOrderItem::getProductId)
-            .distinct()
-            .toList();
-        
-        // Fetch all products once
-        List<PharmacyProduct> allPharmacyProducts = pharmacyProductRepo.findAllById(allPharmacyProductIds);
-        List<MasterProduct> allMasterProducts = masterProductRepo.findAllById(allMasterProductIds);
-        
-        return orders.stream()
-            .map(order -> purchaseOrderMapper.toResponse(order, allPharmacyProducts, allMasterProducts, language))
-            .toList();
-    }
 
-    public List<PurchaseOrderDTOResponse> getByStatus(OrderStatus status) {
-        return getByStatus(status, "ar");
-    }
 
     public PaginationDTO<PurchaseOrderDTOResponse> getByStatusPaginated(OrderStatus status, int page, int size, String language) {
-        // Validate that the current user is a pharmacy employee
-        User currentUser = getCurrentUser();
-        if (!(currentUser instanceof Employee)) {
-            throw new UnAuthorizedException("Only pharmacy employees can access purchase orders");
-        }
-        
-        Employee employee = (Employee) currentUser;
-        if (employee.getPharmacy() == null) {
-            throw new UnAuthorizedException("Employee is not associated with any pharmacy");
-        }
-        
+        Employee employee = validateAndGetEmployee();
         Long pharmacyId = employee.getPharmacy().getId();
         
         Pageable pageable = PageRequest.of(page, size);
         Page<PurchaseOrder> orderPage = purchaseOrderRepo.findByPharmacyIdAndStatus(pharmacyId, status, pageable);
         
         List<PurchaseOrder> orders = orderPage.getContent();
-        
-        // Collect all product IDs efficiently
-        List<Long> allPharmacyProductIds = orders.stream()
-            .flatMap(order -> order.getItems().stream())
-            .filter(item -> item.getProductType() == ProductType.PHARMACY)
-            .map(PurchaseOrderItem::getProductId)
-            .distinct()
-            .toList();
-            
-        List<Long> allMasterProductIds = orders.stream()
-            .flatMap(order -> order.getItems().stream())
-            .filter(item -> item.getProductType() == ProductType.MASTER)
-            .map(PurchaseOrderItem::getProductId)
-            .distinct()
-            .toList();
-        
-        // Fetch all products once
-        List<PharmacyProduct> allPharmacyProducts = pharmacyProductRepo.findAllById(allPharmacyProductIds);
-        List<MasterProduct> allMasterProducts = masterProductRepo.findAllById(allMasterProductIds);
+        List<PharmacyProduct> allPharmacyProducts = getAllPharmacyProducts(orders);
+        List<MasterProduct> allMasterProducts = getAllMasterProducts(orders);
         
         List<PurchaseOrderDTOResponse> responses = orders.stream()
             .map(order -> purchaseOrderMapper.toResponse(order, allPharmacyProducts, allMasterProducts, language))
@@ -345,16 +181,25 @@ public class PurchaseOrderService extends BaseSecurityService {
         return getByStatusPaginated(status, page, size, "ar");
     }
 
-    public List<PurchaseOrderDTOResponse> listAll() {
-        return listAll("ar");
-    }
+
 
     @Transactional
     public void cancel(Long id) {
-        // Validate that the current user is a pharmacy employee
+        Employee employee = validateAndGetEmployee();
+        Long pharmacyId = employee.getPharmacy().getId();
+        
+        PurchaseOrder order = getOrderByIdAndValidatePharmacy(id, pharmacyId);
+        validateOrderCanBeCancelled(order);
+        
+        order.setStatus(OrderStatus.CANCELLED);
+        purchaseOrderRepo.save(order);
+    }
+
+    // Private helper methods for validation and authorization
+    private Employee validateAndGetEmployee() {
         User currentUser = getCurrentUser();
         if (!(currentUser instanceof Employee)) {
-            throw new UnAuthorizedException("Only pharmacy employees can cancel purchase orders");
+            throw new UnAuthorizedException("Only pharmacy employees can perform this operation");
         }
         
         Employee employee = (Employee) currentUser;
@@ -362,22 +207,138 @@ public class PurchaseOrderService extends BaseSecurityService {
             throw new UnAuthorizedException("Employee is not associated with any pharmacy");
         }
         
-        Long pharmacyId = employee.getPharmacy().getId();
-        
+        return employee;
+    }
+
+    private Supplier getSupplier(Long supplierId) {
+        return supplierRepository.findById(supplierId)
+                .orElseThrow(() -> new ResourceNotFoundException("Supplier not found"));
+    }
+
+    private PurchaseOrder getOrderByIdAndValidatePharmacy(Long id, Long pharmacyId) {
         PurchaseOrder order = purchaseOrderRepo.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Purchase order not found"));
         
-        // Validate that the order belongs to the current user's pharmacy
         if (!order.getPharmacy().getId().equals(pharmacyId)) {
-            throw new UnAuthorizedException("You can only cancel purchase orders from your own pharmacy");
+            throw new UnAuthorizedException("You can only access purchase orders from your own pharmacy");
         }
         
+        return order;
+    }
+
+    private void validateOrderCanBeCancelled(PurchaseOrder order) {
         if (order.getStatus() == OrderStatus.DONE) {
             throw new ConflictException("Cannot cancel a completed order");
         }
-        order.setStatus(OrderStatus.CANCELLED);
-        purchaseOrderRepo.save(order);
     }
 
+    private void validateOrderCanBeEdited(PurchaseOrder order) {
+        if (order.getStatus() == OrderStatus.DONE) {
+            throw new ConflictException("Cannot edit a completed order");
+        }
+    }
 
+    // Private helper methods for order item creation
+    private List<PurchaseOrderItem> createOrderItems(PurchaseOrderDTORequest request) {
+        List<PurchaseOrderItem> items = request.getItems().stream()
+            .map(item -> createOrderItem(item))
+            .collect(Collectors.toList());
+        
+        if (items.isEmpty()) {
+            throw new ConflictException("Order must have at least one item");
+        }
+        
+        return items;
+    }
+
+    private PurchaseOrderItem createOrderItem(PurchaseOrderItemDTORequest itemDto) {
+        String barcode = itemDto.getBarcode();
+        Double price = itemDto.getPrice();
+        
+        if (itemDto.getProductType() == ProductType.PHARMACY) {
+            PharmacyProduct product = getPharmacyProduct(itemDto.getProductId());
+            barcode = getBarcodeForPharmacyProduct(product, barcode);
+            price = getPriceForPharmacyProduct(product, price);
+        } else if (itemDto.getProductType() == ProductType.MASTER) {
+            MasterProduct product = getMasterProduct(itemDto.getProductId());
+            barcode = getBarcodeForMasterProduct(product, barcode);
+            price = getPriceForMasterProduct(product);
+        } else {
+            throw new ConflictException("Invalid productType: " + itemDto.getProductType());
+        }
+        
+        return purchaseOrderMapper.toItemEntity(itemDto, barcode, price);
+    }
+
+    private PharmacyProduct getPharmacyProduct(Long productId) {
+        return pharmacyProductRepo.findById(productId)
+            .orElseThrow(() -> new ResourceNotFoundException("PharmacyProduct not found: " + productId));
+    }
+
+    private MasterProduct getMasterProduct(Long productId) {
+        return masterProductRepo.findById(productId)
+            .orElseThrow(() -> new ResourceNotFoundException("MasterProduct not found: " + productId));
+    }
+
+    private String getBarcodeForPharmacyProduct(PharmacyProduct product, String barcode) {
+        if (barcode == null || barcode.isBlank()) {
+            return product.getBarcodes().stream().findFirst().map(b -> b.getBarcode()).orElse(null);
+        }
+        return barcode;
+    }
+
+    private String getBarcodeForMasterProduct(MasterProduct product, String barcode) {
+        if (barcode == null || barcode.isBlank()) {
+            return product.getBarcode();
+        }
+        return barcode;
+    }
+
+    private Double getPriceForPharmacyProduct(PharmacyProduct product, Double price) {
+        if (price == null) {
+            return (double) product.getRefPurchasePrice();
+        }
+        return price;
+    }
+
+    private Double getPriceForMasterProduct(MasterProduct product) {
+        return (double) product.getRefPurchasePrice();
+    }
+
+    // Private helper methods for product retrieval
+    private List<PharmacyProduct> getPharmacyProducts(PurchaseOrder order) {
+        List<Long> pharmacyProductIds = order.getItems().stream()
+            .filter(i -> i.getProductType() == ProductType.PHARMACY)
+            .map(PurchaseOrderItem::getProductId)
+            .toList();
+        return pharmacyProductRepo.findAllById(pharmacyProductIds);
+    }
+
+    private List<MasterProduct> getMasterProducts(PurchaseOrder order) {
+        List<Long> masterProductIds = order.getItems().stream()
+            .filter(i -> i.getProductType() == ProductType.MASTER)
+            .map(PurchaseOrderItem::getProductId)
+            .toList();
+        return masterProductRepo.findAllById(masterProductIds);
+    }
+
+    private List<PharmacyProduct> getAllPharmacyProducts(List<PurchaseOrder> orders) {
+        List<Long> allPharmacyProductIds = orders.stream()
+            .flatMap(order -> order.getItems().stream())
+            .filter(item -> item.getProductType() == ProductType.PHARMACY)
+            .map(PurchaseOrderItem::getProductId)
+            .distinct()
+            .toList();
+        return pharmacyProductRepo.findAllById(allPharmacyProductIds);
+    }
+
+    private List<MasterProduct> getAllMasterProducts(List<PurchaseOrder> orders) {
+        List<Long> allMasterProductIds = orders.stream()
+            .flatMap(order -> order.getItems().stream())
+            .filter(item -> item.getProductType() == ProductType.MASTER)
+            .map(PurchaseOrderItem::getProductId)
+            .distinct()
+            .toList();
+        return masterProductRepo.findAllById(allMasterProductIds);
+    }
 } 

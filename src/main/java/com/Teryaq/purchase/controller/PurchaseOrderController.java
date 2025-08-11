@@ -7,7 +7,7 @@ import com.Teryaq.purchase.service.PurchaseOrderService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import java.util.List;
+
 import com.Teryaq.product.Enum.OrderStatus;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -67,22 +67,29 @@ public class PurchaseOrderController {
         return ResponseEntity.ok(purchaseOrderService.getById(id, language));
     }
 
-    @GetMapping
+    @PutMapping("/{id}")
     @Operation(
-        summary = "Get all purchase orders",
-        description = "Retrieves all purchase orders"
+        summary = "Edit purchase order",
+        description = "Updates an existing purchase order with the given request"
     )
     @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "Successfully retrieved all purchase orders",
+        @ApiResponse(responseCode = "200", description = "Successfully updated purchase order",
             content = @Content(mediaType = "application/json",
             schema = @Schema(implementation = PurchaseOrderDTOResponse.class))),
+        @ApiResponse(responseCode = "400", description = "Invalid purchase order data"),
+        @ApiResponse(responseCode = "404", description = "Purchase order not found"),
+        @ApiResponse(responseCode = "409", description = "Purchase order cannot be edited"),
         @ApiResponse(responseCode = "500", description = "Internal server error")
     })
-    public ResponseEntity<List<PurchaseOrderDTOResponse>> listAll(
+    public ResponseEntity<PurchaseOrderDTOResponse> edit(
+            @Parameter(description = "Purchase order ID", example = "1") @PathVariable Long id,
+            @Parameter(description = "Updated purchase order data", required = true)
+            @Valid @RequestBody PurchaseOrderDTORequest request, 
             @Parameter(description = "Language code", example = "ar") 
             @RequestParam(defaultValue = "ar") String language) {
-        return ResponseEntity.ok(purchaseOrderService.listAll(language));
+        return ResponseEntity.ok(purchaseOrderService.edit(id, request, language));
     }
+
 
     @GetMapping("/paginated")
     @Operation(
@@ -105,26 +112,7 @@ public class PurchaseOrderController {
         return ResponseEntity.ok(purchaseOrderService.listAllPaginated(page, size, language));
     }
 
-    @GetMapping("/status/{status}")
-    @Operation(
-        summary = "Get purchase orders by status",
-        description = "Retrieves purchase orders filtered by status"
-    )
-    @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "Successfully retrieved purchase orders by status",
-            content = @Content(mediaType = "application/json",
-            schema = @Schema(implementation = PurchaseOrderDTOResponse.class))),
-        @ApiResponse(responseCode = "400", description = "Invalid status"),
-        @ApiResponse(responseCode = "500", description = "Internal server error")
-    })
-    public ResponseEntity<List<PurchaseOrderDTOResponse>> getByStatus(
-            @Parameter(description = "Order status", example = "PENDING", 
-                      schema = @Schema(allowableValues = {"PENDING", "APPROVED", "REJECTED", "CANCELLED"})) 
-            @PathVariable OrderStatus status,
-            @Parameter(description = "Language code", example = "ar") 
-            @RequestParam(defaultValue = "ar") String language) {
-        return ResponseEntity.ok(purchaseOrderService.getByStatus(status, language));
-    }
+
 
     @GetMapping("/status/{status}/paginated")
     @Operation(
@@ -151,7 +139,7 @@ public class PurchaseOrderController {
         return ResponseEntity.ok(purchaseOrderService.getByStatusPaginated(status, page, size, language));
     }
 
-    @PostMapping("/{id}/cancel")
+    @DeleteMapping("/{id}")
     @Operation(
         summary = "Cancel purchase order",
         description = "Cancels a purchase order"

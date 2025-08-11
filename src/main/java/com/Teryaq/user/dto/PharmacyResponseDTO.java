@@ -16,4 +16,7 @@ public class PharmacyResponseDTO {
     private String managerEmail;
     private String managerFirstName;
     private String managerLastName;
+    
+    // Account activation status
+    private Boolean isActive;
 } 

@@ -55,7 +55,7 @@ public class PharmacyController {
     @PreAuthorize("hasRole('PHARMACY_MANAGER')")
     @Operation(
         summary = "Complete pharmacy registration",
-        description = "Completes the pharmacy registration process with additional information"
+        description = "Completes the pharmacy registration process with additional information including address, contact details, and manager information"
     )
     @ApiResponses(value = {
         @ApiResponse(responseCode = "200", description = "Registration completed successfully",
@@ -66,19 +66,19 @@ public class PharmacyController {
         @ApiResponse(responseCode = "500", description = "Internal server error")
     })
     public ResponseEntity<?> completeRegistration(
-            @Parameter(description = "New password for the pharmacy manager") 
+            @Parameter(description = "New password for the pharmacy manager", required = true) 
             @RequestParam String newPassword,
-            @Parameter(description = "Pharmacy location") 
+            @Parameter(description = "Pharmacy address/location", required = false) 
             @RequestParam(required = false) String location,
-            @Parameter(description = "Manager's first name") 
+            @Parameter(description = "Manager's first name", required = false) 
             @RequestParam(required = false) String managerFirstName,
-            @Parameter(description = "Manager's last name") 
+            @Parameter(description = "Manager's last name", required = false) 
             @RequestParam(required = false) String managerLastName,
-            @Parameter(description = "Pharmacy phone number") 
+            @Parameter(description = "Pharmacy phone number", required = false) 
             @RequestParam(required = false) String pharmacyPhone,
-            @Parameter(description = "Pharmacy email address") 
+            @Parameter(description = "Pharmacy email address", required = false) 
             @RequestParam(required = false) String pharmacyEmail,
-            @Parameter(description = "Pharmacy opening hours") 
+            @Parameter(description = "Pharmacy opening hours", required = false) 
             @RequestParam(required = false) String openingHours
     ) {
         PharmacyResponseDTO pharmacy = pharmacyService.completeRegistration(newPassword, location, managerFirstName,managerLastName, pharmacyPhone , pharmacyEmail, openingHours);
@@ -101,5 +101,41 @@ public class PharmacyController {
     public ResponseEntity<List<PharmacyResponseDTO>> getAllPharmacies() {
         List<PharmacyResponseDTO> pharmacies = pharmacyService.getAllPharmacies();
         return ResponseEntity.ok(pharmacies);
+    }
+    
+    @GetMapping("/{pharmacyId}")
+    @PreAuthorize("hasRole('PHARMACY_MANAGER')")
+    @Operation(
+        summary = "Get pharmacy by ID",
+        description = "Retrieves a specific pharmacy by ID. Requires PHARMACY_MANAGER role and pharmacy must belong to the current user."
+    )
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Successfully retrieved pharmacy",
+            content = @Content(mediaType = "application/json",
+            schema = @Schema(implementation = PharmacyResponseDTO.class))),
+        @ApiResponse(responseCode = "403", description = "Access denied - insufficient permissions or pharmacy not accessible"),
+        @ApiResponse(responseCode = "404", description = "Pharmacy not found"),
+        @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
+    public ResponseEntity<PharmacyResponseDTO> getPharmacyById(
+            @Parameter(description = "Pharmacy ID", example = "1") @PathVariable Long pharmacyId) {
+        PharmacyResponseDTO pharmacy = pharmacyService.getPharmacyByIdWithAuth(pharmacyId);
+        return ResponseEntity.ok(pharmacy);
+    }
+    
+    @PostMapping("/update-active-status")
+    @PreAuthorize("hasRole('PLATFORM_ADMIN')")
+    @Operation(
+        summary = "Update active status for all pharmacies",
+        description = "Updates the isActive status for all pharmacies based on their registration completion. Requires PLATFORM_ADMIN role."
+    )
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Successfully updated pharmacy active status"),
+        @ApiResponse(responseCode = "403", description = "Access denied - insufficient permissions"),
+        @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
+    public ResponseEntity<String> updateAllPharmacyActiveStatus() {
+        pharmacyService.updateAllPharmacyActiveStatus();
+        return ResponseEntity.ok("Successfully updated active status for all pharmacies");
     }
 } 

@@ -37,6 +37,9 @@ public class Pharmacy extends AuditedEntity {
 
     @Column
     private String phoneNumber;
+    
+    @Column
+    private Boolean isActive;
 
     @OneToMany(mappedBy = "pharmacy")
     private Set<Employee> employees;
