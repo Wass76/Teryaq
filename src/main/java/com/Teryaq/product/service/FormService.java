@@ -3,6 +3,7 @@ package com.Teryaq.product.service;
 
 import com.Teryaq.product.dto.FormDTORequest;
 import com.Teryaq.product.dto.FormDTOResponse;
+import com.Teryaq.product.dto.MultiLangDTOResponse;
 import com.Teryaq.product.entity.Form;
 import com.Teryaq.product.entity.FormTranslation;
 import com.Teryaq.product.mapper.FormMapper;
@@ -118,5 +119,26 @@ public class FormService {
             throw new EntityNotFoundException("Form with ID " + id + " not found");
         }
         formRepo.deleteById(id);
+    }
+
+    
+    public List<MultiLangDTOResponse> getFormsMultiLang() {
+        log.info("Getting forms with multi-language support");
+        List<Form> forms = formRepo.findAllWithTranslations();
+        log.info("Found {} forms", forms.size());
+        
+        return forms.stream()
+                .map(form -> {
+                    log.info("Processing form: {} with {} translations", form.getName(),
+                            form.getTranslations() != null ? form.getTranslations().size() : 0);
+                    return formMapper.toMultiLangResponse(form);
+                })
+                .toList();
+    }
+
+        public MultiLangDTOResponse getByIDMultiLang(long id) {
+        Form form = formRepo.findByIdWithTranslations(id)
+                .orElseThrow(() -> new EntityNotFoundException("Form with ID " + id + " not found"));
+        return formMapper.toMultiLangResponse(form);
     }
 }

@@ -3,6 +3,7 @@ package com.Teryaq.product.service;
 import com.Teryaq.product.dto.PharmacyProductDTORequest;
 import com.Teryaq.product.dto.PharmacyProductDTOResponse;
 import com.Teryaq.product.dto.PharmacyProductListDTO;
+import com.Teryaq.product.dto.ProductMultiLangDTOResponse;
 import com.Teryaq.product.entity.PharmacyProduct;
 import com.Teryaq.product.entity.PharmacyProductTranslation;
 import com.Teryaq.product.mapper.PharmacyProductMapper;
@@ -127,6 +128,7 @@ public class PharmacyProductService extends BaseSecurityService {
         if (employee.getPharmacy() == null) {
             throw new UnAuthorizedException("Employee is not associated with any pharmacy");
         }
+
         
         Long currentPharmacyId = employee.getPharmacy().getId();
         
@@ -177,15 +179,12 @@ public class PharmacyProductService extends BaseSecurityService {
         Long currentPharmacyId = employee.getPharmacy().getId();
 
         return pharmacyProductRepo.findByIdAndPharmacyIdWithTranslations(id, currentPharmacyId).map(existing -> {
-            // تحقق من تكرار الباركودات إذا تم تغييرها
             if (requestDTO.getBarcodes() != null && !requestDTO.getBarcodes().isEmpty()) {
                 for (String barcode : requestDTO.getBarcodes()) {
-                    // تحقق من وجود الباركود في منتجات أخرى (غير المنتج الحالي) في نفس الصيدلية
                     boolean barcodeExistsInOtherProducts = pharmacyProductBarcodeRepo.existsByBarcodeAndProductIdNotAndPharmacyId(barcode, id, currentPharmacyId);
                     if (barcodeExistsInOtherProducts) {
                         throw new ConflictException("Barcode " + barcode + " already exists in another product in this pharmacy");
                     }
-                    // تحقق من عدم وجود الباركود في الماستر
                     if (masterProductRepo.findByBarcode(barcode).isPresent()) {
                         throw new ConflictException("Barcode " + barcode + " already exists in master products");
                     }
@@ -210,7 +209,6 @@ public class PharmacyProductService extends BaseSecurityService {
                 pharmacyProductTranslationRepo.saveAll(newTranslations);
             }
             
-            // إعادة تحميل الكائن مع الترجمات
             return pharmacyProductMapper.toResponse(pharmacyProductRepo.findByIdWithTranslations(saved.getId()).orElse(saved), lang);
         }).orElseThrow(() -> new EntityNotFoundException("Pharmacy Product with ID " + id + " not found"));
     }
@@ -234,6 +232,41 @@ public class PharmacyProductService extends BaseSecurityService {
         pharmacyProductRepo.deleteById(id);
     }
 
+    public List<ProductMultiLangDTOResponse> getPharmacyProductsMultiLang() {
+        User currentUser = getCurrentUser();
+        if (!(currentUser instanceof Employee)) {
+            throw new UnAuthorizedException("Only pharmacy employees can get pharmacy products");
+        }
+        
+        Employee employee = (Employee) currentUser;
+        if (employee.getPharmacy() == null) {
+            throw new UnAuthorizedException("Employee is not associated with any pharmacy");
+        }
+        
+        Long currentPharmacyId = employee.getPharmacy().getId();
+        List<PharmacyProduct> pharmacyProducts = pharmacyProductRepo.findAllWithTranslations(currentPharmacyId);
+        
+        return pharmacyProducts.stream()
+                .map(pharmacyProductMapper::toMultiLangResponse)
+                .collect(Collectors.toList());
+    }
+
+    public ProductMultiLangDTOResponse getPharmacyProductByIdMultiLang(Long id) {
+        User currentUser = getCurrentUser();
+        if (!(currentUser instanceof Employee)) {
+            throw new UnAuthorizedException("Only pharmacy employees can get pharmacy products");
+        }
+        
+        Employee employee = (Employee) currentUser;
+        if (employee.getPharmacy() == null) {
+            throw new UnAuthorizedException("Employee is not associated with any pharmacy");
+        }
+        
+        Long currentPharmacyId = employee.getPharmacy().getId();
+        PharmacyProduct product = pharmacyProductRepo.findByIdAndPharmacyIdWithTranslations(id, currentPharmacyId)
+                .orElseThrow(() -> new EntityNotFoundException("Pharmacy Product with ID " + id + " not found"));
+        return pharmacyProductMapper.toMultiLangResponse(product);
+    }
 
 }
 

@@ -2,6 +2,7 @@ package com.Teryaq.product.mapper;
 
 import com.Teryaq.product.dto.TypeDTOResponse;
 import com.Teryaq.product.dto.TypeDTORequest;
+import com.Teryaq.product.dto.MultiLangDTOResponse;
 import com.Teryaq.product.entity.TypeTranslation;
 import com.Teryaq.product.entity.Type;
 import org.springframework.stereotype.Component;
@@ -45,5 +46,27 @@ public class TypeMapper {
         Type type = new Type();
         type.setName(dto.getName());
         return type;
+    }
+
+    public MultiLangDTOResponse toMultiLangResponse(Type type) {
+        if (type == null) return null;
+
+        String nameAr = type.getTranslations().stream()
+                .filter(t -> t.getLanguage() != null && "ar".equalsIgnoreCase(t.getLanguage().getCode()))
+                .map(TypeTranslation::getName)
+                .findFirst()
+                .orElse(type.getName());
+
+        String nameEn = type.getTranslations().stream()
+                .filter(t -> t.getLanguage() != null && "en".equalsIgnoreCase(t.getLanguage().getCode()))
+                .map(TypeTranslation::getName)
+                .findFirst()
+                .orElse(type.getName());
+
+        return MultiLangDTOResponse.builder()
+                .id(type.getId())
+                .nameAr(nameAr)
+                .nameEn(nameEn)
+                .build();
     }
 }

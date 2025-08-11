@@ -3,6 +3,7 @@ package com.Teryaq.product.controller;
 
 import com.Teryaq.product.dto.ManufacturerDTORequest;
 import com.Teryaq.product.dto.ManufacturerDTOResponse;
+import com.Teryaq.product.dto.MultiLangDTOResponse;
 import com.Teryaq.product.service.ManufacturerService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -132,5 +133,40 @@ public class ManufacturerController {
             @Parameter(description = "Manufacturer ID", example = "1") @PathVariable Long id) {
         manufacturerService.deleteManufacturer(id);
         return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+    }
+
+
+    @GetMapping("/multi-lang")
+    @PreAuthorize("hasRole('PLATFORM_ADMIN')")
+    @Operation(
+        summary = "Get all product manufacturers with multi-language support",
+        description = "Retrieves all product manufacturers with both Arabic and English translations"
+    )
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Successfully retrieved all product manufacturers with multi-language support",
+            content = @Content(mediaType = "application/json",
+            schema = @Schema(implementation = MultiLangDTOResponse.class))),
+        @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
+    public ResponseEntity<?> getManufacturersMultiLang() {
+        return ResponseEntity.ok(manufacturerService.getManufacturersMultiLang());
+    }
+
+    @GetMapping("/multi-lang/{id}")
+    @PreAuthorize("hasRole('PLATFORM_ADMIN')")
+    @Operation(
+        summary = "Get product manufacturer by ID with multi-language support",
+        description = "Retrieves a specific product manufacturer by ID with both Arabic and English translations"
+    )
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Successfully retrieved product manufacturer with multi-language support",
+            content = @Content(mediaType = "application/json",
+            schema = @Schema(implementation = MultiLangDTOResponse.class))),
+        @ApiResponse(responseCode = "404", description = "Product manufacturer not found"),
+        @ApiResponse(responseCode = "500", description = "Internal server error")
+    })  
+    public ResponseEntity<?> getByIdMultiLang(
+            @Parameter(description = "Product manufacturer ID", example = "1") @PathVariable Long id) {
+        return ResponseEntity.ok(manufacturerService.getByIDMultiLang(id));
     }
 }

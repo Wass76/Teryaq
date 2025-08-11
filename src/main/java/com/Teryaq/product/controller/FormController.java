@@ -3,6 +3,7 @@ package com.Teryaq.product.controller;
 
 import com.Teryaq.product.dto.FormDTORequest;
 import com.Teryaq.product.dto.FormDTOResponse;
+import com.Teryaq.product.dto.MultiLangDTOResponse;
 import com.Teryaq.product.service.FormService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -132,4 +133,38 @@ public class FormController {
         formService.deleteForm(id);
         return new ResponseEntity<>(HttpStatus.NO_CONTENT);
     }
+
+    @GetMapping("/multi-lang")
+    @PreAuthorize("hasRole('PLATFORM_ADMIN')")
+    @Operation(
+        summary = "Get all product forms with multi-language support",
+        description = "Retrieves all product forms with both Arabic and English translations"
+    )
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Successfully retrieved all product forms with multi-language support",
+            content = @Content(mediaType = "application/json",
+            schema = @Schema(implementation = MultiLangDTOResponse.class))),
+        @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
+    public ResponseEntity<?> getFormsMultiLang() {
+        return ResponseEntity.ok(formService.getFormsMultiLang());
+    }
+
+    @GetMapping("/multi-lang/{id}")
+    @PreAuthorize("hasRole('PLATFORM_ADMIN')")
+    @Operation(
+        summary = "Get product form by ID with multi-language support",
+        description = "Retrieves a specific product form by ID with both Arabic and English translations"
+    )
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Successfully retrieved product form with multi-language support",
+            content = @Content(mediaType = "application/json",
+            schema = @Schema(implementation = MultiLangDTOResponse.class))),
+        @ApiResponse(responseCode = "404", description = "Product form not found"),
+        @ApiResponse(responseCode = "500", description = "Internal server error")
+    })  
+    public ResponseEntity<?> getByIdMultiLang(
+            @Parameter(description = "Product form ID", example = "1") @PathVariable Long id) {
+        return ResponseEntity.ok(formService.getByIDMultiLang(id));
+    }  
 }

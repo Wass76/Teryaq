@@ -2,6 +2,7 @@ package com.Teryaq.product.service;
 
 import com.Teryaq.product.dto.TypeDTORequest;
 import com.Teryaq.product.dto.TypeDTOResponse;
+import com.Teryaq.product.dto.MultiLangDTOResponse;
 import com.Teryaq.product.entity.TypeTranslation;
 import com.Teryaq.product.entity.Type;
 import com.Teryaq.product.mapper.TypeMapper;
@@ -126,5 +127,26 @@ public class TypeService {
             throw new EntityNotFoundException("Type with ID " + id + " not found");
         }
         typeRepo.deleteById(id);
+    }
+
+    
+    public List<MultiLangDTOResponse> getTypesMultiLang() {
+        log.info("Getting types with multi-language support");
+        List<Type> types = typeRepo.findAllWithTranslations();
+        log.info("Found {} types", types.size());
+        
+        return types.stream()
+                .map(type -> {
+                    log.info("Processing type: {} with {} translations", type.getName(),
+                            type.getTranslations() != null ? type.getTranslations().size() : 0);
+                    return typeMapper.toMultiLangResponse(type);
+                })
+                .toList();
+    }
+
+        public MultiLangDTOResponse getByIDMultiLang(long id) {
+        Type type = typeRepo.findByIdWithTranslations(id)
+                .orElseThrow(() -> new EntityNotFoundException("Type with ID " + id + " not found"));
+        return typeMapper.toMultiLangResponse(type);
     }
 }

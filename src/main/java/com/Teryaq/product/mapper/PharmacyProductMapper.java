@@ -4,6 +4,7 @@ import com.Teryaq.product.repo.CategoryRepo;
 import com.Teryaq.product.dto.PharmacyProductDTORequest;
 import com.Teryaq.product.dto.PharmacyProductDTOResponse;
 import com.Teryaq.product.dto.PharmacyProductListDTO;
+import com.Teryaq.product.dto.ProductMultiLangDTOResponse;
 //import com.Teryaq.product.dto.PharmacyProductTranslationDTOResponse;
 import com.Teryaq.product.entity.Category;
 import com.Teryaq.product.entity.PharmacyProduct;
@@ -264,4 +265,44 @@ public class PharmacyProductMapper {
                 .pharmacyName(product.getPharmacy() != null ? product.getPharmacy().getName() : null)
                 .build();
     }
+
+    public ProductMultiLangDTOResponse toMultiLangResponse(PharmacyProduct product) {
+        if (product == null) return null;
+
+        // استخراج الاسم التجاري باللغتين
+        String tradeNameAr = product.getTranslations().stream()
+                .filter(t -> t.getLanguage() != null && "ar".equalsIgnoreCase(t.getLanguage().getCode()))
+                .map(PharmacyProductTranslation::getTradeName)
+                .findFirst()
+                .orElse(product.getTradeName());
+
+        String tradeNameEn = product.getTranslations().stream()
+                .filter(t -> t.getLanguage() != null && "en".equalsIgnoreCase(t.getLanguage().getCode()))
+                .map(PharmacyProductTranslation::getTradeName)
+                .findFirst()
+                .orElse(product.getTradeName());
+
+        // استخراج الاسم العلمي باللغتين
+        String scientificNameAr = product.getTranslations().stream()
+                .filter(t -> t.getLanguage() != null && "ar".equalsIgnoreCase(t.getLanguage().getCode()))
+                .map(PharmacyProductTranslation::getScientificName)
+                .findFirst()
+                .orElse(product.getScientificName());
+
+        String scientificNameEn = product.getTranslations().stream()
+                .filter(t -> t.getLanguage() != null && "en".equalsIgnoreCase(t.getLanguage().getCode()))
+                .map(PharmacyProductTranslation::getScientificName)
+                .findFirst()
+                .orElse(product.getScientificName());
+
+        return ProductMultiLangDTOResponse.builder()
+                .id(product.getId())
+                .tradeNameAr(tradeNameAr)
+                .tradeNameEn(tradeNameEn)
+                .scientificNameAr(scientificNameAr)
+                .scientificNameEn(scientificNameEn)
+                .pharmacyId(product.getPharmacy() != null ? product.getPharmacy().getId() : null)
+                .build();
+    }
+
 }

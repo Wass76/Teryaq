@@ -2,6 +2,7 @@ package com.Teryaq.product.controller;
 
 
 import com.Teryaq.product.dto.MProductDTORequest;
+import com.Teryaq.product.dto.ProductMultiLangDTOResponse;
 import com.Teryaq.product.service.MasterProductService;
 import io.swagger.v3.oas.annotations.Parameter;
 import org.springframework.data.domain.PageRequest;
@@ -145,6 +146,40 @@ public class MasterProductController {
             @Parameter(description = "Master product ID", example = "1") @PathVariable Long id) {
         masterProductService.deleteMasterProduct(id);
         return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+    }
+
+    @GetMapping("/multi-lang")
+    @PreAuthorize("hasRole('PLATFORM_ADMIN')")
+    @Operation(
+        summary = "Get all master products with multi-language support",
+        description = "Retrieves all master products with both Arabic and English translations"
+    )
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Successfully retrieved all master products with multi-language support",
+            content = @Content(mediaType = "application/json",
+            schema = @Schema(implementation = ProductMultiLangDTOResponse.class))),
+        @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
+    public ResponseEntity<?> getMasterProductsMultiLang() {
+        return ResponseEntity.ok(masterProductService.getMasterProductsMultiLang());
+    }
+
+    @GetMapping("/multi-lang/{id}")
+    @PreAuthorize("hasRole('PLATFORM_ADMIN')")
+    @Operation(
+        summary = "Get master product by ID with multi-language support",
+        description = "Retrieves a specific master product by ID with both Arabic and English translations"
+    )
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Successfully retrieved master product with multi-language support",
+            content = @Content(mediaType = "application/json",
+            schema = @Schema(implementation = ProductMultiLangDTOResponse.class))),
+        @ApiResponse(responseCode = "404", description = "Master product not found"),
+        @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
+    public ResponseEntity<?> getMasterProductByIdMultiLang(
+            @Parameter(description = "Master product ID", example = "1") @PathVariable Long id) {
+        return ResponseEntity.ok(masterProductService.getMasterProductByIdMultiLang(id));
     }
 }
 

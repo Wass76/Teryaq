@@ -14,13 +14,12 @@ import java.util.Optional;
 
 @Repository
 public interface PharmacyProductRepo extends JpaRepository<PharmacyProduct, Long> {
-    // البحث عن منتجات صيدلية معينة
     Page<PharmacyProduct> findByPharmacyId(Long pharmacyId, Pageable pageable);
     
-    @Query("SELECT DISTINCT p FROM PharmacyProduct p LEFT JOIN FETCH p.translations tr LEFT JOIN FETCH tr.language")
-    List<PharmacyProduct> findAllWithTranslations();
+    @Query("SELECT DISTINCT p FROM PharmacyProduct p LEFT JOIN FETCH p.translations tr LEFT JOIN FETCH tr.language WHERE p.pharmacy.id = :pharmacyId")
+    List<PharmacyProduct> findAllWithTranslations(@Param("pharmacyId") Long pharmacyId);
     
-    @Query("SELECT DISTINCT p FROM PharmacyProduct p LEFT JOIN FETCH p.translations tr LEFT JOIN FETCH tr.language WHERE p.id = :id")
+    @Query("SELECT DISTINCT p FROM PharmacyProduct p LEFT JOIN FETCH p.translations tr LEFT JOIN FETCH tr.language WHERE p.id = :id AND p.pharmacy.id = :pharmacyId")
     Optional<PharmacyProduct> findByIdWithTranslations(@Param("id") Long id);
     
     @Query("""

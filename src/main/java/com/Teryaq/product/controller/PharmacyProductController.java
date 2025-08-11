@@ -1,6 +1,7 @@
 package com.Teryaq.product.controller;
 
 import com.Teryaq.product.dto.PharmacyProductDTORequest;
+import com.Teryaq.product.dto.ProductMultiLangDTOResponse;
 import com.Teryaq.product.service.PharmacyProductService;
 
 import jakarta.validation.Valid;
@@ -165,5 +166,37 @@ public class PharmacyProductController {
             @Parameter(description = "Pharmacy product ID", example = "1") @PathVariable Long id) {
         pharmacyProductService.deletePharmacyProduct(id);
         return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+    }
+
+    @GetMapping("/multi-lang")
+    @Operation(
+        summary = "Get all pharmacy products with multi-language support",
+        description = "Retrieves all pharmacy products with both Arabic and English translations"
+    )
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Successfully retrieved all pharmacy products with multi-language support",
+            content = @Content(mediaType = "application/json",
+            schema = @Schema(implementation = ProductMultiLangDTOResponse.class))),
+        @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
+    public ResponseEntity<?> getPharmacyProductsMultiLang() {
+        return ResponseEntity.ok(pharmacyProductService.getPharmacyProductsMultiLang());
+    }
+
+    @GetMapping("/multi-lang/{id}")
+    @Operation(
+        summary = "Get pharmacy product by ID with multi-language support",
+        description = "Retrieves a specific pharmacy product by ID with both Arabic and English translations"
+    )
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Successfully retrieved pharmacy product with multi-language support",
+            content = @Content(mediaType = "application/json",
+            schema = @Schema(implementation = ProductMultiLangDTOResponse.class))),
+        @ApiResponse(responseCode = "404", description = "Pharmacy product not found"),
+        @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
+    public ResponseEntity<?> getPharmacyProductByIdMultiLang(
+            @Parameter(description = "Pharmacy product ID", example = "1") @PathVariable Long id) {
+        return ResponseEntity.ok(pharmacyProductService.getPharmacyProductByIdMultiLang(id));
     }
 }

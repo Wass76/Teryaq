@@ -15,6 +15,8 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import jakarta.validation.Valid;
+import com.Teryaq.product.dto.MultiLangDTOResponse;
+import io.swagger.v3.oas.annotations.media.Schema;
 
 @RestController
 @RequestMapping("api/v1/types")
@@ -124,5 +126,39 @@ public class TypeController {
             @Parameter(description = "Product type ID", example = "1") @PathVariable Long id) {
         typeService.deleteType(id);
         return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+    }
+
+    @GetMapping("/multi-lang")
+    @PreAuthorize("hasRole('PLATFORM_ADMIN')")
+    @Operation(
+        summary = "Get all product types with multi-language support",
+        description = "Retrieves all product types with both Arabic and English translations"
+    )
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Successfully retrieved all product types with multi-language support",
+            content = @Content(mediaType = "application/json",
+            schema = @Schema(implementation = MultiLangDTOResponse.class))),
+        @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
+    public ResponseEntity<?> getTypesMultiLang() {
+        return ResponseEntity.ok(typeService.getTypesMultiLang());
+    }
+
+    @GetMapping("/multi-lang/{id}")
+    @PreAuthorize("hasRole('PLATFORM_ADMIN')")
+    @Operation(
+        summary = "Get product type by ID with multi-language support",
+        description = "Retrieves a specific product type by ID with both Arabic and English translations"
+    )
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Successfully retrieved product type with multi-language support",
+            content = @Content(mediaType = "application/json",
+            schema = @Schema(implementation = MultiLangDTOResponse.class))),
+        @ApiResponse(responseCode = "404", description = "Product type not found"),
+        @ApiResponse(responseCode = "500", description = "Internal server error")
+    })  
+    public ResponseEntity<?> getByIdMultiLang(
+            @Parameter(description = "Product type ID", example = "1") @PathVariable Long id) {
+        return ResponseEntity.ok(typeService.getByIDMultiLang(id));
     }
 }

@@ -3,6 +3,7 @@ package com.Teryaq.product.service;
 
 import com.Teryaq.product.dto.ManufacturerDTORequest;
 import com.Teryaq.product.dto.ManufacturerDTOResponse;
+import com.Teryaq.product.dto.MultiLangDTOResponse;
 import com.Teryaq.product.entity.Manufacturer;
 import com.Teryaq.product.entity.ManufacturerTranslation;
 import com.Teryaq.product.mapper.ManufacturerMapper;
@@ -122,5 +123,26 @@ public class ManufacturerService {
             throw new EntityNotFoundException("Manufacturer with ID " + id + " not found");
         }
         manufacturerRepo.deleteById(id);
+    }
+
+    
+    public List<MultiLangDTOResponse> getManufacturersMultiLang() {
+        log.info("Getting manufacturers with multi-language support");
+        List<Manufacturer> manufacturers = manufacturerRepo.findAllWithTranslations();
+        log.info("Found {} manufacturers", manufacturers.size());
+        
+        return manufacturers.stream()
+                .map(manufacturer -> {
+                    log.info("Processing manufacturer: {} with {} translations", manufacturer.getName(),
+                            manufacturer.getTranslations() != null ? manufacturer.getTranslations().size() : 0);
+                    return manufacturerMapper.toMultiLangResponse(manufacturer);
+                })
+                .toList();
+    }
+
+        public MultiLangDTOResponse getByIDMultiLang(long id) {
+        Manufacturer manufacturer = manufacturerRepo.findByIdWithTranslations(id)
+                .orElseThrow(() -> new EntityNotFoundException("Manufacturer with ID " + id + " not found"));
+        return manufacturerMapper.toMultiLangResponse(manufacturer);
     }
 }

@@ -3,6 +3,7 @@ package com.Teryaq.product.controller;
 
 import com.Teryaq.product.dto.CategoryDTORequest;
 import com.Teryaq.product.dto.CategoryDTOResponse;
+import com.Teryaq.product.dto.MultiLangDTOResponse;
 import com.Teryaq.product.service.CategoryService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -131,5 +132,37 @@ public class CategoryController {
             @Parameter(description = "Product category ID", example = "1") @PathVariable Long id) {
         categoryService.deleteCategory(id);
         return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+    }
+
+    @GetMapping("/multi-lang")
+    @Operation(
+        summary = "Get all product categories with multi-language support",
+        description = "Retrieves all product categories with both Arabic and English translations"
+    )
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Successfully retrieved all product categories with multi-language support",
+            content = @Content(mediaType = "application/json",
+            schema = @Schema(implementation = MultiLangDTOResponse.class))),
+        @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
+    public ResponseEntity<?> getCategoriesMultiLang() {
+        return ResponseEntity.ok(categoryService.getCategoriesMultiLang());
+    }
+
+    @GetMapping("/multi-lang/{id}")
+    @Operation(
+        summary = "Get product category by ID with multi-language support",
+        description = "Retrieves a specific product category by ID with both Arabic and English translations"
+    )
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Successfully retrieved product category with multi-language support",
+            content = @Content(mediaType = "application/json",
+            schema = @Schema(implementation = MultiLangDTOResponse.class))),
+        @ApiResponse(responseCode = "404", description = "Product category not found"),
+        @ApiResponse(responseCode = "500", description = "Internal server error")
+    })  
+    public ResponseEntity<?> getByIdMultiLang(
+            @Parameter(description = "Product category ID", example = "1") @PathVariable Long id) {
+        return ResponseEntity.ok(categoryService.getByIDMultiLang(id));
     }
 }

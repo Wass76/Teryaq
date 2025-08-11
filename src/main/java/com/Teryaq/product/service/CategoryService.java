@@ -2,6 +2,7 @@ package com.Teryaq.product.service;
 
 import com.Teryaq.product.dto.CategoryDTORequest;
 import com.Teryaq.product.dto.CategoryDTOResponse;
+import com.Teryaq.product.dto.MultiLangDTOResponse;
 import com.Teryaq.product.entity.Category;
 import com.Teryaq.product.entity.CategoryTranslation;
 import com.Teryaq.product.mapper.CategoryMapper;
@@ -117,5 +118,25 @@ public class CategoryService {
             throw new EntityNotFoundException("Category with ID " + id + " not found");
         }
         categoryRepo.deleteById(id);
+    }
+
+    public List<MultiLangDTOResponse> getCategoriesMultiLang() {
+        log.info("Getting categories with multi-language support");
+        List<Category> categories = categoryRepo.findAllWithTranslations();
+        log.info("Found {} categories", categories.size());
+        
+        return categories.stream()
+                .map(category -> {
+                    log.info("Processing category: {} with {} translations", category.getName(),
+                            category.getTranslations() != null ? category.getTranslations().size() : 0);
+                    return categoryMapper.toMultiLangResponse(category);
+                })
+                .toList();
+    }
+
+        public MultiLangDTOResponse getByIDMultiLang(long id) {
+        Category category = categoryRepo.findByIdWithTranslations(id)
+                .orElseThrow(() -> new EntityNotFoundException("Category with ID " + id + " not found"));
+        return categoryMapper.toMultiLangResponse(category);
     }
 }

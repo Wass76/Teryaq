@@ -2,6 +2,7 @@ package com.Teryaq.product.mapper;
 
 import com.Teryaq.product.dto.MProductDTORequest;
 import com.Teryaq.product.dto.MProductDTOResponse;
+import com.Teryaq.product.dto.ProductMultiLangDTOResponse;
 //import com.Teryaq.product.dto.MProductTranslationDTOResponse;
 import com.Teryaq.product.entity.*;
 import com.Teryaq.product.repo.*;
@@ -178,6 +179,44 @@ public class MasterProductMapper {
             product.setManufacturer(manufacturerRepo.findById(dto.getManufacturerId()).orElse(null));
 
         return product;
+    }
+
+    public ProductMultiLangDTOResponse toMultiLangResponse(MasterProduct product) {
+        if (product == null) return null;
+
+        // استخراج الاسم التجاري باللغتين
+        String tradeNameAr = product.getTranslations().stream()
+                .filter(t -> t.getLanguage() != null && "ar".equalsIgnoreCase(t.getLanguage().getCode()))
+                .map(MasterProductTranslation::getTradeName)
+                .findFirst()
+                .orElse(product.getTradeName());
+
+        String tradeNameEn = product.getTranslations().stream()
+                .filter(t -> t.getLanguage() != null && "en".equalsIgnoreCase(t.getLanguage().getCode()))
+                .map(MasterProductTranslation::getTradeName)
+                .findFirst()
+                .orElse(product.getTradeName());
+
+        // استخراج الاسم العلمي باللغتين
+        String scientificNameAr = product.getTranslations().stream()
+                .filter(t -> t.getLanguage() != null && "ar".equalsIgnoreCase(t.getLanguage().getCode()))
+                .map(MasterProductTranslation::getScientificName)
+                .findFirst()
+                .orElse(product.getScientificName());
+
+        String scientificNameEn = product.getTranslations().stream()
+                .filter(t -> t.getLanguage() != null && "en".equalsIgnoreCase(t.getLanguage().getCode()))
+                .map(MasterProductTranslation::getScientificName)
+                .findFirst()
+                .orElse(product.getScientificName());
+
+        return ProductMultiLangDTOResponse.builder()
+                .id(product.getId())
+                .tradeNameAr(tradeNameAr)
+                .tradeNameEn(tradeNameEn)
+                .scientificNameAr(scientificNameAr)
+                .scientificNameEn(scientificNameEn)
+                .build();
     }
 
 }

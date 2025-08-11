@@ -2,6 +2,7 @@ package com.Teryaq.product.service;
 
 import com.Teryaq.product.dto.MProductDTORequest;
 import com.Teryaq.product.dto.MProductDTOResponse;
+import com.Teryaq.product.dto.ProductMultiLangDTOResponse;
 import com.Teryaq.product.dto.SearchDTORequest;
 import com.Teryaq.product.entity.MasterProduct;
 import com.Teryaq.product.entity.MasterProductTranslation;
@@ -19,7 +20,9 @@ import org.springframework.transaction.annotation.Transactional;
 import com.Teryaq.language.LanguageRepo;
 import com.Teryaq.language.Language;
 
+import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 
 @Service
@@ -114,6 +117,18 @@ public class MasterProductService {
         masterProductRepo.deleteById(id);
     }
 
+    public List<ProductMultiLangDTOResponse> getMasterProductsMultiLang() {
+        List<MasterProduct> masterProducts = masterProductRepo.findAll();
+        
+        return masterProducts.stream()
+                .map(masterProductMapper::toMultiLangResponse)
+                .collect(Collectors.toList());
+    }
 
+    public ProductMultiLangDTOResponse getMasterProductByIdMultiLang(Long id) {
+        MasterProduct product = masterProductRepo.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Master Product with ID " + id + " not found"));
+        return masterProductMapper.toMultiLangResponse(product);
+    }
 
 }

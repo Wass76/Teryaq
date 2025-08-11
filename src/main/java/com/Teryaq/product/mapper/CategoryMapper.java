@@ -2,6 +2,7 @@ package com.Teryaq.product.mapper;
 
 import com.Teryaq.product.dto.CategoryDTORequest;
 import com.Teryaq.product.dto.CategoryDTOResponse;
+import com.Teryaq.product.dto.MultiLangDTOResponse;
 import com.Teryaq.product.entity.Category;
 import com.Teryaq.product.entity.CategoryTranslation;
 import org.springframework.stereotype.Component;
@@ -38,6 +39,28 @@ public class CategoryMapper {
         Category category = new Category();
         category.setName(dto.getName());
         return category;
+    }
+
+    public MultiLangDTOResponse toMultiLangResponse(Category category) {
+        if (category == null) return null;
+
+        String nameAr = category.getTranslations().stream()
+                .filter(t -> t.getLanguage() != null && "ar".equalsIgnoreCase(t.getLanguage().getCode()))
+                .map(CategoryTranslation::getName)
+                .findFirst()
+                .orElse(category.getName());
+
+        String nameEn = category.getTranslations().stream()
+                .filter(t -> t.getLanguage() != null && "en".equalsIgnoreCase(t.getLanguage().getCode()))
+                .map(CategoryTranslation::getName)
+                .findFirst()
+                .orElse(category.getName());
+
+        return MultiLangDTOResponse.builder()
+                .id(category.getId())
+                .nameAr(nameAr)
+                .nameEn(nameEn)
+                .build();
     }
 
 }
