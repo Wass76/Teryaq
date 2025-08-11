@@ -20,6 +20,10 @@ public class CustomerDTOResponse {
     private String name;
     private String phoneNumber;
     private String address;
+    
+    @Schema(description = "Pharmacy ID", example = "1")
+    private Long pharmacyId;
+    
     private Float totalDebt; // إجمالي الديون
     private Float totalPaid; // إجمالي المدفوع
     private Float remainingDebt; // المتبقي من الديون

@@ -22,6 +22,7 @@ public class CustomerMapper {
                 .name(customer.getName())
                 .phoneNumber(customer.getPhoneNumber())
                 .address(customer.getAddress())
+                .pharmacyId(customer.getPharmacy() != null ? customer.getPharmacy().getId() : null)
                 .build();
 
         // حساب إجمالي الديون والمبالغ المدفوعة
