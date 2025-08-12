@@ -36,6 +36,9 @@ public class PurchaseInvoiceDTORequest {
     @Schema(description = "Total invoice amount", example = "550.00")
     private Double total;
     
+    @Schema(description = "Invoice number (optional)", example = "INV-2024-001")
+    private String invoiceNumber;
+    
     @Schema(description = "List of invoice items")
     private List<PurchaseInvoiceItemDTORequest> items;
 } 

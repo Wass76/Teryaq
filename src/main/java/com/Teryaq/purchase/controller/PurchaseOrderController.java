@@ -114,7 +114,7 @@ public class PurchaseOrderController {
 
 
 
-    @GetMapping("/status/{status}/paginated")
+    @GetMapping("/status/{status}")
     @Operation(
         summary = "Get paginated purchase orders by status",
         description = "Retrieves paginated purchase orders filtered by status"
@@ -137,6 +137,58 @@ public class PurchaseOrderController {
             @Parameter(description = "Language code", example = "ar") 
             @RequestParam(defaultValue = "ar") String language) {
         return ResponseEntity.ok(purchaseOrderService.getByStatusPaginated(status, page, size, language));
+    }
+
+    @GetMapping("/time-range")
+    @Operation(
+        summary = "Get paginated purchase orders by time range",
+        description = "Retrieves paginated purchase orders filtered by creation time range"
+    )
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Successfully retrieved paginated purchase orders by time range",
+            content = @Content(mediaType = "application/json",
+            schema = @Schema(implementation = PaginationDTO.class))),
+        @ApiResponse(responseCode = "400", description = "Invalid date range"),
+        @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
+    public ResponseEntity<PaginationDTO<PurchaseOrderDTOResponse>> getByTimeRangePaginated(
+            @Parameter(description = "Start date and time (ISO format)", example = "2024-01-01T00:00:00") 
+            @RequestParam String startDate,
+            @Parameter(description = "End date and time (ISO format)", example = "2024-12-31T23:59:59") 
+            @RequestParam String endDate,
+            @Parameter(description = "Page number (0-based)", example = "0") 
+            @RequestParam(defaultValue = "0") int page,
+            @Parameter(description = "Number of items per page", example = "10") 
+            @RequestParam(defaultValue = "10") int size,
+            @Parameter(description = "Language code", example = "ar") 
+            @RequestParam(defaultValue = "ar") String language) {
+        java.time.LocalDateTime start = java.time.LocalDateTime.parse(startDate);
+        java.time.LocalDateTime end = java.time.LocalDateTime.parse(endDate);
+        return ResponseEntity.ok(purchaseOrderService.getByTimeRangePaginated(start, end, page, size, language));
+    }
+
+    @GetMapping("/supplier/{supplierId}")
+    @Operation(
+        summary = "Get paginated purchase orders by supplier",
+        description = "Retrieves paginated purchase orders filtered by supplier ID"
+    )
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Successfully retrieved paginated purchase orders by supplier",
+            content = @Content(mediaType = "application/json",
+            schema = @Schema(implementation = PaginationDTO.class))),
+        @ApiResponse(responseCode = "400", description = "Invalid supplier ID"),
+        @ApiResponse(responseCode = "404", description = "Supplier not found"),
+        @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
+    public ResponseEntity<PaginationDTO<PurchaseOrderDTOResponse>> getBySupplierPaginated(
+            @Parameter(description = "Supplier ID", example = "1") @PathVariable Long supplierId,
+            @Parameter(description = "Page number (0-based)", example = "0") 
+            @RequestParam(defaultValue = "0") int page,
+            @Parameter(description = "Number of items per page", example = "10") 
+            @RequestParam(defaultValue = "10") int size,
+            @Parameter(description = "Language code", example = "ar") 
+            @RequestParam(defaultValue = "ar") String language) {
+        return ResponseEntity.ok(purchaseOrderService.getBySupplierPaginated(supplierId, page, size, language));
     }
 
     @DeleteMapping("/{id}")

@@ -39,6 +39,8 @@ public class PurchaseOrderMapper {
         dto.setCurrency(order.getCurrency());
         dto.setTotal(order.getTotal());
         dto.setStatus(order.getStatus());
+        dto.setCreatedAt(order.getCreatedAt());
+        dto.setCreatedBy(order.getCreatedBy());
         dto.setItems(order.getItems().stream().map(item -> {
             String productName = null;
             if (item.getProductType() == ProductType.PHARMACY) {
@@ -82,6 +84,8 @@ public class PurchaseOrderMapper {
         dto.setCurrency(order.getCurrency());
         dto.setTotal(order.getTotal());
         dto.setStatus(order.getStatus());
+        dto.setCreatedAt(order.getCreatedAt());
+        dto.setCreatedBy(order.getCreatedBy());
         dto.setItems(order.getItems().stream().map(item -> {
             String productName = null;
             if (item.getProductType() == ProductType.PHARMACY) {

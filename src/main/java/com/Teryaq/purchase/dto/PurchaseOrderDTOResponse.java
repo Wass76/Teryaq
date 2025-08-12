@@ -3,6 +3,7 @@ package com.Teryaq.purchase.dto;
 import com.Teryaq.product.Enum.OrderStatus;
 import com.Teryaq.user.Enum.Currency;
 import lombok.Data;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Data
@@ -12,5 +13,7 @@ public class PurchaseOrderDTOResponse {
     private Currency currency;
     private Double total;
     private OrderStatus status;
+    private LocalDateTime createdAt;
+    private Long createdBy;
     private List<PurchaseOrderItemDTOResponse> items;
 } 

@@ -32,6 +32,7 @@ import java.util.stream.Collectors;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import java.time.LocalDateTime;
 
 @Service
 @Transactional
@@ -181,7 +182,60 @@ public class PurchaseOrderService extends BaseSecurityService {
         return getByStatusPaginated(status, page, size, "ar");
     }
 
+    // New method for filtering by time range
+    public PaginationDTO<PurchaseOrderDTOResponse> getByTimeRangePaginated(
+            LocalDateTime startDate, LocalDateTime endDate, int page, int size, String language) {
+        Employee employee = validateAndGetEmployee();
+        Long pharmacyId = employee.getPharmacy().getId();
+        
+        Pageable pageable = PageRequest.of(page, size);
+        Page<PurchaseOrder> orderPage = purchaseOrderRepo.findByPharmacyIdAndCreatedAtBetween(
+            pharmacyId, startDate, endDate, pageable);
+        
+        List<PurchaseOrder> orders = orderPage.getContent();
+        List<PharmacyProduct> allPharmacyProducts = getAllPharmacyProducts(orders);
+        List<MasterProduct> allMasterProducts = getAllMasterProducts(orders);
+        
+        List<PurchaseOrderDTOResponse> responses = orders.stream()
+            .map(order -> purchaseOrderMapper.toResponse(order, allPharmacyProducts, allMasterProducts, language))
+            .toList();
+            
+        return new PaginationDTO<>(responses, page, size, orderPage.getTotalElements());
+    }
 
+    public PaginationDTO<PurchaseOrderDTOResponse> getByTimeRangePaginated(
+            LocalDateTime startDate, LocalDateTime endDate, int page, int size) {
+        return getByTimeRangePaginated(startDate, endDate, page, size, "ar");
+    }
+
+    // New method for filtering by supplier
+    public PaginationDTO<PurchaseOrderDTOResponse> getBySupplierPaginated(
+            Long supplierId, int page, int size, String language) {
+        Employee employee = validateAndGetEmployee();
+        Long pharmacyId = employee.getPharmacy().getId();
+        
+        // Validate supplier exists
+        getSupplier(supplierId);
+        
+        Pageable pageable = PageRequest.of(page, size);
+        Page<PurchaseOrder> orderPage = purchaseOrderRepo.findByPharmacyIdAndSupplierId(
+            pharmacyId, supplierId, pageable);
+        
+        List<PurchaseOrder> orders = orderPage.getContent();
+        List<PharmacyProduct> allPharmacyProducts = getAllPharmacyProducts(orders);
+        List<MasterProduct> allMasterProducts = getAllMasterProducts(orders);
+        
+        List<PurchaseOrderDTOResponse> responses = orders.stream()
+            .map(order -> purchaseOrderMapper.toResponse(order, allPharmacyProducts, allMasterProducts, language))
+            .toList();
+            
+        return new PaginationDTO<>(responses, page, size, orderPage.getTotalElements());
+    }
+
+    public PaginationDTO<PurchaseOrderDTOResponse> getBySupplierPaginated(
+            Long supplierId, int page, int size) {
+        return getBySupplierPaginated(supplierId, page, size, "ar");
+    }
 
     @Transactional
     public void cancel(Long id) {

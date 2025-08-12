@@ -36,6 +36,9 @@ public class PurchaseInvoice extends AuditedEntity {
     @Column(nullable = false)
     private Double total;
 
+    @Column(nullable = true)
+    private String invoiceNumber;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "pharmacy_id", nullable = false)
     private Pharmacy pharmacy;

@@ -39,6 +39,7 @@ import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import java.time.LocalDateTime;
 
 @Service
 public class PurchaseInvoiceService extends BaseSecurityService {
@@ -133,6 +134,7 @@ public class PurchaseInvoiceService extends BaseSecurityService {
         invoice.setPurchaseOrder(order);
         invoice.setSupplier(supplier);
         invoice.setCurrency(request.getCurrency());
+        invoice.setInvoiceNumber(request.getInvoiceNumber());
         
         // Properly manage the items collection to avoid Hibernate cascade issues
         invoice.getItems().clear();
@@ -183,6 +185,58 @@ public class PurchaseInvoiceService extends BaseSecurityService {
 
     public PaginationDTO<PurchaseInvoiceDTOResponse> listAllPaginated(int page, int size) {
         return listAllPaginated(page, size, "ar");
+    }
+
+    // New method for filtering by time range
+    public PaginationDTO<PurchaseInvoiceDTOResponse> getByTimeRangePaginated(
+            LocalDateTime startDate, LocalDateTime endDate, int page, int size, String language) {
+        Long currentPharmacyId = getCurrentUserPharmacyId();
+        Pageable pageable = PageRequest.of(page, size);
+        Page<PurchaseInvoice> invoicePage = purchaseInvoiceRepo.findByPharmacyIdAndCreatedAtBetween(
+            currentPharmacyId, startDate, endDate, pageable);
+        
+        List<PurchaseInvoice> invoices = invoicePage.getContent();
+        List<PharmacyProduct> allPharmacyProducts = getAllPharmacyProducts(invoices);
+        List<MasterProduct> allMasterProducts = getAllMasterProducts(invoices);
+        
+        List<PurchaseInvoiceDTOResponse> responses = invoices.stream()
+            .map(invoice -> purchaseInvoiceMapper.toResponse(invoice, allPharmacyProducts, allMasterProducts, language))
+            .toList();
+            
+        return new PaginationDTO<>(responses, page, size, invoicePage.getTotalElements());
+    }
+
+    public PaginationDTO<PurchaseInvoiceDTOResponse> getByTimeRangePaginated(
+            LocalDateTime startDate, LocalDateTime endDate, int page, int size) {
+        return getByTimeRangePaginated(startDate, endDate, page, size, "ar");
+    }
+
+    // New method for filtering by supplier
+    public PaginationDTO<PurchaseInvoiceDTOResponse> getBySupplierPaginated(
+            Long supplierId, int page, int size, String language) {
+        Long currentPharmacyId = getCurrentUserPharmacyId();
+        
+        // Validate supplier exists
+        getSupplier(supplierId);
+        
+        Pageable pageable = PageRequest.of(page, size);
+        Page<PurchaseInvoice> invoicePage = purchaseInvoiceRepo.findByPharmacyIdAndSupplierId(
+            currentPharmacyId, supplierId, pageable);
+        
+        List<PurchaseInvoice> invoices = invoicePage.getContent();
+        List<PharmacyProduct> allPharmacyProducts = getAllPharmacyProducts(invoices);
+        List<MasterProduct> allMasterProducts = getAllMasterProducts(invoices);
+        
+        List<PurchaseInvoiceDTOResponse> responses = invoices.stream()
+            .map(invoice -> purchaseInvoiceMapper.toResponse(invoice, allPharmacyProducts, allMasterProducts, language))
+            .toList();
+            
+        return new PaginationDTO<>(responses, page, size, invoicePage.getTotalElements());
+    }
+
+    public PaginationDTO<PurchaseInvoiceDTOResponse> getBySupplierPaginated(
+            Long supplierId, int page, int size) {
+        return getBySupplierPaginated(supplierId, page, size, "ar");
     }
 
     // Private helper methods for invoice creation

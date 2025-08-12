@@ -23,6 +23,7 @@ public class PurchaseInvoiceMapper {
         invoice.setPurchaseOrder(null); // Set in service if needed
         invoice.setSupplier(supplier);
         invoice.setCurrency(dto.getCurrency());
+        invoice.setInvoiceNumber(dto.getInvoiceNumber());
         invoice.setItems(items.stream().peek(i -> i.setPurchaseInvoice(invoice)).collect(Collectors.toList()));
         // Note: pharmacy will be set in the service layer
         return invoice;
@@ -35,6 +36,9 @@ public class PurchaseInvoiceMapper {
         dto.setSupplierName(invoice.getSupplier().getName());
         dto.setCurrency(invoice.getCurrency());
         dto.setTotal(invoice.getTotal());
+        dto.setInvoiceNumber(invoice.getInvoiceNumber());
+        dto.setCreatedAt(invoice.getCreatedAt());
+        dto.setCreatedBy(invoice.getCreatedBy());
         dto.setItems(invoice.getItems().stream().map(item -> {
             String productName = null;
             if (item.getProductType() == ProductType.PHARMACY) {
