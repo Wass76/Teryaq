@@ -23,8 +23,8 @@ public class ProductSearchDTO {
     private Boolean requiresPrescription;
     private String concentration;
     private String size;
-    // private float refPurchasePrice;
-    // private float refSellingPrice;
+    private float refPurchasePrice;
+    private float refSellingPrice;
     
     private Long pharmacyId;
     private String pharmacyName;

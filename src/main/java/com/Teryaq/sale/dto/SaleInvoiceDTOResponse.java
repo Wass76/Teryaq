@@ -21,7 +21,7 @@ public class SaleInvoiceDTOResponse {
     private Long customerId;
     private String customerName;
     
-    @JsonFormat(pattern = "dd-MM-yyyy'T'HH:mm:ss")
+    @JsonFormat(pattern = "dd-MM-yyyy, HH:mm:ss")
     private LocalDateTime invoiceDate;
     
     private float totalAmount;

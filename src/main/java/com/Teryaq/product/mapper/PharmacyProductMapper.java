@@ -59,7 +59,6 @@ public class PharmacyProductMapper {
         }
         product.setRequiresPrescription(dto.getRequiresPrescription());
 
-        // إضافة الصيدلية
         if (pharmacyId != null) {
             product.setPharmacy(pharmacyRepository.findById(pharmacyId)
                     .orElseThrow(() -> new EntityNotFoundException("Pharmacy not found with ID: " + pharmacyId)));
@@ -84,7 +83,6 @@ public class PharmacyProductMapper {
     public PharmacyProductDTOResponse toResponse(PharmacyProduct product, String lang) {
         String sanitizedlang = lang == null ? "en" : lang.trim().toLowerCase();
         
-        // الحصول على الترجمة المطلوبة
         PharmacyProductTranslation translation = product.getTranslations() != null
                 ? product.getTranslations().stream()
                 .filter(t -> t.getLanguage() != null && t.getLanguage().getCode() != null)
@@ -105,8 +103,8 @@ public class PharmacyProductMapper {
                 .scientificName(translation != null ? translation.getScientificName() : product.getScientificName())
                 .concentration(product.getConcentration())
                 .size(product.getSize())
-                // .refPurchasePrice(product.getRefPurchasePrice())
-                // .refSellingPrice(product.getRefSellingPrice())
+                .refPurchasePrice(product.getRefPurchasePrice())
+                .refSellingPrice(product.getRefSellingPrice())
                 .notes(product.getNotes())  
                 .tax(product.getTax())
                 .barcodes(product.getBarcodes() != null ? 

@@ -39,20 +39,16 @@ public class ProductSearchService extends BaseSecurityService {
         // Get current user's pharmacy ID for filtering
         Long currentPharmacyId = getCurrentUserPharmacyId();
 
-        // البحث في منتجات الماستر باستخدام الـ repository المحسن
         Page<MasterProduct> masterProductsPage = masterProductRepo.search(keyword, lang, PageRequest.of(0, 1000));
         List<MasterProduct> masterProducts = masterProductsPage.getContent();
 
-        // البحث في منتجات الصيدلية باستخدام الـ repository المحسن - مع فلتر الصيدلية
         Page<PharmacyProduct> pharmacyProductsPage = pharmacyProductRepo.searchByPharmacyId(keyword, lang, currentPharmacyId, PageRequest.of(0, 1000));
         List<PharmacyProduct> pharmacyProducts = pharmacyProductsPage.getContent();
 
-        // تحويل منتجات الماستر
         results.addAll(masterProducts.stream()
                 .map(product -> convertMasterProductToUnifiedDTO(product, lang))
                 .collect(Collectors.toList()));
 
-        // تحويل منتجات الصيدلية
         results.addAll(pharmacyProducts.stream()
                 .map(product -> convertPharmacyProductToUnifiedDTO(product, lang))
                 .collect(Collectors.toList()));
@@ -98,8 +94,8 @@ public class ProductSearchService extends BaseSecurityService {
                 .requiresPrescription(product.getRequiresPrescription())
                 .concentration(product.getConcentration())
                 .size(product.getSize())
-                // .refPurchasePrice(product.getRefPurchasePrice())
-                // .refSellingPrice(product.getRefSellingPrice())
+                .refPurchasePrice(product.getRefPurchasePrice())
+                .refSellingPrice(product.getRefSellingPrice())
                 .notes(translatedNotes)
                 .tax(product.getTax())
                 .type(product.getType() != null
@@ -160,8 +156,8 @@ public class ProductSearchService extends BaseSecurityService {
                 .requiresPrescription(product.getRequiresPrescription())
                 .concentration(product.getConcentration())
                 .size(product.getSize())
-                // .refPurchasePrice(product.getRefPurchasePrice())
-                // .refSellingPrice(product.getRefSellingPrice())
+                .refPurchasePrice(product.getRefPurchasePrice())
+                .refSellingPrice(product.getRefSellingPrice())
                 .notes(translatedNotes)
                 .tax(product.getTax())
                 .type(product.getType() != null
