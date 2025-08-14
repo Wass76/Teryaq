@@ -3,7 +3,7 @@ package com.Teryaq.sale.mapper;
 import com.Teryaq.sale.dto.*;
 import com.Teryaq.sale.entity.*;
 import com.Teryaq.product.entity.StockItem;
-import com.Teryaq.product.service.StockManagementService;
+import com.Teryaq.product.service.StockService;
 import com.Teryaq.user.entity.Customer;
 import com.Teryaq.user.entity.Pharmacy;
 import com.Teryaq.user.Enum.Currency;
@@ -18,7 +18,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class SaleMapper {
     
-    private final StockManagementService stockManagementService;
+    private final StockService stockService;
     
     public SaleInvoice toEntity(SaleInvoiceDTORequest dto) {
         SaleInvoice invoice = new SaleInvoice();
@@ -41,7 +41,7 @@ public class SaleMapper {
         SaleInvoice invoice = toEntity(dto);
         invoice.setCustomer(customer);
         invoice.setPharmacy(pharmacy);
-        invoice.setInvoiceDate(java.time.LocalDate.now());
+        invoice.setInvoiceDate(java.time.LocalDateTime.now());
         return invoice;
     }
     
@@ -49,14 +49,10 @@ public class SaleMapper {
         SaleInvoiceItem item = new SaleInvoiceItem();
         item.setStockItem(stockItem);
         item.setQuantity(dto.getQuantity());
-        // item.setDiscount(dto.getDiscountValue() != null ? dto.getDiscountValue() : 0);
-        // item.setDiscountType(dto.getDiscountType());
         
-        // تعيين سعر الوحدة
         if (dto.getUnitPrice() != null) {
             item.setUnitPrice(dto.getUnitPrice());
         } else {
-            // استخدام سعر الشراء الفعلي كسعر البيع
             item.setUnitPrice(stockItem.getActualPurchasePrice().floatValue());
         }
         
@@ -80,10 +76,9 @@ public class SaleMapper {
         dto.setId(item.getId());
         dto.setStockItemId(item.getStockItem() != null ? item.getStockItem().getId() : null);
         
-        // إضافة اسم المنتج باستخدام StockManagementService
         String productName = "Unknown Product";
         if (item.getStockItem() != null) {
-            productName = stockManagementService.getProductName(
+            productName = stockService.getProductName(
                 item.getStockItem().getProductId(), 
                 item.getStockItem().getProductType()
             );
@@ -92,8 +87,6 @@ public class SaleMapper {
         
         dto.setQuantity(item.getQuantity());
         dto.setUnitPrice(item.getUnitPrice());
-        // dto.setDiscount(item.getDiscount());
-        // dto.setDiscountType(item.getDiscountType());
         dto.setSubTotal(item.getSubTotal());
         return dto;
     }
@@ -112,7 +105,7 @@ public class SaleMapper {
         dto.setDiscountType(invoice.getDiscountType());
         dto.setPaidAmount(invoice.getPaidAmount());
         dto.setRemainingAmount(invoice.getRemainingAmount());
-        // حساب الحالة بناءً على المبلغ المتبقي
+        
         String status = invoice.getRemainingAmount() > 0 ? "PENDING" : "COMPLETED";
         dto.setStatus(status);
         if (invoice.getItems() != null) {

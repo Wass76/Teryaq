@@ -12,6 +12,7 @@ import java.util.List;
   "supplierId": 1,
   "currency": "USD",
   "total": 550.00,
+  "invoiceNumber":"123456",
   "items": [
     {
       "productId": 1,

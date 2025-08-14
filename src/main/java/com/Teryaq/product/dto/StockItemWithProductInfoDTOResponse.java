@@ -25,4 +25,5 @@ public class StockItemWithProductInfoDTOResponse {
     private Integer bonusQty;
     private Long addedBy;
     private Long purchaseInvoiceId;
+    private Boolean requiresPrescription;
 } 

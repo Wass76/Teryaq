@@ -3,8 +3,9 @@ package com.Teryaq.product.mapper;
 import com.Teryaq.product.Enum.ProductType;
 import com.Teryaq.product.dto.StockItemDTOResponse;
 import com.Teryaq.product.dto.StockReportDTOResponse;
+import com.Teryaq.product.dto.StockItemWithProductInfoDTOResponse;
 import com.Teryaq.product.entity.StockItem;
-import com.Teryaq.product.service.StockManagementService;
+import com.Teryaq.product.service.StockService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -17,7 +18,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class StockItemMapper {
     
-    private final StockManagementService stockManagementService;
+    private final StockService stockService;
     
     public StockItemDTOResponse toResponse(StockItem stockItem) {
         LocalDate today = LocalDate.now();
@@ -31,7 +32,7 @@ public class StockItemMapper {
         Integer daysUntilExpiry = expiryDate != null ? 
             (int) ChronoUnit.DAYS.between(today, expiryDate) : null;
         
-        String productName = stockManagementService.getProductName(
+        String productName = stockService.getProductName(
             stockItem.getProductId(), stockItem.getProductType());
         
         return StockItemDTOResponse.builder()
@@ -94,5 +95,29 @@ public class StockItemMapper {
                 .expiringSoonItems(expiringSoonItems)
                 .stockItems(stockItemResponses)
                 .build();
+    }
+    
+    public StockItemWithProductInfoDTOResponse toStockItemWithProductInfoDTO(StockItem stockItem) {
+        return StockItemWithProductInfoDTOResponse.builder()
+                .id(stockItem.getId())
+                .productId(stockItem.getProductId())
+                .productType(stockItem.getProductType())
+                .quantity(stockItem.getQuantity())
+                .actualPurchasePrice(stockItem.getActualPurchasePrice())
+                .expiryDate(stockItem.getExpiryDate())
+                .dateAdded(stockItem.getDateAdded())
+                .productName(stockService.getProductName(stockItem.getProductId(), stockItem.getProductType()))
+                .batchNo(stockItem.getBatchNo())
+                .bonusQty(stockItem.getBonusQty())
+                .addedBy(stockItem.getAddedBy())
+                .purchaseInvoiceId(stockItem.getPurchaseInvoice() != null ? stockItem.getPurchaseInvoice().getId() : null)
+                .requiresPrescription(stockService.isProductRequiresPrescription(stockItem.getProductId(), stockItem.getProductType()))
+                .build();
+    }
+    
+    public List<StockItemWithProductInfoDTOResponse> toStockItemWithProductInfoDTOList(List<StockItem> stockItems) {
+        return stockItems.stream()
+                .map(this::toStockItemWithProductInfoDTO)
+                .collect(Collectors.toList());
     }
 } 

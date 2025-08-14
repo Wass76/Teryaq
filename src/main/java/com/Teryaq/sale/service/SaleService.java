@@ -9,7 +9,7 @@ import com.Teryaq.sale.repo.SaleInvoiceRepository;
 import com.Teryaq.sale.repo.SaleInvoiceItemRepository;
 import com.Teryaq.product.entity.StockItem;
 import com.Teryaq.product.repo.StockItemRepo;
-import com.Teryaq.product.service.StockManagementService;
+import com.Teryaq.product.service.StockService;
 import com.Teryaq.user.entity.Customer;
 import com.Teryaq.user.entity.Pharmacy;
 import com.Teryaq.user.repository.CustomerRepo;
@@ -30,6 +30,8 @@ import com.Teryaq.sale.dto.SaleInvoiceItemDTORequest;
 import com.Teryaq.product.Enum.PaymentType;
 import com.Teryaq.user.entity.CustomerDebt;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+
 import com.Teryaq.user.repository.CustomerDebtRepository;
 
 @Service
@@ -45,7 +47,7 @@ public class SaleService extends BaseSecurityService {
     @Autowired
     private StockItemRepo stockItemRepo;
     @Autowired
-    private StockManagementService stockManagementService;
+    private StockService stockService;
     @Autowired
     private DiscountCalculationService discountCalculationService;
     @Autowired
@@ -60,7 +62,7 @@ public class SaleService extends BaseSecurityService {
                       SaleInvoiceItemRepository saleInvoiceItemRepository,
                       CustomerRepo customerRepository,
                       StockItemRepo stockItemRepo,
-                      StockManagementService stockManagementService,
+                      StockService stockService,
                       DiscountCalculationService discountCalculationService,
                       PaymentValidationService paymentValidationService,
                       CustomerDebtRepository customerDebtRepository,
@@ -71,7 +73,7 @@ public class SaleService extends BaseSecurityService {
         this.saleInvoiceItemRepository = saleInvoiceItemRepository;
         this.customerRepository = customerRepository;
         this.stockItemRepo = stockItemRepo;
-        this.stockManagementService = stockManagementService;
+        this.stockService = stockService;
         this.discountCalculationService = discountCalculationService;
         this.paymentValidationService = paymentValidationService;
         this.customerDebtRepository = customerDebtRepository;
@@ -80,30 +82,24 @@ public class SaleService extends BaseSecurityService {
 
     @Transactional
     public SaleInvoiceDTOResponse createSaleInvoice(SaleInvoiceDTORequest requestDTO) {
-        // Get current user's pharmacy
         Pharmacy currentPharmacy = getCurrentUserPharmacy();
         
-        // الحصول على العميل
         Customer customer = null;
         if (requestDTO.getCustomerId() != null) {
             customer = customerRepository.findById(requestDTO.getCustomerId()).orElse(null);
         }
         
-        // التحقق من صحة الدفع
         if (!paymentValidationService.validatePayment(requestDTO.getPaymentType(), requestDTO.getPaymentMethod())) {
             throw new ConflictException("the payment type and payment method are not compatible");
         }
         
-        // التحقق من المبلغ المدفوع (سيتم التحقق من الإجمالي بعد حساب الفاتورة)
         float paidAmount = requestDTO.getPaidAmount() != null ? requestDTO.getPaidAmount() : 0;
         if (paidAmount < 0) {
             throw new ConflictException("the paid amount cannot be negative");
         }
         
-        // إنشاء فاتورة البيع باستخدام Mapper
         SaleInvoice invoice = saleMapper.toEntityWithCustomerAndDate(requestDTO, customer, currentPharmacy);
         
-        // الحصول على جميع StockItems المطلوبة
         List<Long> stockItemIds = requestDTO.getItems().stream()
             .map(SaleInvoiceItemDTORequest::getStockItemId)
             .collect(Collectors.toList());
@@ -125,35 +121,30 @@ public class SaleService extends BaseSecurityService {
         for (SaleInvoiceItem item : items) {
             StockItem product = item.getStockItem();
             
-            if (!stockManagementService.isQuantityAvailable(product.getProductId(), item.getQuantity())) {
-                String productName = stockManagementService.getProductName(product.getProductId(), product.getProductType());
+            if (!stockService.isQuantityAvailable(product.getProductId(), item.getQuantity())) {
+                String productName = stockService.getProductName(product.getProductId(), product.getProductType());
                 throw new RequestNotValidException("Insufficient stock for product: " + productName + 
                     " (ID: " + product.getProductId() + "). Available: " + 
-                    stockManagementService.getTotalQuantityByProductId(product.getProductId()) + 
+                    stockItemRepo.getTotalQuantity(product.getProductId(), getCurrentUserPharmacyId()) + 
                     ", Requested: " + item.getQuantity());
             }
             
-            // التحقق من تاريخ انتهاء الصلاحية
             if (product.getExpiryDate() != null && product.getExpiryDate().isBefore(java.time.LocalDate.now())) {
-                String productName = stockManagementService.getProductName(product.getProductId(), product.getProductType());
+                String productName = stockService.getProductName(product.getProductId(), product.getProductType());
                 throw new RequestNotValidException("Product expired: " + productName + 
                     " (ID: " + product.getProductId() + "). Expiry date: " + product.getExpiryDate());
             }
             
-            // تحديث الكمية في المخزون
             product.setQuantity(product.getQuantity() - item.getQuantity());
             stockItemRepo.save(product);
             
-            // ربط العنصر بالفاتورة
             item.setSaleInvoice(invoice);
             
-            // حساب المجاميع بدون خصم على مستوى العنصر
             float subTotal = item.getUnitPrice() * item.getQuantity();
             item.setSubTotal(subTotal);
             total += subTotal;
         }
         
-        // حساب المجاميع النهائية مع خصم الفاتورة
         float invoiceDiscount = discountCalculationService.calculateDiscount(
             total, 
             invoice.getDiscountType(), 
@@ -162,25 +153,21 @@ public class SaleService extends BaseSecurityService {
         
         invoice.setTotalAmount(total - invoiceDiscount);
         
-        // للدفع النقدي، إذا لم يتم تحديد المبلغ المدفوع أو كان 0، استخدم الإجمالي
         if (requestDTO.getPaymentType() == PaymentType.CASH && paidAmount == 0) {
             paidAmount = invoice.getTotalAmount();
         }
         
-        // التحقق من المبلغ المدفوع بعد حساب الإجمالي
         if (!paymentValidationService.validatePaidAmount(invoice.getTotalAmount(), paidAmount, requestDTO.getPaymentType())) {
             throw new RequestNotValidException("the paid amount is not valid for payment type: " + requestDTO.getPaymentType());
         }
         
-        // حساب المبلغ المتبقي
         float remainingAmount = paymentValidationService.calculateRemainingAmount(invoice.getTotalAmount(), paidAmount);
         
-        // للدفع النقدي، يجب أن يكون المبلغ المتبقي 0
         if (requestDTO.getPaymentType() == PaymentType.CASH) {
             if (remainingAmount > 0) {
                 throw new RequestNotValidException("Cash payment must be complete. Remaining amount: " + remainingAmount);
             }
-            remainingAmount = 0; // ضبط المبلغ المتبقي على 0 للدفع النقدي
+            remainingAmount = 0; 
         }
         
         invoice.setPaidAmount(paidAmount);
@@ -188,16 +175,13 @@ public class SaleService extends BaseSecurityService {
         
         invoice.setItems(items);
         
-        // حفظ الفاتورة والعناصر
         SaleInvoice savedInvoice = saleInvoiceRepository.save(invoice);
         saleInvoiceItemRepository.saveAll(items);
         
-        // إنشاء دين للعميل إذا كان هناك مبلغ متبقي
         if (customer != null && remainingAmount > 0) {
             createCustomerDebt(customer, remainingAmount, savedInvoice);
         }
         
-        // تحويل النتيجة إلى DTO
         return saleMapper.toResponse(savedInvoice);
     }
     
@@ -208,59 +192,47 @@ public class SaleService extends BaseSecurityService {
                 .amount(remainingAmount)
                 .paidAmount(0f)
                 .remainingAmount(remainingAmount)
-                .dueDate(LocalDate.now().plusMonths(1)) // تاريخ استحقاق بعد شهر
+                .dueDate(LocalDate.now().plusMonths(1)) 
                 .notes("دين من فاتورة بيع رقم: " + invoice.getId())
                 .status("ACTIVE")
                 .build();
             
             customerDebtRepository.save(debt);
         } catch (Exception e) {
-            // تسجيل الخطأ ولكن لا نوقف عملية البيع
             logger.error("Error creating customer debt for invoice {}: {}", invoice.getId(), e.getMessage(), e);
         }
     }
 
-    /**
-     * الحصول على فاتورة بيع بواسطة المعرف
-     */
+   
     public SaleInvoiceDTOResponse getSaleById(Long saleId) {
-        // Get current user's pharmacy ID
         Long currentPharmacyId = getCurrentUserPharmacyId();
         
-        // Find sale invoice by ID and pharmacy ID to ensure pharmacy isolation
         SaleInvoice saleInvoice = saleInvoiceRepository.findByIdAndPharmacyId(saleId, currentPharmacyId)
                 .orElseThrow(() -> new EntityNotFoundException("Sale invoice not found with ID: " + saleId));
         return saleMapper.toResponse(saleInvoice);
     }
 
-    /**
-     * إلغاء عملية البيع واستعادة الكميات في المخزون
-     */
+    
     @Transactional
     public void cancelSale(Long saleId) {
         // Get current user's pharmacy ID for security
         Long currentPharmacyId = getCurrentUserPharmacyId();
         
-        // البحث عن فاتورة البيع with pharmacy filtering
         SaleInvoice saleInvoice = saleInvoiceRepository.findByIdAndPharmacyId(saleId, currentPharmacyId)
                 .orElseThrow(() -> new EntityNotFoundException("Sale invoice not found with ID: " + saleId));
 
-        // التحقق من أن الفاتورة لم يتم دفعها بالكامل (لا يمكن إلغاء فواتير مدفوعة بالكامل)
         if (saleInvoice.getRemainingAmount() <= 0) {
             throw new RequestNotValidException("Cannot cancel a fully paid sale invoice");
         }
 
-        // استعادة الكميات في المخزون
         for (SaleInvoiceItem item : saleInvoice.getItems()) {
             StockItem stockItem = item.getStockItem();
             if (stockItem != null) {
-                // إضافة الكمية المباعة مرة أخرى إلى المخزون
                 stockItem.setQuantity(stockItem.getQuantity() + item.getQuantity());
                 stockItemRepo.save(stockItem);
             }
         }
 
-        // حذف ديون العميل المرتبطة بهذه الفاتورة
         if (saleInvoice.getCustomer() != null) {
             List<CustomerDebt> relatedDebts = customerDebtRepository.findByCustomerId(saleInvoice.getCustomer().getId());
             relatedDebts.stream()
@@ -268,25 +240,32 @@ public class SaleService extends BaseSecurityService {
                     .forEach(debt -> customerDebtRepository.delete(debt));
         }
 
-        // حذف عناصر الفاتورة
         saleInvoiceItemRepository.deleteBySaleInvoiceId(saleId);
 
-        // حذف الفاتورة
         saleInvoiceRepository.delete(saleInvoice);
     }
 
-    /**
-     * الحصول على جميع فواتير البيع للصيدلية الحالية
-     */
+
     public List<SaleInvoiceDTOResponse> getAllSales() {
-        // Get current user's pharmacy ID for security
         Long currentPharmacyId = getCurrentUserPharmacyId();
         
-        // البحث عن جميع فواتير البيع للصيدلية الحالية
         List<SaleInvoice> saleInvoices = saleInvoiceRepository.findByPharmacyIdOrderByInvoiceDateDesc(currentPharmacyId);
         
         return saleInvoices.stream()
                 .map(saleMapper::toResponse)
                 .collect(Collectors.toList());
     }
+
+    public List<SaleInvoiceDTOResponse> searchSaleInvoiceByDate(LocalDate createdDate) {
+    Long currentPharmacyId = getCurrentUserPharmacyId();
+    LocalDateTime startOfDay = createdDate.atStartOfDay();
+    LocalDateTime endOfDay = createdDate.atTime(23, 59, 59);
+    List<SaleInvoice> saleInvoices = saleInvoiceRepository.findByPharmacyIdAndInvoiceDateBetween(currentPharmacyId, startOfDay, endOfDay);
+    if (saleInvoices.isEmpty()) {
+        throw new EntityNotFoundException("No sale invoices found for date: " + createdDate);
+    }
+    return saleInvoices.stream()
+            .map(saleMapper::toResponse)
+            .collect(Collectors.toList());
+}
 } 

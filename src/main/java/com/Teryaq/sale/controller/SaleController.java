@@ -17,6 +17,8 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
+
+import java.time.LocalDate;
 import java.util.List;
 
 @RestController
@@ -109,5 +111,12 @@ public class SaleController {
             @Min(1) @PathVariable Long id) {
         saleService.cancelSale(id);
         return ResponseEntity.ok().build();
+    }
+
+    @GetMapping("/search-by-date")
+    public ResponseEntity<List<SaleInvoiceDTOResponse>> searchSaleInvoiceByDate(
+        @RequestParam("date") LocalDate createdAt) {
+        List<SaleInvoiceDTOResponse> response = saleService.searchSaleInvoiceByDate(createdAt);
+        return ResponseEntity.ok(response);
     }
 } 

@@ -9,7 +9,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Data
@@ -21,8 +21,8 @@ public class SaleInvoiceDTOResponse {
     private Long customerId;
     private String customerName;
     
-    @JsonFormat(pattern = "yyyy-MM-dd")
-    private LocalDate invoiceDate;
+    @JsonFormat(pattern = "dd-MM-yyyy'T'HH:mm:ss")
+    private LocalDateTime invoiceDate;
     
     private float totalAmount;
     private PaymentType paymentType;

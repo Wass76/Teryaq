@@ -5,7 +5,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 
 import com.Teryaq.product.Enum.DiscountType;
@@ -29,8 +29,8 @@ public class SaleInvoice extends AuditedEntity{
     @JoinColumn(name = "customer_id")
     private Customer customer;
 
-    @JsonFormat(pattern = "yyyy-MM-dd")
-    private LocalDate invoiceDate;
+    @JsonFormat(pattern = "dd-MM-yyyy'T'HH:mm:ss")
+    private LocalDateTime invoiceDate;
 
     private float totalAmount;
 
@@ -51,7 +51,7 @@ public class SaleInvoice extends AuditedEntity{
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private Currency currency = Currency.SYP; // افتراضي الليرة السورية
+    private Currency currency = Currency.SYP; 
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "pharmacy_id", nullable = false)
