@@ -152,6 +152,8 @@ public class PharmacyProductController {
         return ResponseEntity.ok(pharmacyProductService.editPharmacyProduct(id, pharmacyProduct, lang));
     }
 
+
+
     @DeleteMapping("{id}")
     @Operation(
         summary = "Delete pharmacy product",

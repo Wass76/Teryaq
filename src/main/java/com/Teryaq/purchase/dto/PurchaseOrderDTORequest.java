@@ -25,7 +25,7 @@ public class PurchaseOrderDTORequest {
     private Long supplierId;
     
     @Schema(description = "Currency for the purchase order", example = "USD", 
-            allowableValues = {"USD", "EUR", "GBP", "SAR", "AED"})
+            allowableValues = {"USD", "EUR", "GBP", "SAR", "AED" , "SYP"})
     private Currency currency;
     
     @Schema(description = "List of items to purchase")

@@ -36,6 +36,9 @@ public class StockItem extends AuditedEntity {
     @Column
     private String batchNo;
 
+    @Column
+    private String invoiceNumber;
+
     @Column(nullable = false)
     private Double actualPurchasePrice;
 

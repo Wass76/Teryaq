@@ -35,6 +35,7 @@ public class PurchaseOrderMapper {
     public PurchaseOrderDTOResponse toResponse(PurchaseOrder order, List<PharmacyProduct> pharmacyProducts, List<MasterProduct> masterProducts, String language) {
         PurchaseOrderDTOResponse dto = new PurchaseOrderDTOResponse();
         dto.setId(order.getId());
+        dto.setSupplierId(order.getSupplier().getId());
         dto.setSupplierName(order.getSupplier().getName());
         dto.setCurrency(order.getCurrency());
         dto.setTotal(order.getTotal());
@@ -80,6 +81,7 @@ public class PurchaseOrderMapper {
     public PurchaseOrderDTOResponse toResponse(PurchaseOrder order, List<PharmacyProduct> pharmacyProducts, List<MasterProduct> masterProducts) {
         PurchaseOrderDTOResponse dto = new PurchaseOrderDTOResponse();
         dto.setId(order.getId());
+        dto.setSupplierId(order.getSupplier().getId());
         dto.setSupplierName(order.getSupplier().getName());
         dto.setCurrency(order.getCurrency());
         dto.setTotal(order.getTotal());

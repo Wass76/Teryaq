@@ -89,6 +89,9 @@ public class PurchaseInvoiceService extends BaseSecurityService {
         // Update order status
         updateOrderStatus(order);
         
+        // Create StockItem records for audit trail
+        createStockItemRecords(invoice);
+        
         // Get products for response mapping
         List<PharmacyProduct> pharmacyProducts = getPharmacyProducts(invoice);
         List<MasterProduct> masterProducts = getMasterProducts(invoice);
@@ -301,7 +304,9 @@ public class PurchaseInvoiceService extends BaseSecurityService {
 
     private void setInvoiceItemPrices(PurchaseInvoice invoice) {
         invoice.getItems().forEach(item -> {
-            item.setActualPrice(item.getInvoicePrice());
+            // Calculate actual price after bonus
+            Double actualPrice = calculateActualPurchasePrice(item);
+            item.setActualPrice(actualPrice);
         });
     }
 
@@ -323,6 +328,111 @@ public class PurchaseInvoiceService extends BaseSecurityService {
     private void updateOrderStatus(PurchaseOrder order) {
         order.setStatus(OrderStatus.DONE);
         purchaseOrderRepo.save(order);
+    }
+
+    // Method to create StockItem records for audit trail
+    private void createStockItemRecords(PurchaseInvoice invoice) {
+        for (PurchaseInvoiceItem item : invoice.getItems()) {
+            // Validate expiry date
+            validateExpiryDate(item.getExpiryDate());
+            
+            // Calculate actual purchase price after bonus
+            Double actualPurchasePrice = calculateActualPurchasePrice(item);
+            
+            // Update the actualPrice in the PurchaseInvoiceItem
+            item.setActualPrice(actualPurchasePrice);
+            
+            StockItem stockItem = new StockItem();
+            
+            // Set basic properties
+            stockItem.setProductId(item.getProductId());
+            stockItem.setProductType(item.getProductType());
+            stockItem.setQuantity(item.getReceivedQty());
+            stockItem.setBonusQty(item.getBonusQty());
+            stockItem.setActualPurchasePrice(actualPurchasePrice);
+            
+            // Set batch and invoice details
+            stockItem.setBatchNo(item.getBatchNo());
+            stockItem.setInvoiceNumber(item.getInvoiceNumber());
+            stockItem.setExpiryDate(item.getExpiryDate());
+            
+            // Link to purchase invoice
+            stockItem.setPurchaseInvoice(invoice);
+            
+            // Set pharmacy
+            stockItem.setPharmacy(invoice.getPharmacy());
+            
+            // Set timestamps
+            stockItem.setDateAdded(LocalDate.now());
+            stockItem.setAddedBy(getCurrentUser().getId());
+            
+            // Save the stock item
+            stockItemRepo.save(stockItem);
+            
+            // Update PharmacyProduct refPurchasePrice if price changed
+            updatePharmacyProductPriceIfChanged(item, actualPurchasePrice);
+        }
+        
+        // Save the updated PurchaseInvoiceItem entities
+        purchaseInvoiceItemRepo.saveAll(invoice.getItems());
+    }
+
+    // Validate expiry date
+    private void validateExpiryDate(LocalDate expiryDate) {
+        if (expiryDate == null) {
+            throw new ConflictException("Expiry date is required for all items");
+        }
+        
+        LocalDate today = LocalDate.now();
+        if (expiryDate.isBefore(today)) {
+            throw new ConflictException("Cannot accept items with expired date: " + expiryDate);
+        }
+        
+        // Warning for items expiring within 6 months
+        LocalDate sixMonthsFromNow = today.plusMonths(6);
+        if (expiryDate.isBefore(sixMonthsFromNow)) {
+            logger.warn("Item with expiry date {} is less than 6 months from now", expiryDate);
+            // You can add user notification here if needed
+        }
+    }
+
+    // Calculate actual purchase price after bonus
+    private Double calculateActualPurchasePrice(PurchaseInvoiceItem item) {
+        if (item.getReceivedQty() == null || item.getReceivedQty() <= 0) {
+            throw new ConflictException("Received quantity must be greater than 0");
+        }
+        
+        if (item.getInvoicePrice() == null || item.getInvoicePrice() <= 0) {
+            throw new ConflictException("Invoice price must be greater than 0");
+        }
+        
+        int bonusQty = item.getBonusQty() != null ? item.getBonusQty() : 0;
+        int totalQty = item.getReceivedQty() + bonusQty;
+        
+        if (totalQty <= 0) {
+            throw new ConflictException("Total quantity (received + bonus) must be greater than 0");
+        }
+        
+        // Formula: (receivedQty × invoicePrice) ÷ (receivedQty + bonusQty)
+        return (item.getReceivedQty() * item.getInvoicePrice()) / totalQty;
+    }
+
+    // Update PharmacyProduct refPurchasePrice if price changed
+    private void updatePharmacyProductPriceIfChanged(PurchaseInvoiceItem item, Double actualPurchasePrice) {
+        if (item.getProductType() == ProductType.PHARMACY) {
+            PharmacyProduct product = pharmacyProductRepo.findById(item.getProductId())
+                .orElse(null);
+            
+            if (product != null && actualPurchasePrice != null) {
+                // Update refPurchasePrice only if it's different
+                if (!actualPurchasePrice.equals(product.getRefPurchasePrice())) {
+                    product.setRefPurchasePrice(actualPurchasePrice.floatValue());
+                    pharmacyProductRepo.save(product);
+                    logger.info("Updated refPurchasePrice for PharmacyProduct {} from {} to {}", 
+                        product.getId(), product.getRefPurchasePrice(), actualPurchasePrice);
+                }
+            }
+        }
     }
 
     // Private helper methods for product retrieval

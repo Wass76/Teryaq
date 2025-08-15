@@ -1,6 +1,7 @@
 package com.Teryaq.product.service;
 
 import com.Teryaq.product.dto.PharmacyProductDTORequest;
+
 import com.Teryaq.product.dto.PharmacyProductDTOResponse;
 import com.Teryaq.product.dto.PharmacyProductListDTO;
 import com.Teryaq.product.dto.ProductMultiLangDTOResponse;
@@ -267,6 +268,8 @@ public class PharmacyProductService extends BaseSecurityService {
                 .orElseThrow(() -> new EntityNotFoundException("Pharmacy Product with ID " + id + " not found"));
         return pharmacyProductMapper.toMultiLangResponse(product);
     }
+
+
 
 }
 

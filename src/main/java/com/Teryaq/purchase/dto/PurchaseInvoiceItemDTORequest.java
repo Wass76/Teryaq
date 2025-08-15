@@ -14,6 +14,7 @@ import lombok.Data;
   "bonusQty": 10,
   "invoicePrice": 5.50,
   "batchNo": "BATCH001",
+  "invoiceNumber": "INV-2024-001",
   "expiryDate": "2025-12-31",
   "productType": "MASTER"
 }
@@ -34,7 +35,10 @@ public class PurchaseInvoiceItemDTORequest {
     
     @Schema(description = "Batch number", example = "BATCH001")
     private String batchNo;
-    
+
+    @Schema(description = "Invoice number from supplier", example = "INV-2024-001")
+    private String invoiceNumber;
+
     @Schema(description = "Expiry date", example = "2025-12-31")
     @JsonFormat(pattern = "yyyy-MM-dd")
     private LocalDate expiryDate;

@@ -9,6 +9,7 @@ import java.util.List;
 public class PurchaseInvoiceDTOResponse {
     private Long id;
     private Long purchaseOrderId;
+    private Long supplierId;
     private String supplierName;
     private Currency currency;
     private Double total;

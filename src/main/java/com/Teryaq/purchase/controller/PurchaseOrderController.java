@@ -19,6 +19,8 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import jakarta.validation.Valid;
 
+import java.time.LocalDateTime;
+
 @RestController
 @RequestMapping("/api/v1/purchase-orders")
 @RequiredArgsConstructor
@@ -91,7 +93,7 @@ public class PurchaseOrderController {
     }
 
 
-    @GetMapping("/paginated")
+    @GetMapping
     @Operation(
         summary = "Get paginated purchase orders",
         description = "Retrieves purchase orders with pagination support"
@@ -162,8 +164,8 @@ public class PurchaseOrderController {
             @RequestParam(defaultValue = "10") int size,
             @Parameter(description = "Language code", example = "ar") 
             @RequestParam(defaultValue = "ar") String language) {
-        java.time.LocalDateTime start = java.time.LocalDateTime.parse(startDate);
-        java.time.LocalDateTime end = java.time.LocalDateTime.parse(endDate);
+        LocalDateTime start = LocalDateTime.parse(startDate);
+        LocalDateTime end = LocalDateTime.parse(endDate);
         return ResponseEntity.ok(purchaseOrderService.getByTimeRangePaginated(start, end, page, size, language));
     }
 

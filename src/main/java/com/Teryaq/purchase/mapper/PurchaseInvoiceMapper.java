@@ -33,6 +33,7 @@ public class PurchaseInvoiceMapper {
         PurchaseInvoiceDTOResponse dto = new PurchaseInvoiceDTOResponse();
         dto.setId(invoice.getId());
         dto.setPurchaseOrderId(invoice.getPurchaseOrder() != null ? invoice.getPurchaseOrder().getId() : null);
+        dto.setSupplierId(invoice.getSupplier().getId());
         dto.setSupplierName(invoice.getSupplier().getName());
         dto.setCurrency(invoice.getCurrency());
         dto.setTotal(invoice.getTotal());

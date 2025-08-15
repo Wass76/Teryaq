@@ -94,7 +94,7 @@ public class PurchaseInvoiceController {
     }
 
 
-    @GetMapping("/paginated")
+    @GetMapping
     @Operation(
         summary = "Get paginated purchase invoices",
         description = "Retrieves purchase invoices with pagination support"

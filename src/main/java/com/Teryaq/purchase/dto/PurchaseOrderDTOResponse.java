@@ -9,6 +9,7 @@ import java.util.List;
 @Data
 public class PurchaseOrderDTOResponse {
     private Long id;
+    private Long supplierId;
     private String supplierName;
     private Currency currency;
     private Double total;

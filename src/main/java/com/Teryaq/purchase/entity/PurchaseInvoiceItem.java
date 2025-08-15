@@ -44,6 +44,9 @@ public class PurchaseInvoiceItem extends AuditedEntity {
     private String batchNo;
 
     @Column(nullable = true)
+    private String invoiceNumber;
+
+    @Column(nullable = true)
     private LocalDate expiryDate;
 
     @EqualsAndHashCode.Include
