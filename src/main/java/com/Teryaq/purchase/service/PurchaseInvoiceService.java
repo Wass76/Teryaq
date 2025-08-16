@@ -90,7 +90,7 @@ public class PurchaseInvoiceService extends BaseSecurityService {
         updateOrderStatus(order);
         
         // Create StockItem records for audit trail
-        createStockItemRecords(invoice);
+        createStockItemRecords(invoice, request);
         
         // Get products for response mapping
         List<PharmacyProduct> pharmacyProducts = getPharmacyProducts(invoice);
@@ -275,9 +275,15 @@ public class PurchaseInvoiceService extends BaseSecurityService {
 
     private PurchaseInvoiceItem validateAndCreateInvoiceItem(PurchaseInvoiceItemDTORequest itemDto) {
         if (itemDto.getProductType() == ProductType.PHARMACY) {
+            // Validate that sellingPrice is provided for PHARMACY products
+            if (itemDto.getSellingPrice() == null || itemDto.getSellingPrice() <= 0) {
+                throw new ConflictException("Selling price is required and must be greater than 0 for PHARMACY type products");
+            }
+            
             pharmacyProductRepo.findById(itemDto.getProductId())
                 .orElseThrow(() -> new ResourceNotFoundException("PharmacyProduct not found: " + itemDto.getProductId()));
         } else if (itemDto.getProductType() == ProductType.MASTER) {
+            // For MASTER products, sellingPrice is optional and will not be set
             masterProductRepo.findById(itemDto.getProductId())
                 .orElseThrow(() -> new ResourceNotFoundException("MasterProduct not found: " + itemDto.getProductId()));
         } else {
@@ -331,7 +337,7 @@ public class PurchaseInvoiceService extends BaseSecurityService {
     }
 
     // Method to create StockItem records for audit trail
-    private void createStockItemRecords(PurchaseInvoice invoice) {
+    private void createStockItemRecords(PurchaseInvoice invoice, PurchaseInvoiceDTORequest request) {
         for (PurchaseInvoiceItem item : invoice.getItems()) {
             // Validate expiry date
             validateExpiryDate(item.getExpiryDate());
@@ -370,7 +376,7 @@ public class PurchaseInvoiceService extends BaseSecurityService {
             stockItemRepo.save(stockItem);
             
             // Update PharmacyProduct refPurchasePrice if price changed
-            updatePharmacyProductPriceIfChanged(item, actualPurchasePrice);
+            updatePharmacyProductPriceIfChanged(item, actualPurchasePrice, request);
         }
         
         // Save the updated PurchaseInvoiceItem entities
@@ -418,18 +424,50 @@ public class PurchaseInvoiceService extends BaseSecurityService {
     }
 
     // Update PharmacyProduct refPurchasePrice if price changed
-    private void updatePharmacyProductPriceIfChanged(PurchaseInvoiceItem item, Double actualPurchasePrice) {
+    private void updatePharmacyProductPriceIfChanged(PurchaseInvoiceItem item, Double actualPurchasePrice, PurchaseInvoiceDTORequest request) {
         if (item.getProductType() == ProductType.PHARMACY) {
             PharmacyProduct product = pharmacyProductRepo.findById(item.getProductId())
                 .orElse(null);
             
-            if (product != null && actualPurchasePrice != null) {
-                // Update refPurchasePrice only if it's different
-                if (!actualPurchasePrice.equals(product.getRefPurchasePrice())) {
+            if (product != null) {
+                boolean updated = false;
+                
+                // Update refPurchasePrice if it's different
+                if (actualPurchasePrice != null && !actualPurchasePrice.equals(product.getRefPurchasePrice())) {
                     product.setRefPurchasePrice(actualPurchasePrice.floatValue());
-                    pharmacyProductRepo.save(product);
+                    updated = true;
                     logger.info("Updated refPurchasePrice for PharmacyProduct {} from {} to {}", 
                         product.getId(), product.getRefPurchasePrice(), actualPurchasePrice);
+                }
+                
+                // Find the corresponding item in the request to get sellingPrice and minStockLevel
+                PurchaseInvoiceItemDTORequest requestItem = request.getItems().stream()
+                    .filter(reqItem -> reqItem.getProductId().equals(item.getProductId()) && 
+                                     reqItem.getProductType() == item.getProductType())
+                    .findFirst()
+                    .orElse(null);
+                
+                if (requestItem != null) {
+                    // Update refSellingPrice if provided in the request
+                    if (requestItem.getSellingPrice() != null && !requestItem.getSellingPrice().equals(product.getRefSellingPrice())) {
+                        product.setRefSellingPrice(requestItem.getSellingPrice().floatValue());
+                        updated = true;
+                        logger.info("Updated refSellingPrice for PharmacyProduct {} from {} to {}", 
+                            product.getId(), product.getRefSellingPrice(), requestItem.getSellingPrice());
+                    }
+                    
+                    // Update minStockLevel if provided in the request
+                    if (requestItem.getMinStockLevel() != null && !requestItem.getMinStockLevel().equals(product.getMinStockLevel())) {
+                        product.setMinStockLevel(requestItem.getMinStockLevel());
+                        updated = true;
+                        logger.info("Updated minStockLevel for PharmacyProduct {} from {} to {}", 
+                            product.getId(), product.getMinStockLevel(), requestItem.getMinStockLevel());
+                    }
+                }
+                
+                // Save the product if any field was updated
+                if (updated) {
+                    pharmacyProductRepo.save(product);
                 }
             }
         }

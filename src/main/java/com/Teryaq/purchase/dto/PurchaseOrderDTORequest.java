@@ -14,7 +14,8 @@ import java.util.List;
     {
       "productId": 1,
       "quantity": 100,
-      "unitPrice": 5.50
+      "unitPrice": 5.50,
+      "items" :
     }
   ]
 }

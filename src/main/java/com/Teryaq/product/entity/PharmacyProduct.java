@@ -27,6 +27,7 @@ public class PharmacyProduct extends AuditedEntity {
     private String size;
     private float refPurchasePrice;
     private float refSellingPrice;
+    private Integer minStockLevel;
     private String notes;
     private float tax;
 
