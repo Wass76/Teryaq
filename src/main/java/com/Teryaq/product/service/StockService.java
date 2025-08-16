@@ -245,8 +245,8 @@ public class StockService extends BaseSecurityService {
         return 0f;
     }
 
-    public boolean isQuantityAvailable(Long productId, Integer requiredQuantity) {
-        Integer availableQuantity = stockItemRepo.getTotalQuantity(productId, getCurrentUserPharmacyId());
+    public boolean isQuantityAvailable(Long productId, Integer requiredQuantity, ProductType productType) {
+        Integer availableQuantity = stockItemRepo.getTotalQuantity(productId, getCurrentUserPharmacyId(), productType);
         return availableQuantity >= requiredQuantity;
     }
     

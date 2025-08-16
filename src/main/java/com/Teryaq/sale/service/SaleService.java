@@ -121,11 +121,11 @@ public class SaleService extends BaseSecurityService {
         for (SaleInvoiceItem item : items) {
             StockItem product = item.getStockItem();
             
-            if (!stockService.isQuantityAvailable(product.getProductId(), item.getQuantity())) {
+            if (!stockService.isQuantityAvailable(product.getProductId(), item.getQuantity(), product.getProductType())) {
                 String productName = stockService.getProductName(product.getProductId(), product.getProductType());
                 throw new RequestNotValidException("Insufficient stock for product: " + productName + 
                     " (ID: " + product.getProductId() + "). Available: " + 
-                    stockItemRepo.getTotalQuantity(product.getProductId(), getCurrentUserPharmacyId()) + 
+                    stockItemRepo.getTotalQuantity(product.getProductId(), getCurrentUserPharmacyId(), product.getProductType()) + 
                     ", Requested: " + item.getQuantity());
             }
             

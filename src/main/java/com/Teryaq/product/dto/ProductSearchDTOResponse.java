@@ -13,7 +13,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-public class ProductSearchDTO {
+public class ProductSearchDTOResponse {
     private Long id;
     private String tradeName;
     private String scientificName;
@@ -29,10 +29,19 @@ public class ProductSearchDTO {
     private Long pharmacyId;
     private String pharmacyName;
     
-
+    private Long typeId;
     private String type;
-    private String form;
+
+    private Long formId;
+    private String form;   
+
+    private Long manufacturerId;
     private String manufacturer;
+
+    private Set<Long> categoryIds;
+    private Set<String> categories;
+
     private String notes;
     private float tax;
+    private Integer quantity; 
 } 

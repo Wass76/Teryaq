@@ -20,8 +20,8 @@ public interface StockItemRepo extends JpaRepository<StockItem, Long> {
     
     List<StockItem> findByProductTypeAndPharmacyId(ProductType productType, Long pharmacyId);
     
-    @Query("SELECT COALESCE(SUM(s.quantity), 0) FROM StockItem s WHERE s.productId = :productId AND s.pharmacy.id = :pharmacyId AND s.quantity > 0")
-    Integer getTotalQuantity(@Param("productId") Long productId, @Param("pharmacyId") Long pharmacyId);
+    @Query("SELECT COALESCE(SUM(s.quantity), 0) FROM StockItem s WHERE s.productId = :productId AND s.pharmacy.id = :pharmacyId AND s.quantity > 0 AND s.productType = :productType")
+    Integer getTotalQuantity(@Param("productId") Long productId, @Param("pharmacyId") Long pharmacyId, @Param("productType") ProductType productType);
     
     @Query("SELECT s FROM StockItem s WHERE s.expiryDate < :date AND s.pharmacy.id = :pharmacyId AND s.quantity > 0")
     List<StockItem> findExpiredItems(@Param("date") LocalDate date, @Param("pharmacyId") Long pharmacyId);

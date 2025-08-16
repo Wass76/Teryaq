@@ -1,5 +1,6 @@
 package com.Teryaq.product.mapper;
 
+import com.Teryaq.product.Enum.ProductType;
 import com.Teryaq.product.dto.MProductDTORequest;
 import com.Teryaq.product.dto.MProductDTOResponse;
 import com.Teryaq.product.dto.ProductMultiLangDTOResponse;
@@ -12,7 +13,6 @@ import org.springframework.stereotype.Component;
 import java.util.HashSet;
 //import java.util.Set;
 import java.util.stream.Collectors;
-import com.Teryaq.product.entity.ProductType;
 
 @Component
 @RequiredArgsConstructor
@@ -82,6 +82,12 @@ public class MasterProductMapper {
                 .barcode(product.getBarcode())
                 .productTypeName(ProductType.MASTER.getTranslatedName(lang))
                 .requiresPrescription(product.getRequiresPrescription())
+                .typeId(product.getType() != null ? product.getType().getId() : null)
+                .formId(product.getForm() != null ? product.getForm().getId() : null)
+                .manufacturerId(product.getManufacturer() != null ? product.getManufacturer().getId() : null)
+                .categoryIds(product.getCategories() != null ? product.getCategories().stream()
+                        .map(Category::getId)
+                        .collect(Collectors.toSet()) : new HashSet<>())
 
                 .categories(
                     product.getCategories() != null ? product.getCategories().stream()
