@@ -2,6 +2,7 @@ package com.Teryaq.product.repo;
 
 import com.Teryaq.product.entity.StockItem;
 import com.Teryaq.product.Enum.ProductType;
+import com.Teryaq.product.dto.StockItemDTOResponse;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -35,14 +36,31 @@ public interface StockItemRepo extends JpaRepository<StockItem, Long> {
         @Param("minQuantity") Integer minQuantity, 
         @Param("date") LocalDate date);
     
-        @Query("""
-            SELECT si FROM StockItem si
-            LEFT JOIN si.purchaseInvoice pi
-            WHERE si.pharmacy.id = :pharmacyId
-              AND LOWER(pi.invoiceNumber) LIKE LOWER(CONCAT('%', :keyword, '%'))
-            """)
-            List<StockItem> searchStockItems(
-                @Param("keyword") String keyword,
-                @Param("pharmacyId") Long pharmacyId);
+        // @Query("""
+        //     SELECT si FROM StockItem si
+        //     LEFT JOIN si.purchaseInvoice pi
+        //     WHERE si.pharmacy.id = :pharmacyId
+        //       AND LOWER(pi.invoiceNumber) LIKE LOWER(CONCAT('%', :keyword, '%'))
+        //     """)
+        //     List<StockItemDTOResponse> searchStockItems(
+        //         @Param("keyword") String keyword,
+        //         @Param("pharmacyId") Long pharmacyId);
+    
+    @Query("""
+        SELECT new com.Teryaq.product.dto.StockItemDTOResponse(
+            si.id, si.productId, null, si.productType, 
+            si.quantity, si.bonusQty, si.expiryDate, si.batchNo, 
+            si.actualPurchasePrice, si.dateAdded, si.addedBy, 
+            pi.id, null, null, null, si.pharmacy.id, pi.invoiceNumber)
+        FROM StockItem si
+        LEFT JOIN si.purchaseInvoice pi
+        WHERE si.pharmacy.id = :pharmacyId
+          AND LOWER(pi.invoiceNumber) LIKE LOWER(CONCAT('%', :keyword, '%'))
+        """)
+        List<StockItemDTOResponse> searchStockItems(
+            @Param("keyword") String keyword,
+            @Param("pharmacyId") Long pharmacyId);
+    
+   
 }
             

@@ -2,6 +2,7 @@ package com.Teryaq.product.service;
 
 import com.Teryaq.product.entity.StockItem;
 import com.Teryaq.product.Enum.ProductType;
+import com.Teryaq.product.dto.StockItemDTOResponse;
 import com.Teryaq.product.repo.StockItemRepo;
 import com.Teryaq.product.repo.PharmacyProductRepo;
 import com.Teryaq.product.repo.MasterProductRepo;
@@ -20,6 +21,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.HashMap;
 import java.util.stream.Collectors;
+import com.Teryaq.product.mapper.StockItemMapper;
+import org.springframework.context.annotation.Lazy;
 
 @Service
 @Transactional
@@ -28,18 +31,21 @@ public class StockService extends BaseSecurityService {
     private final StockItemRepo stockItemRepo;
     private final PharmacyProductRepo pharmacyProductRepo;
     private final MasterProductRepo masterProductRepo;
+    private final StockItemMapper stockItemMapper;
 
     public StockService(StockItemRepo stockItemRepo,
                                 PharmacyProductRepo pharmacyProductRepo,
                                 MasterProductRepo masterProductRepo,
+                                @Lazy StockItemMapper stockItemMapper,
                                 UserRepository userRepository) {
         super(userRepository);
         this.stockItemRepo = stockItemRepo;
         this.pharmacyProductRepo = pharmacyProductRepo;
         this.masterProductRepo = masterProductRepo;
+        this.stockItemMapper = stockItemMapper;
     }
 
-    public StockItem editStockQuantity(Long stockItemId, Integer quantityChange, 
+    public StockItemDTOResponse editStockQuantity(Long stockItemId, Integer newQuantity, 
                                        String reasonCode, String additionalNotes) {
         User currentUser = getCurrentUser();
         if (!(currentUser instanceof Employee)) {
@@ -59,7 +65,6 @@ public class StockService extends BaseSecurityService {
             throw new UnAuthorizedException("you can't edit stock of another pharmacy");
         }
         
-        int newQuantity = stockItem.getQuantity() + quantityChange;
         if (newQuantity < 0) {
             throw new IllegalArgumentException("the quantity can't be negative");
         }
@@ -74,12 +79,31 @@ public class StockService extends BaseSecurityService {
         stockItem.setLastModifiedBy(currentUser.getId());
         stockItem.setUpdatedAt(LocalDateTime.now());
         
-        return stockItemRepo.save(stockItem);
+        StockItem savedStockItem = stockItemRepo.save(stockItem);
+        
+        StockItemDTOResponse response = stockItemMapper.toResponse(savedStockItem);
+        
+        response.setPharmacyId(savedStockItem.getPharmacy().getId());
+        
+        if (savedStockItem.getPurchaseInvoice() != null) {
+            response.setPurchaseInvoiceNumber(savedStockItem.getPurchaseInvoice().getInvoiceNumber());
+        }
+        
+        return response;
     }
     
-    public List<StockItem> stockItemSearch(String keyword) {
+    public List<StockItemDTOResponse> stockItemSearch(String keyword) {
         Long currentPharmacyId = getCurrentUserPharmacyId();
-        return stockItemRepo.searchStockItems(keyword ,currentPharmacyId);
+        List<StockItemDTOResponse> stockItems = stockItemRepo.searchStockItems(keyword, currentPharmacyId);
+        
+        stockItems.forEach(item -> {
+            if (item.getProductId() != null && item.getProductType() != null) {
+                String productName = getProductName(item.getProductId(), item.getProductType());
+                item.setProductName(productName);
+            }
+        });
+        
+        return stockItems;
     }
     
     public List<StockItem> getExpiredItems() {

@@ -52,6 +52,9 @@ public class StockItemMapper {
                 .isExpired(isExpired)
                 .isExpiringSoon(isExpiringSoon)
                 .daysUntilExpiry(daysUntilExpiry)
+                .pharmacyId(stockItem.getPharmacy().getId())
+                .purchaseInvoiceNumber(stockItem.getPurchaseInvoice() != null ? 
+                    stockItem.getPurchaseInvoice().getInvoiceNumber() : null)
                 .build();
     }
     
