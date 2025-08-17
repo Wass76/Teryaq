@@ -4,8 +4,6 @@ import com.Teryaq.product.entity.StockItem;
 import com.Teryaq.product.Enum.ProductType;
 import com.Teryaq.product.dto.StockItemDTOResponse;
 import com.Teryaq.product.repo.StockItemRepo;
-import com.Teryaq.product.repo.PharmacyProductRepo;
-import com.Teryaq.product.repo.MasterProductRepo;
 import com.Teryaq.user.repository.UserRepository;
 import com.Teryaq.user.service.BaseSecurityService;
 import com.Teryaq.user.entity.Employee;
@@ -20,7 +18,6 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.HashMap;
-import java.util.stream.Collectors;
 import com.Teryaq.product.mapper.StockItemMapper;
 import org.springframework.context.annotation.Lazy;
 
@@ -29,19 +26,13 @@ import org.springframework.context.annotation.Lazy;
 public class StockService extends BaseSecurityService {
 
     private final StockItemRepo stockItemRepo;
-    private final PharmacyProductRepo pharmacyProductRepo;
-    private final MasterProductRepo masterProductRepo;
     private final StockItemMapper stockItemMapper;
 
     public StockService(StockItemRepo stockItemRepo,
-                                PharmacyProductRepo pharmacyProductRepo,
-                                MasterProductRepo masterProductRepo,
                                 @Lazy StockItemMapper stockItemMapper,
                                 UserRepository userRepository) {
         super(userRepository);
         this.stockItemRepo = stockItemRepo;
-        this.pharmacyProductRepo = pharmacyProductRepo;
-        this.masterProductRepo = masterProductRepo;
         this.stockItemMapper = stockItemMapper;
     }
 
@@ -94,16 +85,8 @@ public class StockService extends BaseSecurityService {
     
     public List<StockItemDTOResponse> stockItemSearch(String keyword) {
         Long currentPharmacyId = getCurrentUserPharmacyId();
-        List<StockItemDTOResponse> stockItems = stockItemRepo.searchStockItems(keyword, currentPharmacyId);
-        
-        stockItems.forEach(item -> {
-            if (item.getProductId() != null && item.getProductType() != null) {
-                String productName = getProductName(item.getProductId(), item.getProductType());
-                item.setProductName(productName);
-            }
-        });
-        
-        return stockItems;
+        List<StockItem> stockItems = stockItemRepo.searchStockItems(keyword, currentPharmacyId);
+        return stockItemMapper.toResponseList(stockItems);
     }
     
     public List<StockItem> getExpiredItems() {
@@ -163,86 +146,15 @@ public class StockService extends BaseSecurityService {
     
   
 
-    public List<StockItem> getAllStockItems() {
+    public List<StockItemDTOResponse> getAllStockItems() {
         Long currentPharmacyId = getCurrentUserPharmacyId();
-        return stockItemRepo.findByPharmacyId(currentPharmacyId);
+        List<StockItem> stockItems = stockItemRepo.findByPharmacyId(currentPharmacyId);
+        return stockItemMapper.toResponseList(stockItems);
     }
 
-    public List<Map<String, Object>> getAllStockItemsWithProductInfo() {
-        List<StockItem> stockItems = getAllStockItems();
-        
-        return stockItems.stream().map(item -> {
-            Map<String, Object> stockInfo = new HashMap<>();
-            stockInfo.put("id", item.getId());
-            stockInfo.put("productId", item.getProductId());
-            stockInfo.put("productType", item.getProductType());
-            stockInfo.put("quantity", item.getQuantity());
-            stockInfo.put("actualPurchasePrice", item.getActualPurchasePrice());
-            stockInfo.put("batchNo",item.getBatchNo());
-            
-            
-            if (item.getExpiryDate() != null) {
-                stockInfo.put("expiryDate", item.getExpiryDate().toString());
-            } else {
-                stockInfo.put("expiryDate", null);
-            }
-            
-            if (item.getDateAdded() != null) {
-                stockInfo.put("dateAdded", item.getDateAdded().toString());
-            } else {
-                stockInfo.put("dateAdded", null);
-            }
-            
-            String productName = getProductName(item.getProductId(), item.getProductType());
-            stockInfo.put("productName", productName);
-            
-            boolean requiresPrescription = isProductRequiresPrescription(item.getProductId(), item.getProductType());
-            stockInfo.put("requiresPrescription", requiresPrescription);
-
-            Float sellingPrice = getProductSellingPrice(item.getProductId(), item.getProductType());
-            stockInfo.put("sellingPrice", sellingPrice);
-            
-            return stockInfo;
-        }).collect(Collectors.toList());
-    }
-
-    public String getProductName(Long productId, ProductType productType) {
-        if (productType == ProductType.PHARMACY) {
-            return pharmacyProductRepo.findById(productId)
-                .map(product -> product.getTradeName())
-                .orElse("Unknown Product");
-        } else if (productType == ProductType.MASTER) {
-            return masterProductRepo.findById(productId)
-                .map(product -> product.getTradeName())
-                .orElse("Unknown Product");
-        }
-        return "Unknown Product";
-    }
-
-    public boolean isProductRequiresPrescription(Long productId, ProductType productType) {
-        if (productType == ProductType.PHARMACY) {
-            return pharmacyProductRepo.findById(productId)
-                .map(product -> product.getRequiresPrescription()) 
-                .orElse(false);
-        } else if (productType == ProductType.MASTER) {
-            return masterProductRepo.findById(productId)
-                .map(product -> product.getRequiresPrescription()) 
-                .orElse(false);
-        }
-        return false;
-    }
-    
-    public Float getProductSellingPrice(Long productId, ProductType productType) {
-        if (productType == ProductType.PHARMACY) {
-            return pharmacyProductRepo.findById(productId)
-                .map(product -> product.getRefSellingPrice())
-                .orElse(0f);
-        } else if (productType == ProductType.MASTER) {
-            return masterProductRepo.findById(productId)
-                .map(product -> product.getRefSellingPrice())
-                .orElse(0f);
-        }
-        return 0f;
+    public List<StockItemDTOResponse> getAllStockItemsWithProductInfo() {
+        List<StockItem> stockItems = stockItemRepo.findByPharmacyId(getCurrentUserPharmacyId());
+        return stockItemMapper.toResponseList(stockItems);
     }
 
     public boolean isQuantityAvailable(Long productId, Integer requiredQuantity, ProductType productType) {
@@ -258,12 +170,12 @@ public class StockService extends BaseSecurityService {
         Map<String, Object> details = new HashMap<>();
         details.put("productId", productId);
         details.put("totalQuantity", stockItems.stream().mapToInt(StockItem::getQuantity).sum());
-        details.put("stockItems", stockItems);
+        details.put("stockItems", stockItemMapper.toResponseList(stockItems));
         
         if (!stockItems.isEmpty()) {
             ProductType productType = stockItems.get(0).getProductType();
-            details.put("productName", getProductName(productId, productType));
-            details.put("sellingPrice", getProductSellingPrice(productId, productType));
+            details.put("productName", stockItemMapper.getProductName(productId, productType));
+            details.put("sellingPrice", stockItemMapper.getProductSellingPrice(productId, productType));
             details.put("productType", productType.toString());
         }
         
@@ -293,7 +205,7 @@ public class StockService extends BaseSecurityService {
         double totalPurchaseValue = stockItems.stream()
             .mapToDouble(item -> item.getQuantity() * item.getActualPurchasePrice()).sum();
         double totalSellingValue = stockItems.stream()
-            .mapToDouble(item -> item.getQuantity() * getProductSellingPrice(item.getProductId(), item.getProductType()))
+            .mapToDouble(item -> item.getQuantity() * stockItemMapper.getProductSellingPrice(item.getProductId(), item.getProductType()))
             .sum();
         
         stockValue.put("totalPurchaseValue", totalPurchaseValue);

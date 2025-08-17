@@ -3,7 +3,7 @@ package com.Teryaq.sale.mapper;
 import com.Teryaq.sale.dto.*;
 import com.Teryaq.sale.entity.*;
 import com.Teryaq.product.entity.StockItem;
-import com.Teryaq.product.service.StockService;
+import com.Teryaq.product.mapper.StockItemMapper;
 import com.Teryaq.user.entity.Customer;
 import com.Teryaq.user.entity.Pharmacy;
 import com.Teryaq.user.Enum.Currency;
@@ -18,7 +18,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class SaleMapper {
     
-    private final StockService stockService;
+    private final StockItemMapper stockItemMapper;
     
     public SaleInvoice toEntity(SaleInvoiceDTORequest dto) {
         SaleInvoice invoice = new SaleInvoice();
@@ -78,7 +78,7 @@ public class SaleMapper {
         
         String productName = "Unknown Product";
         if (item.getStockItem() != null) {
-            productName = stockService.getProductName(
+            productName = stockItemMapper.getProductName(
                 item.getStockItem().getProductId(), 
                 item.getStockItem().getProductType()
             );

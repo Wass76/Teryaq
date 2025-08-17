@@ -44,7 +44,7 @@ public class StockManagementController {
         return ResponseEntity.ok(result);
     }
     
-    @GetMapping("/search/advanced")
+    @GetMapping("/search")
     @Operation(summary = "Search for Stock Item", description = "Search by Invoice Number")
     public ResponseEntity<List<StockItemDTOResponse>> advancedStockSearch(
             @RequestParam(required = false) String keyword) {
@@ -98,8 +98,8 @@ public class StockManagementController {
     
     @GetMapping("/all-with-product-info")
     @Operation(summary = "all stock with product information", description = "get all stock with product information")
-    public ResponseEntity<List<Map<String, Object>>> getAllStockItemsWithProductInfo() {
-        List<Map<String, Object>> stockItems = stockService.getAllStockItemsWithProductInfo();
+    public ResponseEntity<List<StockItemDTOResponse>> getAllStockItemsWithProductInfo() {
+        List<StockItemDTOResponse> stockItems = stockService.getAllStockItemsWithProductInfo();
         return ResponseEntity.ok(stockItems);   
     }
     
