@@ -29,6 +29,7 @@ import java.util.ArrayList;
 import java.util.Optional;
 import java.time.DayOfWeek;
 import java.util.logging.Logger;
+import com.Teryaq.user.entity.WorkShift;
 
 @Service
 @Transactional
@@ -210,7 +211,7 @@ public class EmployeeService extends BaseSecurityService {
                 .orElseThrow(() -> new ResourceNotFoundException("Employee not found"));
     }
     
-    public EmployeeResponseDTO createWorkingHoursForEmployee(Long employeeId, CreateWorkingHoursRequestDTO request) {
+    public EmployeeResponseDTO upsertWorkingHoursForEmployee(Long employeeId, CreateWorkingHoursRequestDTO request) {
         // Validate that the current user is a pharmacy manager
         User currentUser = getCurrentUser();
         if (!(currentUser instanceof Employee)) {
@@ -223,15 +224,15 @@ public class EmployeeService extends BaseSecurityService {
         }
         
         Long managerPharmacyId = manager.getPharmacy().getId();
-        logger.info("Creating working hours for employee ID: " + employeeId);
+        logger.info("Upserting working hours for employee ID: " + employeeId);
         
         // Validate and get employee
         Employee employee = validateAndGetEmployee(employeeId, managerPharmacyId);
         
-        // Create working hours for each day
-        createWorkingHoursForMultipleDays(employee, request.getDaysOfWeek(), request.getShifts());
+        // Upsert working hours for each day
+        upsertWorkingHoursForMultipleDays(employee, request.getDaysOfWeek(), request.getShifts());
         
-        logger.info("Working hours created successfully for employee");
+        logger.info("Working hours upserted successfully for employee");
         return EmployeeMapper.toResponseDTO(employee);
     }
     
@@ -290,7 +291,7 @@ public class EmployeeService extends BaseSecurityService {
             logger.info("Processing working hours for employee (new format)...");
             
             for (CreateWorkingHoursRequestDTO request : workingHoursRequests) {
-                createWorkingHoursForMultipleDays(employee, request.getDaysOfWeek(), request.getShifts());
+                upsertWorkingHoursForMultipleDays(employee, request.getDaysOfWeek(), request.getShifts());
             }
             
             logger.info("Working hours requests processed successfully");
@@ -357,14 +358,14 @@ public class EmployeeService extends BaseSecurityService {
             
             // Create new working hours
             for (CreateWorkingHoursRequestDTO request : workingHoursRequests) {
-                createWorkingHoursForMultipleDays(employee, request.getDaysOfWeek(), request.getShifts());
+                upsertWorkingHoursForMultipleDays(employee, request.getDaysOfWeek(), request.getShifts());
             }
             
             logger.info("Working hours requests updated successfully");
         }
     }
     
-    private void createWorkingHoursForMultipleDays(Employee employee, List<DayOfWeek> daysOfWeek, List<WorkShiftDTO> shifts) {
+    private void upsertWorkingHoursForMultipleDays(Employee employee, List<DayOfWeek> daysOfWeek, List<WorkShiftDTO> shifts) {
         if (daysOfWeek == null || daysOfWeek.isEmpty()) {
             logger.warning("No days of week provided for working hours");
             return;
@@ -375,33 +376,34 @@ public class EmployeeService extends BaseSecurityService {
             return;
         }
         
-        logger.info("Creating working hours for " + daysOfWeek.size() + " days");
-        
-        List<EmployeeWorkingHours> workingHoursList = new ArrayList<>();
+        logger.info("Upserting working hours for " + daysOfWeek.size() + " days");
         
         for (DayOfWeek dayOfWeek : daysOfWeek) {
-            // Check if working hours already exist for this day
-            Optional<EmployeeWorkingHours> existingWorkingHours = employeeWorkingHoursRepository
-                    .findByEmployee_IdAndDayOfWeek(employee.getId(), dayOfWeek);
+            // Delete existing working hours for this day if they exist
+            employeeWorkingHoursRepository.deleteByEmployee_IdAndDayOfWeek(employee.getId(), dayOfWeek);
             
-            if (existingWorkingHours.isPresent()) {
-                logger.info("Working hours already exist for " + dayOfWeek + ", updating...");
-                EmployeeWorkingHours existing = existingWorkingHours.get();
-                existing.setShifts(WorkShiftMapper.toEntityList(shifts));
-                workingHoursList.add(existing);
-            } else {
-                logger.info("Creating new working hours for " + dayOfWeek);
-                EmployeeWorkingHours workingHours = new EmployeeWorkingHours();
-                workingHours.setEmployee(employee);
-                workingHours.setDayOfWeek(dayOfWeek);
-                workingHours.setShifts(WorkShiftMapper.toEntityList(shifts));
-                workingHoursList.add(workingHours);
+            // Create new working hours for this day
+            logger.info("Creating new working hours for " + dayOfWeek);
+            EmployeeWorkingHours workingHours = new EmployeeWorkingHours();
+            workingHours.setEmployee(employee);
+            workingHours.setDayOfWeek(dayOfWeek);
+            
+            // Create new WorkShift entities
+            List<WorkShift> newShifts = new ArrayList<>();
+            for (WorkShiftDTO shiftDTO : shifts) {
+                WorkShift shift = new WorkShift();
+                shift.setStartTime(shiftDTO.getStartTime());
+                shift.setEndTime(shiftDTO.getEndTime());
+                shift.setDescription(shiftDTO.getDescription());
+                newShifts.add(shift);
             }
+            
+            workingHours.setShifts(newShifts);
+            
+            // Save the new working hours
+            employeeWorkingHoursRepository.save(workingHours);
         }
         
-        if (!workingHoursList.isEmpty()) {
-            employeeWorkingHoursRepository.saveAll(workingHoursList);
-            logger.info("Saved " + workingHoursList.size() + " working hours records");
-        }
+        logger.info("Working hours upserted successfully for " + daysOfWeek.size() + " days");
     }
 } 

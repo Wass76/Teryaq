@@ -130,24 +130,24 @@ public class EmployeeController {
         return ResponseEntity.noContent().build();
     }
     
-    @PostMapping("/{employeeId}/working-hours")
+    @PutMapping("/{employeeId}/working-hours")
     @PreAuthorize("hasRole('PHARMACY_MANAGER')")
     @Operation(
-        summary = "Create working hours for employee",
-        description = "Creates working hours schedule for a specific employee. Requires PHARMACY_MANAGER role."
+        summary = "Create or update working hours for employee",
+        description = "Creates working hours schedule for a specific employee if they don't exist, or updates existing ones. Requires PHARMACY_MANAGER role."
     )
     @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "Successfully created working hours",
+        @ApiResponse(responseCode = "200", description = "Successfully created/updated working hours",
             content = @Content(mediaType = "application/json")),
         @ApiResponse(responseCode = "400", description = "Invalid working hours data"),
         @ApiResponse(responseCode = "403", description = "Access denied - insufficient permissions"),
         @ApiResponse(responseCode = "404", description = "Employee not found"),
         @ApiResponse(responseCode = "500", description = "Internal server error")
     })
-    public ResponseEntity<?> createWorkingHoursForEmployee(
+    public ResponseEntity<?> upsertWorkingHoursForEmployee(
             @Parameter(description = "Employee ID", example = "1") @PathVariable Long employeeId,
             @Parameter(description = "Working hours data", required = true)
             @Valid @RequestBody CreateWorkingHoursRequestDTO request) {
-        return ResponseEntity.ok(employeeService.createWorkingHoursForEmployee(employeeId, request));
+        return ResponseEntity.ok(employeeService.upsertWorkingHoursForEmployee(employeeId, request));
     }
 } 

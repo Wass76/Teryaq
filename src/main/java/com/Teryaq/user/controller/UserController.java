@@ -23,25 +23,6 @@ public class UserController {
 
     private final UserService userService;
 
-//    @PostMapping("/login")
-//    @Operation(
-//        summary = "User login",
-//        description = "Authenticates a user and returns a JWT token"
-//    )
-//    @ApiResponses(value = {
-//        @ApiResponse(responseCode = "200", description = "Login successful",
-//            content = @Content(mediaType = "application/json",
-//            schema = @Schema(implementation = UserAuthenticationResponse.class))),
-//        @ApiResponse(responseCode = "401", description = "Invalid credentials"),
-//        @ApiResponse(responseCode = "429", description = "Too many login attempts")
-//    })
-//    public ResponseEntity<UserAuthenticationResponse> login(
-//            @RequestBody AuthenticationRequest request,
-//            HttpServletRequest httpServletRequest) {
-//        UserAuthenticationResponse response = userService.login(request, httpServletRequest);
-//        return new ResponseEntity<>(response, HttpStatus.OK);
-//    }
-
     @GetMapping("/me")
     @Operation(
         summary = "Get current user information",
