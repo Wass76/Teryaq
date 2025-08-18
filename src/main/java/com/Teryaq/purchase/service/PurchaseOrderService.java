@@ -280,11 +280,17 @@ public class PurchaseOrderService extends BaseSecurityService {
         if (order.getStatus() == OrderStatus.DONE) {
             throw new ConflictException("Cannot cancel a completed order");
         }
+        if (order.getStatus() == OrderStatus.CANCELLED) {
+            throw new ConflictException("Order is already cancelled");
+        }
     }
 
     private void validateOrderCanBeEdited(PurchaseOrder order) {
         if (order.getStatus() == OrderStatus.DONE) {
             throw new ConflictException("Cannot edit a completed order");
+        }
+        if (order.getStatus() == OrderStatus.CANCELLED) {
+            throw new ConflictException("Cannot edit a cancelled order");
         }
     }
 
