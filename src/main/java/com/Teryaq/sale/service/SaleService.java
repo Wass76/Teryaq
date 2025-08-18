@@ -33,6 +33,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 import com.Teryaq.user.repository.CustomerDebtRepository;
+import com.Teryaq.product.mapper.StockItemMapper;
 
 @Service
 public class SaleService extends BaseSecurityService {
@@ -54,6 +55,8 @@ public class SaleService extends BaseSecurityService {
     private PaymentValidationService paymentValidationService;
     @Autowired
     private CustomerDebtRepository customerDebtRepository;
+    @Autowired
+    private StockItemMapper stockItemMapper;
 
     @Autowired
     private SaleMapper saleMapper;
@@ -67,6 +70,7 @@ public class SaleService extends BaseSecurityService {
                       PaymentValidationService paymentValidationService,
                       CustomerDebtRepository customerDebtRepository,
                       SaleMapper saleMapper,
+                      StockItemMapper stockItemMapper,
                       com.Teryaq.user.repository.UserRepository userRepository) {
         super(userRepository);
         this.saleInvoiceRepository = saleInvoiceRepository;
@@ -78,6 +82,7 @@ public class SaleService extends BaseSecurityService {
         this.paymentValidationService = paymentValidationService;
         this.customerDebtRepository = customerDebtRepository;
         this.saleMapper = saleMapper;
+        this.stockItemMapper = stockItemMapper;
     }
 
     @Transactional
@@ -121,16 +126,16 @@ public class SaleService extends BaseSecurityService {
         for (SaleInvoiceItem item : items) {
             StockItem product = item.getStockItem();
             
-            if (!stockService.isQuantityAvailable(product.getProductId(), item.getQuantity())) {
-                String productName = stockService.getProductName(product.getProductId(), product.getProductType());
+            if (!stockService.isQuantityAvailable(product.getProductId(), item.getQuantity(), product.getProductType())) {
+                String productName = stockItemMapper.getProductName(product.getProductId(), product.getProductType());
                 throw new RequestNotValidException("Insufficient stock for product: " + productName + 
                     " (ID: " + product.getProductId() + "). Available: " + 
-                    stockItemRepo.getTotalQuantity(product.getProductId(), getCurrentUserPharmacyId()) + 
+                    stockItemRepo.getTotalQuantity(product.getProductId(), getCurrentUserPharmacyId(), product.getProductType()) + 
                     ", Requested: " + item.getQuantity());
             }
             
             if (product.getExpiryDate() != null && product.getExpiryDate().isBefore(java.time.LocalDate.now())) {
-                String productName = stockService.getProductName(product.getProductId(), product.getProductType());
+                String productName = stockItemMapper.getProductName(product.getProductId(), product.getProductType());
                 throw new RequestNotValidException("Product expired: " + productName + 
                     " (ID: " + product.getProductId() + "). Expiry date: " + product.getExpiryDate());
             }

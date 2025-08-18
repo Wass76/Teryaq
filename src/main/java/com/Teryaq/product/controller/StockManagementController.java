@@ -4,6 +4,8 @@ import com.Teryaq.product.dto.StockItemEditRequest;
 import com.Teryaq.product.entity.StockItem;
 import com.Teryaq.product.service.StockService;
 import com.Teryaq.product.Enum.ProductType;
+import com.Teryaq.product.dto.StockItemDTOResponse;
+
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
@@ -28,11 +30,11 @@ public class StockManagementController {
     @Transactional
     @PutMapping("/{stockItemId}/adjust")
     @Operation(summary = "edit stock quantity", description = "edit stock quantity")
-    public ResponseEntity<StockItem> adjustStockQuantity(@PathVariable Long stockItemId,
+    public ResponseEntity<StockItemDTOResponse> adjustStockQuantity(@PathVariable Long stockItemId,
                                                         @Valid @RequestBody StockItemEditRequest request) {
         Integer quantityChange = request.getQuantity();
         
-        StockItem result = stockService.editStockQuantity(
+        StockItemDTOResponse result = stockService.editStockQuantity(
             stockItemId,
             quantityChange,
             request.getReasonCode(),
@@ -42,11 +44,11 @@ public class StockManagementController {
         return ResponseEntity.ok(result);
     }
     
-    @GetMapping("/search/advanced")
+    @GetMapping("/search")
     @Operation(summary = "Search for Stock Item", description = "Search by Invoice Number")
-    public ResponseEntity<List<StockItem>> advancedStockSearch(
+    public ResponseEntity<List<StockItemDTOResponse>> advancedStockSearch(
             @RequestParam(required = false) String keyword) {
-        List<StockItem> stockItems = stockService.stockItemSearch(keyword);
+        List<StockItemDTOResponse> stockItems = stockService.stockItemSearch(keyword);
         return ResponseEntity.ok(stockItems);
     }
     
@@ -96,8 +98,8 @@ public class StockManagementController {
     
     @GetMapping("/all-with-product-info")
     @Operation(summary = "all stock with product information", description = "get all stock with product information")
-    public ResponseEntity<List<Map<String, Object>>> getAllStockItemsWithProductInfo() {
-        List<Map<String, Object>> stockItems = stockService.getAllStockItemsWithProductInfo();
+    public ResponseEntity<List<StockItemDTOResponse>> getAllStockItemsWithProductInfo() {
+        List<StockItemDTOResponse> stockItems = stockService.getAllStockItemsWithProductInfo();
         return ResponseEntity.ok(stockItems);   
     }
     

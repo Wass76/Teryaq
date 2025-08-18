@@ -31,9 +31,16 @@ public class MProductDTOResponse {
     @Builder.Default
     private Boolean requiresPrescription = false;
 
+    private Long typeId;
     private String type;
+
+    private Long formId;    
     private String form;
+
+    private Long manufacturerId;
     private String manufacturer;
+
+    private Set<Long> categoryIds;
     private Set<String> categories;
 
 

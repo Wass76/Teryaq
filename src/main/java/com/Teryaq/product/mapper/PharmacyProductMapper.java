@@ -1,6 +1,7 @@
 package com.Teryaq.product.mapper;
 
 import com.Teryaq.product.repo.CategoryRepo;
+import com.Teryaq.product.Enum.ProductType;
 import com.Teryaq.product.dto.PharmacyProductDTORequest;
 import com.Teryaq.product.dto.PharmacyProductDTOResponse;
 import com.Teryaq.product.dto.PharmacyProductListDTO;
@@ -22,7 +23,6 @@ import org.springframework.stereotype.Component;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
-import com.Teryaq.product.entity.ProductType;
 
 @Component
 @RequiredArgsConstructor

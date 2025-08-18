@@ -33,9 +33,7 @@ import java.util.List;
     {
       "stockItemId": 1,
       "quantity": 2,
-      "unitPrice": 800.0,
-      "discountType": "FIXED_AMOUNT",
-      "discountValue": 100.0
+      "unitPrice": 800.0
     }
   ]
 }

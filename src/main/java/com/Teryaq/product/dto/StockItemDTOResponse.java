@@ -9,11 +9,12 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDate;
+import java.util.List;
 
 @Data
-@AllArgsConstructor
-@NoArgsConstructor
 @Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class StockItemDTOResponse {
     private Long id;
     private Long productId;
@@ -22,18 +23,27 @@ public class StockItemDTOResponse {
     private Integer quantity;
     private Integer bonusQty;
 
+
+    private Integer total; 
+    private String supplier; 
+    private List<String> categories; 
+    private Integer minQuantity; 
+
     @JsonFormat(pattern = "yyyy-MM-dd")
     private LocalDate expiryDate;
     private String batchNo;
     private Double actualPurchasePrice;
+    private Float sellingPrice;
 
     @JsonFormat(pattern = "yyyy-MM-dd")
     private LocalDate dateAdded;
     private Long addedBy;
     private Long purchaseInvoiceId;
     
-    // معلومات إضافية
     private Boolean isExpired;
     private Boolean isExpiringSoon;
     private Integer daysUntilExpiry;
+    
+    private Long pharmacyId;
+    private String purchaseInvoiceNumber;
 } 

@@ -1,10 +1,9 @@
 package com.Teryaq.product.service;
 
-import com.Teryaq.product.dto.ProductSearchDTO;
+import com.Teryaq.product.dto.ProductSearchDTOResponse;
 import com.Teryaq.product.entity.MasterProduct;
 import com.Teryaq.product.entity.PharmacyProduct;
-import com.Teryaq.product.entity.PharmacyProductBarcode;
-import com.Teryaq.product.entity.ProductType;
+import com.Teryaq.product.mapper.ProductSearchMapper;
 import com.Teryaq.product.repo.MasterProductRepo;
 import com.Teryaq.product.repo.PharmacyProductRepo;
 import com.Teryaq.user.repository.UserRepository;
@@ -12,12 +11,11 @@ import com.Teryaq.user.service.BaseSecurityService;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.HashSet;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
@@ -25,18 +23,21 @@ public class ProductSearchService extends BaseSecurityService {
 
     private final MasterProductRepo masterProductRepo;
     private final PharmacyProductRepo pharmacyProductRepo;
+    private final ProductSearchMapper productSearchMapper;
 
-    protected ProductSearchService(UserRepository userRepository, MasterProductRepo masterProductRepo, PharmacyProductRepo pharmacyProductRepo) {
+    protected ProductSearchService(UserRepository userRepository, 
+                                 MasterProductRepo masterProductRepo, 
+                                 PharmacyProductRepo pharmacyProductRepo,
+                                 ProductSearchMapper productSearchMapper) {
         super(userRepository);
         this.masterProductRepo = masterProductRepo;
         this.pharmacyProductRepo = pharmacyProductRepo;
+        this.productSearchMapper = productSearchMapper;
     }
 
+    public Page<ProductSearchDTOResponse> searchProducts(String keyword, String lang, Pageable pageable) {
+        List<ProductSearchDTOResponse> allResults = new ArrayList<>();
 
-    public List<ProductSearchDTO> searchProducts(String keyword, String lang) {
-        List<ProductSearchDTO> results = new ArrayList<>();
-
-        // Get current user's pharmacy ID for filtering
         Long currentPharmacyId = getCurrentUserPharmacyId();
 
         Page<MasterProduct> masterProductsPage = masterProductRepo.search(keyword, lang, PageRequest.of(0, 1000));
@@ -45,144 +46,39 @@ public class ProductSearchService extends BaseSecurityService {
         Page<PharmacyProduct> pharmacyProductsPage = pharmacyProductRepo.searchByPharmacyId(keyword, lang, currentPharmacyId, PageRequest.of(0, 1000));
         List<PharmacyProduct> pharmacyProducts = pharmacyProductsPage.getContent();
 
-        results.addAll(masterProducts.stream()
-                .map(product -> convertMasterProductToUnifiedDTO(product, lang))
+        allResults.addAll(masterProducts.stream()
+                .map(product -> productSearchMapper.convertMasterProductToUnifiedDTO(product, lang, currentPharmacyId))
                 .collect(Collectors.toList()));
 
-        results.addAll(pharmacyProducts.stream()
-                .map(product -> convertPharmacyProductToUnifiedDTO(product, lang))
+        allResults.addAll(pharmacyProducts.stream()
+                .map(product -> productSearchMapper.convertPharmacyProductToUnifiedDTO(product, lang, currentPharmacyId))
                 .collect(Collectors.toList()));
 
-        return results;
+        
+        return applyPagination(allResults, pageable);
     }
 
-    public List<ProductSearchDTO> getAllProducts(String lang) {
-        return searchProducts("", lang);
+    public Page<ProductSearchDTOResponse> getAllProducts(String lang, Pageable pageable) {
+        return searchProducts("", lang, pageable);
     }
 
+   
+    private Page<ProductSearchDTOResponse> applyPagination(List<ProductSearchDTOResponse> allResults, Pageable pageable) {
+        int totalElements = allResults.size();
+        int pageSize = pageable.getPageSize();
+        int pageNumber = pageable.getPageNumber();
+        int startIndex = pageNumber * pageSize;
+        int endIndex = Math.min(startIndex + pageSize, totalElements);
 
+        List<ProductSearchDTOResponse> pageContent = new ArrayList<>();
+        if (startIndex < totalElements) {
+            pageContent = allResults.subList(startIndex, endIndex);
+        }
 
-    private ProductSearchDTO convertMasterProductToUnifiedDTO(MasterProduct product, String lang) {
-        // الحصول على الترجمة
-        String translatedTradeName = product.getTranslations() != null
-                ? product.getTranslations().stream()
-                .filter(t -> t.getLanguage() != null && t.getLanguage().getCode() != null)
-                .filter(t -> t.getLanguage().getCode().trim().equalsIgnoreCase(lang))
-                .findFirst()
-                .map(t -> t.getTradeName())
-                .orElse(product.getTradeName())
-                : product.getTradeName();
-
-        String translatedScientificName = product.getTranslations() != null
-                ? product.getTranslations().stream()
-                .filter(t -> t.getLanguage() != null && t.getLanguage().getCode() != null)
-                .filter(t -> t.getLanguage().getCode().trim().equalsIgnoreCase(lang))
-                .findFirst()
-                .map(t -> t.getScientificName())
-                .orElse(product.getScientificName())
-                : product.getScientificName();
-
-        String translatedNotes = product.getNotes();
-
-        return ProductSearchDTO.builder()
-                .id(product.getId())
-                .tradeName(translatedTradeName)
-                .scientificName(translatedScientificName)
-                .barcodes(product.getBarcode() != null ? Set.of(product.getBarcode()) : new HashSet<>())               
-                //.productType(ProductType.MASTER)
-                .productTypeName(ProductType.MASTER.getTranslatedName(lang))
-                .requiresPrescription(product.getRequiresPrescription())
-                .concentration(product.getConcentration())
-                .size(product.getSize())
-                .refPurchasePrice(product.getRefPurchasePrice())
-                .refSellingPrice(product.getRefSellingPrice())
-                .notes(translatedNotes)
-                .tax(product.getTax())
-                .type(product.getType() != null
-                        ? product.getType().getTranslations().stream()
-                        .filter(t -> lang.equalsIgnoreCase(t.getLanguage().getCode()))
-                        .findFirst()
-                        .map(com.Teryaq.product.entity.TypeTranslation::getName)
-                        .orElse(product.getType().getName())
-                        : null)
-                .form(product.getForm() != null
-                        ? product.getForm().getTranslations().stream()
-                        .filter(t -> lang.equalsIgnoreCase(t.getLanguage().getCode()))
-                        .findFirst()
-                        .map(com.Teryaq.product.entity.FormTranslation::getName)
-                        .orElse(product.getForm().getName())
-                        : null)
-                .manufacturer(product.getManufacturer() != null
-                        ? product.getManufacturer().getTranslations().stream()
-                        .filter(t -> lang.equalsIgnoreCase(t.getLanguage().getCode()))
-                        .findFirst()
-                        .map(com.Teryaq.product.entity.ManufacturerTranslation::getName)
-                        .orElse(product.getManufacturer().getName())
-                        : null)
-                .build();
-    }
-
-    private ProductSearchDTO convertPharmacyProductToUnifiedDTO(PharmacyProduct product, String lang) {
-        // الحصول على الترجمة
-        String translatedTradeName = product.getTranslations() != null
-                ? product.getTranslations().stream()
-                .filter(t -> t.getLanguage() != null && t.getLanguage().getCode() != null)
-                .filter(t -> t.getLanguage().getCode().trim().equalsIgnoreCase(lang))
-                .findFirst()
-                .map(t -> t.getTradeName())
-                .orElse(product.getTradeName())
-                : product.getTradeName();
-
-        String translatedScientificName = product.getTranslations() != null
-                ? product.getTranslations().stream()
-                .filter(t -> t.getLanguage() != null && t.getLanguage().getCode() != null)
-                .filter(t -> t.getLanguage().getCode().trim().equalsIgnoreCase(lang))
-                .findFirst()
-                .map(t -> t.getScientificName())
-                .orElse(product.getScientificName())
-                : product.getScientificName();
-
-        String translatedNotes = product.getNotes();
-
-        return ProductSearchDTO.builder()
-                .id(product.getId())
-                .tradeName(translatedTradeName)
-                .scientificName(translatedScientificName)
-                .barcodes(product.getBarcodes() != null && !product.getBarcodes().isEmpty() 
-                    ? product.getBarcodes().stream().map(PharmacyProductBarcode::getBarcode).collect(Collectors.toSet()) 
-                    : new HashSet<>())
-                //.productType(ProductType.PHARMACY)
-                .productTypeName(ProductType.PHARMACY.getTranslatedName(lang))
-                .requiresPrescription(product.getRequiresPrescription())
-                .concentration(product.getConcentration())
-                .size(product.getSize())
-                .refPurchasePrice(product.getRefPurchasePrice())
-                .refSellingPrice(product.getRefSellingPrice())
-                .notes(translatedNotes)
-                .tax(product.getTax())
-                .type(product.getType() != null
-                        ? product.getType().getTranslations().stream()
-                        .filter(t -> lang.equalsIgnoreCase(t.getLanguage().getCode()))
-                        .findFirst()
-                        .map(com.Teryaq.product.entity.TypeTranslation::getName)
-                        .orElse(product.getType().getName())
-                        : null)
-                .form(product.getForm() != null
-                        ? product.getForm().getTranslations().stream()
-                        .filter(t -> lang.equalsIgnoreCase(t.getLanguage().getCode()))
-                        .findFirst()
-                        .map(com.Teryaq.product.entity.FormTranslation::getName)
-                        .orElse(product.getForm().getName())
-                        : null)
-                .manufacturer(product.getManufacturer() != null
-                        ? product.getManufacturer().getTranslations().stream()
-                        .filter(t -> lang.equalsIgnoreCase(t.getLanguage().getCode()))
-                        .findFirst()
-                        .map(com.Teryaq.product.entity.ManufacturerTranslation::getName)
-                        .orElse(product.getManufacturer().getName())
-                        : null)
-                .pharmacyId(product.getPharmacy() != null ? product.getPharmacy().getId() : null)
-                .pharmacyName(product.getPharmacy() != null ? product.getPharmacy().getName() : null)
-                .build();
+        return new org.springframework.data.domain.PageImpl<>(
+            pageContent, 
+            pageable, 
+            totalElements
+        );
     }
 } 

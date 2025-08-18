@@ -12,7 +12,6 @@ import com.Teryaq.product.entity.PharmacyProduct;
 import com.Teryaq.product.entity.MasterProduct;
 import com.Teryaq.purchase.mapper.PurchaseOrderMapper;
 import com.Teryaq.purchase.repository.PurchaseOrderRepo;
-import com.Teryaq.purchase.repository.PurchaseOrderItemRepo;
 import com.Teryaq.product.repo.PharmacyProductRepo;
 import com.Teryaq.product.repo.MasterProductRepo;
 import com.Teryaq.user.entity.Pharmacy;
@@ -38,14 +37,12 @@ import java.time.LocalDateTime;
 @Transactional
 public class PurchaseOrderService extends BaseSecurityService {
     private final PurchaseOrderRepo purchaseOrderRepo;
-    private final PurchaseOrderItemRepo purchaseOrderItemRepo;
     private final PharmacyProductRepo pharmacyProductRepo;
     private final MasterProductRepo masterProductRepo;
     private final SupplierRepository supplierRepository;
     private final PurchaseOrderMapper purchaseOrderMapper;
 
     public PurchaseOrderService(PurchaseOrderRepo purchaseOrderRepo,
-                              PurchaseOrderItemRepo purchaseOrderItemRepo,
                               PharmacyProductRepo pharmacyProductRepo,
                               MasterProductRepo masterProductRepo,
                               SupplierRepository supplierRepository,
@@ -53,7 +50,6 @@ public class PurchaseOrderService extends BaseSecurityService {
                               UserRepository userRepository) {
         super(userRepository);
         this.purchaseOrderRepo = purchaseOrderRepo;
-        this.purchaseOrderItemRepo = purchaseOrderItemRepo;
         this.pharmacyProductRepo = pharmacyProductRepo;
         this.masterProductRepo = masterProductRepo;
         this.supplierRepository = supplierRepository;
