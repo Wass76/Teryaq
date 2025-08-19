@@ -4,6 +4,7 @@ import com.Teryaq.user.dto.EmployeeCreateRequestDTO;
 import com.Teryaq.user.dto.EmployeeUpdateRequestDTO;
 import com.Teryaq.user.dto.EmployeeResponseDTO;
 import com.Teryaq.user.dto.CreateWorkingHoursRequestDTO;
+import com.Teryaq.user.dto.UpsertWorkingHoursRequestDTO;
 import com.Teryaq.user.service.EmployeeService;
 
 import org.springframework.http.ResponseEntity;
@@ -130,24 +131,24 @@ public class EmployeeController {
         return ResponseEntity.noContent().build();
     }
     
-    @PostMapping("/{employeeId}/working-hours")
+    @PutMapping("/{employeeId}/working-hours")
     @PreAuthorize("hasRole('PHARMACY_MANAGER')")
     @Operation(
-        summary = "Create working hours for employee",
-        description = "Creates working hours schedule for a specific employee. Requires PHARMACY_MANAGER role."
+        summary = "Create or update multiple working hours for employee",
+        description = "Creates or updates working hours schedule for a specific employee. Accepts multiple working hours configurations for different days and shifts. Requires PHARMACY_MANAGER role."
     )
     @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "Successfully created working hours",
+        @ApiResponse(responseCode = "200", description = "Successfully created/updated working hours",
             content = @Content(mediaType = "application/json")),
         @ApiResponse(responseCode = "400", description = "Invalid working hours data"),
         @ApiResponse(responseCode = "403", description = "Access denied - insufficient permissions"),
         @ApiResponse(responseCode = "404", description = "Employee not found"),
         @ApiResponse(responseCode = "500", description = "Internal server error")
     })
-    public ResponseEntity<?> createWorkingHoursForEmployee(
+    public ResponseEntity<?> upsertWorkingHoursForEmployee(
             @Parameter(description = "Employee ID", example = "1") @PathVariable Long employeeId,
-            @Parameter(description = "Working hours data", required = true)
-            @Valid @RequestBody CreateWorkingHoursRequestDTO request) {
-        return ResponseEntity.ok(employeeService.createWorkingHoursForEmployee(employeeId, request));
+            @Parameter(description = "Multiple working hours configurations", required = true)
+            @Valid @RequestBody UpsertWorkingHoursRequestDTO request) {
+        return ResponseEntity.ok(employeeService.upsertWorkingHoursForEmployee(employeeId, request));
     }
 } 

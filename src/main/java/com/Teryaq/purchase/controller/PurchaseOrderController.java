@@ -72,7 +72,7 @@ public class PurchaseOrderController {
     @PutMapping("/{id}")
     @Operation(
         summary = "Edit purchase order",
-        description = "Updates an existing purchase order with the given request"
+        description = "Updates an existing purchase order with the given request. Cannot edit completed or cancelled orders."
     )
     @ApiResponses(value = {
         @ApiResponse(responseCode = "200", description = "Successfully updated purchase order",
@@ -80,7 +80,7 @@ public class PurchaseOrderController {
             schema = @Schema(implementation = PurchaseOrderDTOResponse.class))),
         @ApiResponse(responseCode = "400", description = "Invalid purchase order data"),
         @ApiResponse(responseCode = "404", description = "Purchase order not found"),
-        @ApiResponse(responseCode = "409", description = "Purchase order cannot be edited"),
+        @ApiResponse(responseCode = "409", description = "Purchase order cannot be edited (completed or cancelled)"),
         @ApiResponse(responseCode = "500", description = "Internal server error")
     })
     public ResponseEntity<PurchaseOrderDTOResponse> edit(
@@ -196,12 +196,12 @@ public class PurchaseOrderController {
     @DeleteMapping("/{id}")
     @Operation(
         summary = "Cancel purchase order",
-        description = "Cancels a purchase order"
+        description = "Cancels a purchase order. Cannot cancel already cancelled or completed orders."
     )
     @ApiResponses(value = {
         @ApiResponse(responseCode = "200", description = "Successfully cancelled purchase order"),
         @ApiResponse(responseCode = "404", description = "Purchase order not found"),
-        @ApiResponse(responseCode = "409", description = "Purchase order already cancelled"),
+        @ApiResponse(responseCode = "409", description = "Purchase order cannot be cancelled (already cancelled or completed)"),
         @ApiResponse(responseCode = "500", description = "Internal server error")
     })
     public ResponseEntity<Void> cancel(

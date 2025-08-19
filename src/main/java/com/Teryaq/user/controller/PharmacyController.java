@@ -33,8 +33,8 @@ public class PharmacyController {
 
     @PostMapping("/login")
     @Operation(
-        summary = "Pharmacy manager login",
-        description = "Authenticates a pharmacy manager and returns a JWT token"
+        summary = "Pharmacy user login",
+        description = "Authenticates pharmacy users (managers, pharmacists, trainees) and returns a JWT token"
     )
     @ApiResponses(value = {
         @ApiResponse(responseCode = "200", description = "Login successful",
@@ -44,10 +44,10 @@ public class PharmacyController {
         @ApiResponse(responseCode = "429", description = "Too many login attempts"),
         @ApiResponse(responseCode = "500", description = "Internal server error")
     })
-    public ResponseEntity<UserAuthenticationResponse> managerLogin(
+    public ResponseEntity<UserAuthenticationResponse> pharmacyLogin(
             @Valid @RequestBody AuthenticationRequest request, 
             HttpServletRequest httpServletRequest) {
-        UserAuthenticationResponse response = pharmacyService.managerLogin(request, httpServletRequest);
+        UserAuthenticationResponse response = pharmacyService.pharmacyLogin(request, httpServletRequest);
         return ResponseEntity.ok(response);
     }
 

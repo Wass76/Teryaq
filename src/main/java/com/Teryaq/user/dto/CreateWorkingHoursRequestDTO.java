@@ -1,6 +1,5 @@
 package com.Teryaq.user.dto;
 
-import com.Teryaq.utils.annotation.ValidEnum;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 import java.time.DayOfWeek;
@@ -9,7 +8,6 @@ import java.util.List;
 @Data
 @Schema(description = "Request to create working hours for multiple days")
 public class CreateWorkingHoursRequestDTO {
-    @ValidEnum(enumClass = DayOfWeek.class)
     @Schema(description = "List of days to apply the same working hours", 
             example = "[\"MONDAY\", \"TUESDAY\", \"WEDNESDAY\", \"THURSDAY\", \"FRIDAY\"]")
     private List<DayOfWeek> daysOfWeek; // List of days to apply the same working hours

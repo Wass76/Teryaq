@@ -195,49 +195,66 @@ public class PharmacyService {
         }
     }
 
-    public UserAuthenticationResponse managerLogin(AuthenticationRequest request, HttpServletRequest httpServletRequest) {
+    public UserAuthenticationResponse pharmacyLogin(AuthenticationRequest request, HttpServletRequest httpServletRequest) {
         String userIp = httpServletRequest.getRemoteAddr();
         if (rateLimiterConfig.getBlockedIPs().contains(userIp)) {
             throw new TooManyRequestException("Too many login attempts. Please try again later.");
         }
-        String rateLimiterKey = "managerLoginRateLimiter-" + userIp;
+        String rateLimiterKey = "pharmacyLoginRateLimiter-" + userIp;
         RateLimiter rateLimiter = rateLimiterRegistry.rateLimiter(rateLimiterKey);
         if (rateLimiter.acquirePermission()) {
-            Authentication authentication = authenticationManager.authenticate(
-                    new UsernamePasswordAuthenticationToken(
-                            request.getEmail(),
-                            request.getPassword(),
-                            new HashSet<>()
-                    ));
-            SecurityContextHolder.getContext().setAuthentication(authentication);
-            var employee = employeeRepository.findByEmail(request.getEmail()).orElseThrow(
-                    () -> new RuntimeException("Manager email not found")
-            );
-            if (!"PHARMACY_MANAGER".equals(employee.getRole().getName())) {
-                throw new AccessDeniedException("Not a pharmacy manager");
-            }
-            var jwtToken = jwtService.generateToken(employee);
-            UserAuthenticationResponse response = new UserAuthenticationResponse();
-            response.setToken(jwtToken);
-            response.setEmail(employee.getEmail());
-            response.setFirstName(employee.getFirstName());
-            response.setLastName(employee.getLastName());
-            response.setRole(employee.getRole().getName());
-            
-            // Set isActive based on pharmacy registration completion
-            Boolean isActive = false;
-            if (employee.getPharmacy() != null) {
-                Pharmacy pharmacy = employee.getPharmacy();
-                if (pharmacy.getIsActive() != null) {
-                    isActive = pharmacy.getIsActive();
-                } else {
-                    // Fallback to calculated value if isActive is not set
-                    isActive = PharmacyMapper.isPharmacyAccountActive(pharmacy);
+            try {
+                Authentication authentication = authenticationManager.authenticate(
+                        new UsernamePasswordAuthenticationToken(
+                                request.getEmail(),
+                                request.getPassword(),
+                                new HashSet<>()
+                        ));
+                SecurityContextHolder.getContext().setAuthentication(authentication);
+                
+                var employee = employeeRepository.findByEmail(request.getEmail()).orElseThrow(
+                        () -> new RuntimeException("Employee email not found")
+                );
+                
+                // Check if user has a valid pharmacy role
+                if (employee.getRole() == null) {
+                    throw new AccessDeniedException("Employee has no role assigned");
                 }
+                
+                String roleName = employee.getRole().getName();
+                
+                // Check if user has a valid pharmacy role - using the correct role constants
+                if (!RoleConstants.PHARMACY_MANAGER.equals(roleName) && 
+                    !RoleConstants.PHARMACY_EMPLOYEE.equals(roleName) && 
+                    !RoleConstants.PHARMACY_TRAINEE.equals(roleName)) {
+                    throw new AccessDeniedException("User does not have a valid pharmacy role. Current role: " + roleName);
+                }
+                
+                var jwtToken = jwtService.generateToken(employee);
+                UserAuthenticationResponse response = new UserAuthenticationResponse();
+                response.setToken(jwtToken);
+                response.setEmail(employee.getEmail());
+                response.setFirstName(employee.getFirstName());
+                response.setLastName(employee.getLastName());
+                response.setRole(employee.getRole().getName());
+                
+                // Set isActive based on pharmacy registration completion
+                Boolean isActive = false;
+                if (employee.getPharmacy() != null) {
+                    Pharmacy pharmacy = employee.getPharmacy();
+                    if (pharmacy.getIsActive() != null) {
+                        isActive = pharmacy.getIsActive();
+                    } else {
+                        // Fallback to calculated value if isActive is not set
+                        isActive = PharmacyMapper.isPharmacyAccountActive(pharmacy);
+                    }
+                }
+                response.setIsActive(isActive);
+                
+                return response;
+            } catch (Exception e) {
+                throw e;
             }
-            response.setIsActive(isActive);
-            
-            return response;
         } else {
             rateLimiterConfig.blockIP(userIp);
             throw new TooManyRequestException("Too many login attempts, Please try again later.");
