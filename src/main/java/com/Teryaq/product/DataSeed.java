@@ -10,14 +10,17 @@ import com.Teryaq.user.entity.Pharmacy;
 import com.Teryaq.user.repository.*;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
 
-
 @Component
 @RequiredArgsConstructor
 public class DataSeed {
+
+    private static final Logger logger = LoggerFactory.getLogger(DataSeed.class);
 
     private final LanguageRepo languageRepo;
     private final CategoryRepo categoryRepo;
@@ -35,128 +38,183 @@ public class DataSeed {
 
     @PostConstruct
     public void seedAll() {
-        seedLanguages();
-        seedCategories();
-        seedForms();
-        seedTypes();
-        seedManufacturers();
-        seedCustomers();
-        seedPharmacy();
-
+        try {
+            logger.info("Starting data seeding process...");
+            
+            // Check if database is ready
+            if (!isDatabaseReady()) {
+                logger.warn("Database is not ready for seeding. Skipping data seeding.");
+                return;
+            }
+            
+            seedLanguages();
+            seedCategories();
+            seedForms();
+            seedTypes();
+            seedManufacturers();
+            seedPharmacy(); // Must be before customers since customers depend on pharmacy
+            seedCustomers();
+            
+            logger.info("Data seeding completed successfully!");
+        } catch (Exception e) {
+            logger.error("Error during data seeding: {}", e.getMessage(), e);
+            logger.warn("Application will continue without seeded data. You may need to seed data manually later.");
+        }
+    }
+    
+    private boolean isDatabaseReady() {
+        try {
+            // Try to access a simple repository method to check if tables exist
+            languageRepo.count();
+            return true;
+        } catch (Exception e) {
+            logger.warn("Database tables are not ready yet: {}", e.getMessage());
+            return false;
+        }
     }
 
     private void seedLanguages() {
-        if (languageRepo.count() == 0) {
-            List<Language> languages = List.of(
-                    new Language("ar", "Arabic"),
-                    new Language("en", "English")
-            );
-            languageRepo.saveAll(languages);
-            System.out.println("✅ Languages seeded");
+        try {
+            if (languageRepo.count() == 0) {
+                List<Language> languages = List.of(
+                        new Language("ar", "Arabic"),
+                        new Language("en", "English")
+                );
+                languageRepo.saveAll(languages);
+                logger.info("✅ Languages seeded");
+            } else {
+                logger.info("Languages already exist, skipping seeding");
+            }
+        } catch (Exception e) {
+            logger.error("Error seeding languages: {}", e.getMessage());
         }
     }
 
     private void seedCategories() {
-        if (categoryRepo.count() == 0) {
-            Language ar = languageRepo.findByCode("ar").orElseThrow();
+        try {
+            if (categoryRepo.count() == 0) {
+                Language ar = languageRepo.findByCode("ar").orElseThrow();
 
-            Category cat1 = new Category();
-            cat1.setName("Painkillers");
-            cat1 = categoryRepo.save(cat1);
+                Category cat1 = new Category();
+                cat1.setName("Painkillers");
+                cat1 = categoryRepo.save(cat1);
 
-            Category cat2 = new Category();
-            cat2.setName("Antibiotics");
-            cat2 = categoryRepo.save(cat2);
+                Category cat2 = new Category();
+                cat2.setName("Antibiotics");
+                cat2 = categoryRepo.save(cat2);
 
-            Category cat3 = new Category();
-            cat3.setName("Sterilizers");
-            cat3 = categoryRepo.save(cat3);
+                Category cat3 = new Category();
+                cat3.setName("Sterilizers");
+                cat3 = categoryRepo.save(cat3);
 
-            List<CategoryTranslation> translations = List.of(
-                    new CategoryTranslation("مسكنات", cat1, ar),
-                    new CategoryTranslation( "مضادات حيوية", cat2, ar),
-                    new CategoryTranslation( "المعقمات ", cat3, ar)
-            );
-            categoryTranslationRepo.saveAll(translations);
-            System.out.println("✅ Categories seeded");
+                List<CategoryTranslation> translations = List.of(
+                        new CategoryTranslation("مسكنات", cat1, ar),
+                        new CategoryTranslation( "مضادات حيوية", cat2, ar),
+                        new CategoryTranslation( "المعقمات ", cat3, ar)
+                );
+                categoryTranslationRepo.saveAll(translations);
+                logger.info("✅ Categories seeded");
+            } else {
+                logger.info("Categories already exist, skipping seeding");
+            }
+        } catch (Exception e) {
+            logger.error("Error seeding categories: {}", e.getMessage());
         }
     }
 
     private void seedForms() {
-        if (formRepo.count() == 0) {
-            Language ar = languageRepo.findByCode("ar").orElseThrow();
+        try {
+            if (formRepo.count() == 0) {
+                Language ar = languageRepo.findByCode("ar").orElseThrow();
 
-            Form form1 = new Form();
-            form1.setName("Coated Tablets");
-            form1 = formRepo.save(form1);
+                Form form1 = new Form();
+                form1.setName("Coated Tablets");
+                form1 = formRepo.save(form1);
 
-            Form form2 = new Form();
-            form2.setName("syrup");
-            form2 = formRepo.save(form2);
+                Form form2 = new Form();
+                form2.setName("syrup");
+                form2 = formRepo.save(form2);
 
-            Form form3 = new Form();
-            form3.setName("Serum");
-            form3 = formRepo.save(form3);
+                Form form3 = new Form();
+                form3.setName("Serum");
+                form3 = formRepo.save(form3);
 
-            List<FormTranslation> translations = List.of(
-                    new FormTranslation("أقراص ملبسة", form1, ar),
-                    new FormTranslation("شراب", form2, ar),
-                    new FormTranslation("سيروم", form3, ar)
-            );
-            formTranslationRepo.saveAll(translations);
-            System.out.println("✅ Forms seeded");
+                List<FormTranslation> translations = List.of(
+                        new FormTranslation("أقراص ملبسة", form1, ar),
+                        new FormTranslation("شراب", form2, ar),
+                        new FormTranslation("سيروم", form3, ar)
+                );
+                formTranslationRepo.saveAll(translations);
+                logger.info("✅ Forms seeded");
+            } else {
+                logger.info("Forms already exist, skipping seeding");
+            }
+        } catch (Exception e) {
+            logger.error("Error seeding forms: {}", e.getMessage());
         }
     }
 
     private void seedTypes() {
-        if (typeRepo.count() == 0) {
-            Language ar = languageRepo.findByCode("ar").orElseThrow();
+        try {
+            if (typeRepo.count() == 0) {
+                Language ar = languageRepo.findByCode("ar").orElseThrow();
 
-            Type type1 = new Type();
-            type1.setName("Medicine");
-            type1 = typeRepo.save(type1);
+                Type type1 = new Type();
+                type1.setName("Medicine");
+                type1 = typeRepo.save(type1);
 
-            Type type2 = new Type();
-            type2.setName("cosmetic");
-            type2 = typeRepo.save(type2);
+                Type type2 = new Type();
+                type2.setName("cosmetic");
+                type2 = typeRepo.save(type2);
 
-            Type type3 = new Type();
-            type3.setName("Medical supplies");
-            type3 = typeRepo.save(type3);
+                Type type3 = new Type();
+                type3.setName("Medical supplies");
+                type3 = typeRepo.save(type3);
 
-            List<TypeTranslation> translations = List.of(
-                    new TypeTranslation( "دواء ", type1, ar),
-                    new TypeTranslation( "مستحضر تجميل ", type2, ar),
-                    new TypeTranslation( "مستلزمات طبية ", type3, ar)
-            );
-            typeTranslationRepo.saveAll(translations);
-            System.out.println("✅ Types seeded");
+                List<TypeTranslation> translations = List.of(
+                        new TypeTranslation( "دواء ", type1, ar),
+                        new TypeTranslation( "مستحضر تجميل ", type2, ar),
+                        new TypeTranslation( "مستلزمات طبية ", type3, ar)
+                );
+                typeTranslationRepo.saveAll(translations);
+                logger.info("✅ Types seeded");
+            } else {
+                logger.info("Types already exist, skipping seeding");
+            }
+        } catch (Exception e) {
+            logger.error("Error seeding types: {}", e.getMessage());
         }
     }
 
     private void seedManufacturers() {
-        if (manufacturerRepo.count() == 0) {
-            Language ar = languageRepo.findByCode("ar").orElseThrow();
+        try {
+            if (manufacturerRepo.count() == 0) {
+                Language ar = languageRepo.findByCode("ar").orElseThrow();
 
-            Manufacturer m1 = new Manufacturer();
-            m1.setName("Teryaq Pharma");
-            m1 = manufacturerRepo.save(m1);
+                Manufacturer m1 = new Manufacturer();
+                m1.setName("Teryaq Pharma");
+                m1 = manufacturerRepo.save(m1);
 
-            Manufacturer m2 = new Manufacturer();
-            m2.setName("Ultra Medica");
-            m2 = manufacturerRepo.save(m2);
+                Manufacturer m2 = new Manufacturer();
+                m2.setName("Ultra Medica");
+                m2 = manufacturerRepo.save(m2);
 
-            Manufacturer m3 = new Manufacturer();
-            m3.setName("Avenzor");
-            m3 = manufacturerRepo.save(m3);
+                Manufacturer m3 = new Manufacturer();
+                m3.setName("Avenzor");
+                m3 = manufacturerRepo.save(m3);
 
-            List<ManufacturerTranslation> translations = List.of(
-                    new ManufacturerTranslation("ترياق فارما", m1, ar),
-                    new ManufacturerTranslation("ألترا ميديكا", m2, ar),
-                    new ManufacturerTranslation("ابن زهر", m3, ar)
-            );
-            manufacturerTranslationRepo.saveAll(translations);
-            System.out.println("✅ Manufacturers seeded");
+                List<ManufacturerTranslation> translations = List.of(
+                        new ManufacturerTranslation("ترياق فارما", m1, ar),
+                        new ManufacturerTranslation("ألترا ميديكا", m2, ar),
+                        new ManufacturerTranslation("ابن زهر", m3, ar)
+                );
+                manufacturerTranslationRepo.saveAll(translations);
+                logger.info("✅ Manufacturers seeded");
+            } else {
+                logger.info("Manufacturers already exist, skipping seeding");
+            }
+        } catch (Exception e) {
+            logger.error("Error seeding manufacturers: {}", e.getMessage());
         }
     }
 
@@ -173,39 +231,55 @@ public class DataSeed {
 //    }
 
     private void seedCustomers() {
-        if (customerRepository.count() == 0) {
-            List<Customer> customers = List.of(
-                createCustomer("أحمد محمد", "0991111111", "دمشق - المزة"),
-                createCustomer("فاطمة علي", "0992222222", "دمشق - باب شرقي"),
-                createCustomer("محمد حسن", "0993333333", "دمشق - أبو رمانة"),
-                createCustomer("عائشة أحمد", "0994444444", "دمشق - القابون"),
-                createCustomer("علي محمود", "0995555555", "دمشق - الميدان")
-            );
-            customerRepository.saveAll(customers);
-            System.out.println("✅ Customers seeded");
+        try {
+            if (customerRepository.count() == 0) {
+                // Get the pharmacy first
+                Pharmacy pharmacy = pharmacyRepository.findAll().get(0);
+                
+                List<Customer> customers = List.of(
+                    createCustomer("أحمد محمد", "0991111111", "دمشق - المزة", pharmacy),
+                    createCustomer("فاطمة علي", "0992222222", "دمشق - باب شرقي", pharmacy),
+                    createCustomer("محمد حسن", "0993333333", "دمشق - أبو رمانة", pharmacy),
+                    createCustomer("عائشة أحمد", "0994444444", "دمشق - القابون", pharmacy),
+                    createCustomer("علي محمود", "0995555555", "دمشق - الميدان", pharmacy)
+                );
+                customerRepository.saveAll(customers);
+                logger.info("✅ Customers seeded");
+            } else {
+                logger.info("Customers already exist, skipping seeding");
+            }
+        } catch (Exception e) {
+            logger.error("Error seeding customers: {}", e.getMessage());
         }
     }
     
-    private Customer createCustomer(String name, String phoneNumber, String address) {
+    private Customer createCustomer(String name, String phoneNumber, String address, Pharmacy pharmacy) {
         Customer customer = new Customer();
         customer.setName(name);
         customer.setPhoneNumber(phoneNumber);
         customer.setAddress(address);
+        customer.setPharmacy(pharmacy);
         return customer;
     }
 
     private void seedPharmacy() {
-        if (pharmacyRepository.count() == 0) {
-            Pharmacy pharmacy = new Pharmacy();
-            pharmacy.setName("صيدلية ترياق");
-            pharmacy.setLicenseNumber("PH-001-2024");
-            pharmacy.setAddress("دمشق - المزة");
-            pharmacy.setEmail("info@teryaq-pharmacy.com");
-            pharmacy.setPhoneNumber("011-1234567");
-            pharmacy.setOpeningHours("8:00 AM - 10:00 PM");
-            pharmacy.setType(PharmacyType.MAIN);
-            pharmacy = pharmacyRepository.save(pharmacy);
-            System.out.println("✅ Pharmacy seeded");
+        try {
+            if (pharmacyRepository.count() == 0) {
+                Pharmacy pharmacy = new Pharmacy();
+                pharmacy.setName("صيدلية ترياق");
+                pharmacy.setLicenseNumber("PH-001-2024");
+                pharmacy.setAddress("دمشق - المزة");
+                pharmacy.setEmail("info@teryaq-pharmacy.com");
+                pharmacy.setPhoneNumber("011-1234567");
+                pharmacy.setOpeningHours("8:00 AM - 10:00 PM");
+                pharmacy.setType(PharmacyType.MAIN);
+                pharmacy = pharmacyRepository.save(pharmacy);
+                logger.info("✅ Pharmacy seeded");
+            } else {
+                logger.info("Pharmacy already exist, skipping seeding");
+            }
+        } catch (Exception e) {
+            logger.error("Error seeding pharmacy: {}", e.getMessage());
         }
     }
 
