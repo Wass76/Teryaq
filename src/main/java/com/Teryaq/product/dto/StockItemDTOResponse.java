@@ -28,7 +28,7 @@ public class StockItemDTOResponse {
     private Integer total; 
     private String supplier; 
     private List<String> categories; 
-    private Integer minQuantity; 
+    private Integer minStockLevel; 
 
     @JsonFormat(pattern = "yyyy-MM-dd")
     private LocalDate expiryDate;

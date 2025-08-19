@@ -12,13 +12,19 @@ import com.Teryaq.product.repo.MasterProductTranslationRepo;
 import com.Teryaq.product.repo.PharmacyProductRepo;
 import com.Teryaq.utils.exception.ConflictException;
 import jakarta.persistence.EntityNotFoundException;
-import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.Teryaq.product.dto.PaginationDTO;
 import com.Teryaq.language.LanguageRepo;
 import com.Teryaq.language.Language;
+import com.Teryaq.user.service.BaseSecurityService;
+import com.Teryaq.user.repository.UserRepository;
+import com.Teryaq.user.entity.Employee;
+import com.Teryaq.utils.exception.UnAuthorizedException;
+import com.Teryaq.user.entity.User;
 
 import java.util.List;
 import java.util.Set;
@@ -26,9 +32,8 @@ import java.util.stream.Collectors;
 
 
 @Service
-@RequiredArgsConstructor
 @Transactional
-public class MasterProductService {
+public class MasterProductService extends BaseSecurityService {
 
     private final MasterProductRepo masterProductRepo;
     private final MasterProductMapper masterProductMapper;
@@ -36,7 +41,32 @@ public class MasterProductService {
     private final MasterProductTranslationRepo masterProductTranslationRepo;
     private final LanguageRepo languageRepo;
 
+    public MasterProductService(MasterProductRepo masterProductRepo,
+                               MasterProductMapper masterProductMapper,
+                               PharmacyProductRepo pharmacyProductRepo,
+                               MasterProductTranslationRepo masterProductTranslationRepo,
+                               LanguageRepo languageRepo,
+                               UserRepository userRepository) {
+        super(userRepository);
+        this.masterProductRepo = masterProductRepo;
+        this.masterProductMapper = masterProductMapper;
+        this.pharmacyProductRepo = pharmacyProductRepo;
+        this.masterProductTranslationRepo = masterProductTranslationRepo;
+        this.languageRepo = languageRepo;
+    }
 
+
+    public PaginationDTO<MProductDTOResponse> getMasterProductPaginated(String lang, int page, int size) {
+        Pageable pageable = PageRequest.of(page, size);
+        Page<MasterProduct> productPage = masterProductRepo.findAll(pageable);
+        
+        List<MProductDTOResponse> responses = productPage.getContent().stream()
+                .map(product -> masterProductMapper.toResponse(product, lang))
+                .collect(Collectors.toList());
+        
+        return new PaginationDTO<>(responses, page, size, productPage.getTotalElements());
+    }
+    
     public Page<MProductDTOResponse> getMasterProduct(String lang , Pageable pageable) {
         return masterProductRepo.findAll(pageable).map(
                 product -> masterProductMapper.toResponse(product, lang)
@@ -50,6 +80,21 @@ public class MasterProductService {
     }
 
 
+    public PaginationDTO<MProductDTOResponse> searchPaginated(SearchDTORequest requestDTO, int page, int size) {
+        Pageable pageable = PageRequest.of(page, size);
+        Page<MasterProduct> productPage = masterProductRepo.search(
+                requestDTO.getKeyword(),
+                requestDTO.getLang(),
+                pageable
+        );
+        
+        List<MProductDTOResponse> responses = productPage.getContent().stream()
+                .map(product -> masterProductMapper.toResponse(product, requestDTO.getLang()))
+                .collect(Collectors.toList());
+        
+        return new PaginationDTO<>(responses, page, size, productPage.getTotalElements());
+    }
+    
     public Page<MProductDTOResponse> search(SearchDTORequest requestDTO , Pageable pageable) {
         Page<MasterProduct> products = masterProductRepo.search(
                 requestDTO.getKeyword(),
@@ -129,6 +174,28 @@ public class MasterProductService {
         MasterProduct product = masterProductRepo.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Master Product with ID " + id + " not found"));
         return masterProductMapper.toMultiLangResponse(product);
+    }
+
+    
+    public MProductDTOResponse updateMasterProductMinStockLevel(Long id, Integer minStockLevel, String lang) {
+       User currentUser = getCurrentUser();
+       if (!(currentUser instanceof Employee)) {
+        throw new UnAuthorizedException("Only pharmacy employees can update master products");
+       }
+       
+        MasterProduct product = masterProductRepo.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Master Product with ID " + id + " not found"));
+        
+        if (minStockLevel != null && minStockLevel < 0) {
+            throw new ConflictException("Minimum stock level must be greater than or equal to 0");
+        }
+        
+        product.setMinStockLevel(minStockLevel);
+        product.setLastModifiedBy(currentUser.getId()); 
+        product.setUpdatedAt(java.time.LocalDateTime.now());
+        
+        MasterProduct saved = masterProductRepo.save(product);
+        return masterProductMapper.toResponse(saved, lang);
     }
 
 }

@@ -3,6 +3,7 @@ package com.Teryaq.product.service;
 import com.Teryaq.product.entity.StockItem;
 import com.Teryaq.product.Enum.ProductType;
 import com.Teryaq.product.dto.StockItemDTOResponse;
+import com.Teryaq.product.dto.StockItemDetailDTOResponse;
 import com.Teryaq.product.repo.StockItemRepo;
 import com.Teryaq.user.repository.UserRepository;
 import com.Teryaq.user.service.BaseSecurityService;
@@ -85,7 +86,8 @@ public class StockService extends BaseSecurityService {
     }
     
     public StockItemDTOResponse editStockQuantityAndExpiryDate(Long stockItemId, Integer newQuantity, 
-                                                              LocalDate newExpiryDate, String reasonCode, String additionalNotes) {
+                                                              LocalDate newExpiryDate, Integer newMinStockLevel, 
+                                                              String reasonCode, String additionalNotes) {
         User currentUser = getCurrentUser();
         if (!(currentUser instanceof Employee)) {
             throw new UnAuthorizedException("only pharmacy employees can edit the stock");
@@ -111,6 +113,10 @@ public class StockService extends BaseSecurityService {
             throw new ConflictException("expiry date cannot be in the past");
         }
         
+        if (newMinStockLevel != null && newMinStockLevel < 0) {
+            throw new ConflictException("minimum stock level cannot be negative");
+        }
+        
         if (newQuantity != null) {
             stockItem.setQuantity(newQuantity);
             
@@ -122,6 +128,10 @@ public class StockService extends BaseSecurityService {
         
         if (newExpiryDate != null) {
             stockItem.setExpiryDate(newExpiryDate);
+        }
+        
+        if (newMinStockLevel != null) {
+            stockItem.setMinStockLevel(newMinStockLevel);
         }
         
         stockItem.setLastModifiedBy(currentUser.getId());
@@ -229,14 +239,20 @@ public class StockService extends BaseSecurityService {
         details.put("totalQuantity", stockItems.stream().mapToInt(StockItem::getQuantity).sum());
         details.put("stockItems", stockItemMapper.toResponseList(stockItems));
         
-        if (!stockItems.isEmpty()) {
-            ProductType productType = stockItems.get(0).getProductType();
-            details.put("productName", stockItemMapper.getProductName(productId, productType));
-            details.put("sellingPrice", stockItemMapper.getProductSellingPrice(productId, productType));
-            details.put("productType", productType.toString());
+        return details;
+    }
+    
+    public StockItemDetailDTOResponse getStockItemDetail(Long stockItemId) {
+        Long currentPharmacyId = getCurrentUserPharmacyId();
+        
+        StockItem stockItem = stockItemRepo.findById(stockItemId)
+            .orElseThrow(() -> new EntityNotFoundException("Stock item not found"));
+        
+        if (!stockItem.getPharmacy().getId().equals(currentPharmacyId)) {
+            throw new UnAuthorizedException("You can't access stock item from another pharmacy");
         }
         
-        return details;
+        return stockItemMapper.toDetailResponse(stockItem);
     }
         
     public Map<String, Object> getStockSummary() {

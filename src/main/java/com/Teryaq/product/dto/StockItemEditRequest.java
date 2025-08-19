@@ -16,6 +16,7 @@ import jakarta.validation.constraints.NotBlank;
 @Schema(description = "edit stock quantity request", example= """
 {
     "quantity": 10,
+    "minStockLevel": 5,
     "reasonCode": "Received Shipment",
     "additionalNotes": "تم استلام شحنة جديدة"
 }
@@ -33,6 +34,10 @@ public class StockItemEditRequest {
     @Schema(description = "expiry date", example = "2025-01-01")
     @JsonFormat(pattern = "yyyy-MM-dd")
     private LocalDate expiryDate;
+    
+    @Schema(description = "minimum stock level", example = "10")
+    @Min(value = 0, message = "minimum stock level must be greater than or equal to 0")
+    private Integer minStockLevel;
     
     @Schema(description = "reason code", example = "Received Shipment")
     @NotBlank(message = "reason code is required")

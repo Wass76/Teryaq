@@ -2,6 +2,7 @@ package com.Teryaq.product.mapper;
 
 import com.Teryaq.product.Enum.ProductType;
 import com.Teryaq.product.dto.StockItemDTOResponse;
+import com.Teryaq.product.dto.StockItemDetailDTOResponse;
 import com.Teryaq.product.dto.StockReportDTOResponse;
 import com.Teryaq.product.dto.StockItemWithProductInfoDTOResponse;
 import com.Teryaq.product.entity.StockItem;
@@ -15,8 +16,7 @@ import com.Teryaq.purchase.repository.PurchaseOrderItemRepo;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
-import java.time.LocalDate;
-import java.time.temporal.ChronoUnit;
+import java.time.LocalDate; 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -39,9 +39,6 @@ public class StockItemMapper {
             expiryDate.isAfter(today) && 
             expiryDate.isBefore(today.plusDays(30));
         
-        Integer daysUntilExpiry = expiryDate != null ? 
-            (int) ChronoUnit.DAYS.between(today, expiryDate) : null;
-        
         String productName = getProductName(
             stockItem.getProductId(), stockItem.getProductType());
         
@@ -49,10 +46,8 @@ public class StockItemMapper {
         
         String supplier = getSupplierName(stockItem);
         List<String> categories = getCategories(stockItem.getProductId(), stockItem.getProductType());
-        Integer minQuantity = getMinQuantity(stockItem.getProductId(), stockItem.getProductType());
-        
-        Float sellingPrice = getProductSellingPrice(stockItem.getProductId(), stockItem.getProductType());
-        
+        Integer minStockLevel = getMinStockLevel(stockItem.getProductId(), stockItem.getProductType());
+                
         List<String> barcodes = getBarcodes(stockItem.getProductId(), stockItem.getProductType());
         
         return StockItemDTOResponse.builder()
@@ -66,18 +61,16 @@ public class StockItemMapper {
                 .total(total)
                 .supplier(supplier)
                 .categories(categories)
-                .minQuantity(minQuantity)
+                .minStockLevel(minStockLevel)
                 .expiryDate(stockItem.getExpiryDate())
                 .batchNo(stockItem.getBatchNo())
                 .actualPurchasePrice(stockItem.getActualPurchasePrice())
-                .sellingPrice(sellingPrice)
                 .dateAdded(stockItem.getDateAdded())
                 .addedBy(stockItem.getCreatedBy() != null ? stockItem.getCreatedBy() : stockItem.getAddedBy())
                 .purchaseInvoiceId(stockItem.getPurchaseInvoice() != null ? 
                     stockItem.getPurchaseInvoice().getId() : null)
                 .isExpired(isExpired)
-                .isExpiringSoon(isExpiringSoon)
-                .daysUntilExpiry(daysUntilExpiry)
+                .isExpiringSoon(isExpiringSoon) 
                 .pharmacyId(stockItem.getPharmacy().getId())
                 .purchaseInvoiceNumber(stockItem.getPurchaseInvoice() != null ? 
                     stockItem.getPurchaseInvoice().getInvoiceNumber() : null)
@@ -149,6 +142,39 @@ public class StockItemMapper {
                 .map(this::toStockItemWithProductInfoDTO)
                 .collect(Collectors.toList());
     }
+    
+    public StockItemDetailDTOResponse toDetailResponse(StockItem stockItem) {
+        LocalDate today = LocalDate.now();
+        LocalDate expiryDate = stockItem.getExpiryDate();
+        
+        
+        String productName = getProductName(
+            stockItem.getProductId(), stockItem.getProductType());
+        
+        String supplier = getSupplierName(stockItem);
+        List<String> categories = getCategories(stockItem.getProductId(), stockItem.getProductType());
+        Integer minStockLevel = getMinStockLevel(stockItem.getProductId(), stockItem.getProductType());
+        
+        List<String> barcodes = getBarcodes(stockItem.getProductId(), stockItem.getProductType());
+        
+        // Calculate total value
+        Double totalValue = stockItem.getQuantity() * stockItem.getActualPurchasePrice();
+        
+        return StockItemDetailDTOResponse.builder()
+                .id(stockItem.getId())
+                .productName(productName)
+                .batchNumber(stockItem.getBatchNo())
+                .productType(stockItem.getProductType())
+                .barcodes(barcodes)
+                .currentStock(stockItem.getQuantity())
+                .minStockLevel(minStockLevel)
+                .actualPurchasePrice(stockItem.getActualPurchasePrice())
+                .totalValue(totalValue)
+                .categories(categories)
+                .supplier(supplier)
+                .expiryDate(stockItem.getExpiryDate())
+                .build();
+    }
 
     private String getSupplierName(StockItem stockItem) {
         try {
@@ -183,7 +209,7 @@ public class StockItemMapper {
         return List.of();
     }
     
-    private Integer getMinQuantity(Long productId, ProductType productType) {
+    private Integer getMinStockLevel(Long productId, ProductType productType) {
         try {
             if (productType == ProductType.PHARMACY) {
                 Optional<PharmacyProduct> pharmacyProduct = pharmacyProductRepo.findById(productId);

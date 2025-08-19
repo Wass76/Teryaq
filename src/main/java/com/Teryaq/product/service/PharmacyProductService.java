@@ -23,9 +23,11 @@ import com.Teryaq.language.LanguageRepo;
 
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.Teryaq.product.dto.PaginationDTO;
 
 import java.util.List;
 import java.util.HashSet;
@@ -65,6 +67,20 @@ public class PharmacyProductService extends BaseSecurityService {
 //        );
 //    }
 
+    public PaginationDTO<PharmacyProductListDTO> getPharmacyProductByPharmacyIdPaginated(Long pharmacyId, String lang, int page, int size) {
+        // Validate that the user has access to the requested pharmacy
+        validatePharmacyAccess(pharmacyId);
+        
+        Pageable pageable = PageRequest.of(page, size);
+        Page<PharmacyProduct> productPage = pharmacyProductRepo.findByPharmacyId(pharmacyId, pageable);
+        
+        List<PharmacyProductListDTO> responses = productPage.getContent().stream()
+                .map(product -> pharmacyProductMapper.toListDTO(product, lang))
+                .collect(Collectors.toList());
+        
+        return new PaginationDTO<>(responses, page, size, productPage.getTotalElements());
+    }
+    
     public Page<PharmacyProductListDTO> getPharmacyProductByPharmacyId(Long pharmacyId, String lang, Pageable pageable) {
         // Validate that the user has access to the requested pharmacy
         validatePharmacyAccess(pharmacyId);
@@ -73,6 +89,20 @@ public class PharmacyProductService extends BaseSecurityService {
         );
     }
 
+    public PaginationDTO<PharmacyProductDTOResponse> getPharmacyProductByPharmacyIdWithTranslationPaginated(Long pharmacyId, String lang, int page, int size) {
+        // Validate that the user has access to the requested pharmacy
+        validatePharmacyAccess(pharmacyId);
+        
+        Pageable pageable = PageRequest.of(page, size);
+        Page<PharmacyProduct> productPage = pharmacyProductRepo.findByPharmacyId(pharmacyId, pageable);
+        
+        List<PharmacyProductDTOResponse> responses = productPage.getContent().stream()
+                .map(product -> pharmacyProductMapper.toResponse(product, lang))
+                .collect(Collectors.toList());
+        
+        return new PaginationDTO<>(responses, page, size, productPage.getTotalElements());
+    }
+    
     public Page<PharmacyProductDTOResponse> getPharmacyProductByPharmacyIdWithTranslation(Long pharmacyId, String lang, Pageable pageable) {
         // Validate that the user has access to the requested pharmacy
         validatePharmacyAccess(pharmacyId);
@@ -81,6 +111,30 @@ public class PharmacyProductService extends BaseSecurityService {
         );
     }
 
+    public PaginationDTO<PharmacyProductListDTO> getPharmacyProductPaginated(String lang, int page, int size) {
+        // Validate that the current user is an employee
+        User currentUser = getCurrentUser();
+        if (!(currentUser instanceof Employee)) {
+            throw new UnAuthorizedException("Only pharmacy employees can access pharmacy products");
+        }
+        
+        Employee employee = (Employee) currentUser;
+        if (employee.getPharmacy() == null) {
+            throw new UnAuthorizedException("Employee is not associated with any pharmacy");
+        }
+        
+        Long currentPharmacyId = employee.getPharmacy().getId();
+        
+        Pageable pageable = PageRequest.of(page, size);
+        Page<PharmacyProduct> productPage = pharmacyProductRepo.findByPharmacyId(currentPharmacyId, pageable);
+        
+        List<PharmacyProductListDTO> responses = productPage.getContent().stream()
+                .map(product -> pharmacyProductMapper.toListDTO(product, lang))
+                .collect(Collectors.toList());
+        
+        return new PaginationDTO<>(responses, page, size, productPage.getTotalElements());
+    }
+    
     public Page<PharmacyProductListDTO> getPharmacyProduct(String lang, Pageable pageable) {
         // Validate that the current user is an employee
         User currentUser = getCurrentUser();

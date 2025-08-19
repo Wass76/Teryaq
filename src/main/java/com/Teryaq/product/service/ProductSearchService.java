@@ -13,6 +13,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import com.Teryaq.product.dto.PaginationDTO;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -35,50 +36,70 @@ public class ProductSearchService extends BaseSecurityService {
         this.productSearchMapper = productSearchMapper;
     }
 
-    public Page<ProductSearchDTOResponse> searchProducts(String keyword, String lang, Pageable pageable) {
-        List<ProductSearchDTOResponse> allResults = new ArrayList<>();
-
+    public PaginationDTO<ProductSearchDTOResponse> searchProductsPaginated(String keyword, String lang, int page, int size) {
         Long currentPharmacyId = getCurrentUserPharmacyId();
-
-        Page<MasterProduct> masterProductsPage = masterProductRepo.search(keyword, lang, PageRequest.of(0, 1000));
-        List<MasterProduct> masterProducts = masterProductsPage.getContent();
-
-        Page<PharmacyProduct> pharmacyProductsPage = pharmacyProductRepo.searchByPharmacyId(keyword, lang, currentPharmacyId, PageRequest.of(0, 1000));
-        List<PharmacyProduct> pharmacyProducts = pharmacyProductsPage.getContent();
-
-        allResults.addAll(masterProducts.stream()
-                .map(product -> productSearchMapper.convertMasterProductToUnifiedDTO(product, lang, currentPharmacyId))
-                .collect(Collectors.toList()));
-
-        allResults.addAll(pharmacyProducts.stream()
-                .map(product -> productSearchMapper.convertPharmacyProductToUnifiedDTO(product, lang, currentPharmacyId))
-                .collect(Collectors.toList()));
-
         
-        return applyPagination(allResults, pageable);
+        Pageable pageable = PageRequest.of(page, size);
+        Page<MasterProduct> masterProductsPage = masterProductRepo.search(keyword, lang, pageable);
+        Page<PharmacyProduct> pharmacyProductsPage = pharmacyProductRepo.searchByPharmacyId(keyword, lang, currentPharmacyId, pageable);
+        
+        List<ProductSearchDTOResponse> masterResults = masterProductsPage.getContent().stream()
+                .map(product -> productSearchMapper.convertMasterProductToUnifiedDTO(product, lang, currentPharmacyId))
+                .collect(Collectors.toList());
+                
+        List<ProductSearchDTOResponse> pharmacyResults = pharmacyProductsPage.getContent().stream()
+                .map(product -> productSearchMapper.convertPharmacyProductToUnifiedDTO(product, lang, currentPharmacyId))
+                .collect(Collectors.toList());
+        
+        List<ProductSearchDTOResponse> combinedResults = new ArrayList<>();
+        combinedResults.addAll(masterResults);
+        combinedResults.addAll(pharmacyResults);
+        
+        long totalElements = masterProductsPage.getTotalElements() + pharmacyProductsPage.getTotalElements();
+        
+        return new PaginationDTO<>(combinedResults, page, size, totalElements);
+    }
+    
+    public Page<ProductSearchDTOResponse> searchProducts(String keyword, String lang, Pageable pageable) {
+        Long currentPharmacyId = getCurrentUserPharmacyId();
+        
+        Page<MasterProduct> masterProductsPage = masterProductRepo.search(keyword, lang, pageable);
+        Page<PharmacyProduct> pharmacyProductsPage = pharmacyProductRepo.searchByPharmacyId(keyword, lang, currentPharmacyId, pageable);
+        
+        List<ProductSearchDTOResponse> masterResults = masterProductsPage.getContent().stream()
+                .map(product -> productSearchMapper.convertMasterProductToUnifiedDTO(product, lang, currentPharmacyId))
+                .collect(Collectors.toList());
+                
+        List<ProductSearchDTOResponse> pharmacyResults = pharmacyProductsPage.getContent().stream()
+                .map(product -> productSearchMapper.convertPharmacyProductToUnifiedDTO(product, lang, currentPharmacyId))
+                .collect(Collectors.toList());
+        
+        List<ProductSearchDTOResponse> combinedResults = new ArrayList<>();
+        combinedResults.addAll(masterResults);
+        combinedResults.addAll(pharmacyResults);
+        
+        return new org.springframework.data.domain.PageImpl<>(
+            combinedResults,
+            pageable,
+            masterProductsPage.getTotalElements() + pharmacyProductsPage.getTotalElements()
+        );
     }
 
+    public PaginationDTO<ProductSearchDTOResponse> getAllProductsPaginated(String lang, int page, int size) {
+        Pageable pageable = PageRequest.of(page, size);
+        Page<ProductSearchDTOResponse> productPage = searchProducts("", lang, pageable);
+        
+        return new PaginationDTO<>(
+            productPage.getContent(),
+            page,
+            size,
+            productPage.getTotalElements()
+        );
+    }
+    
     public Page<ProductSearchDTOResponse> getAllProducts(String lang, Pageable pageable) {
         return searchProducts("", lang, pageable);
     }
 
-   
-    private Page<ProductSearchDTOResponse> applyPagination(List<ProductSearchDTOResponse> allResults, Pageable pageable) {
-        int totalElements = allResults.size();
-        int pageSize = pageable.getPageSize();
-        int pageNumber = pageable.getPageNumber();
-        int startIndex = pageNumber * pageSize;
-        int endIndex = Math.min(startIndex + pageSize, totalElements);
 
-        List<ProductSearchDTOResponse> pageContent = new ArrayList<>();
-        if (startIndex < totalElements) {
-            pageContent = allResults.subList(startIndex, endIndex);
-        }
-
-        return new org.springframework.data.domain.PageImpl<>(
-            pageContent, 
-            pageable, 
-            totalElements
-        );
-    }
 } 

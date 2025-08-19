@@ -25,6 +25,7 @@ public class ProductSearchDTOResponse {
     private String size;
     private float refPurchasePrice;
     private float refSellingPrice;
+    private Integer minStockLevel;
     
     private Long pharmacyId;
     private String pharmacyName;

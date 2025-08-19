@@ -37,6 +37,9 @@ public class StockItem extends AuditedEntity {
     private Integer bonusQty;
 
     @Column
+    private Integer minStockLevel;
+
+    @Column
     private LocalDate expiryDate;
 
     @Column
