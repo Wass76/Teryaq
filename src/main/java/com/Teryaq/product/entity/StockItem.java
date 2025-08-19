@@ -24,11 +24,20 @@ public class StockItem extends AuditedEntity {
     @Column(nullable = false)
     private ProductType productType; // 'MASTER' or 'PHARMACY'
 
+    @Column
+    private String productName;
+
+    @Column
+    private String barcode;
+
     @Column(nullable = false)
     private Integer quantity;
 
     @Column
     private Integer bonusQty;
+
+    @Column
+    private Integer minStockLevel;
 
     @Column
     private LocalDate expiryDate;

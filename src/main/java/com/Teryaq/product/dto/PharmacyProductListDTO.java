@@ -19,6 +19,7 @@ public class PharmacyProductListDTO {
     private String scientificName;
     private String concentration;
     private String size;
+    private Integer minStockLevel;
     private Boolean requiresPrescription;
     private Set<String> barcodes;
     private String productTypeName;

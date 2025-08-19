@@ -9,10 +9,6 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -41,8 +37,8 @@ public class ProductSearchController {
         @ApiResponse(responseCode = "500", description = "Internal server error")
     })
     @GetMapping("/products")
-    @Operation(summary = "Search products by keyword", description = "Search for products using a keyword in both master and pharmacy products")
-    public ResponseEntity<Page<ProductSearchDTOResponse>> searchProducts(
+    @Operation(summary = "Search products by keyword", description = "Search for products using a keyword in both master and pharmacy products with enhanced pagination")
+    public ResponseEntity<?> searchProducts(
             @Parameter(description = "Search keyword", example = "باراسيتامول") 
             @RequestParam String keyword,
             @Parameter(description = "Language code", example = "ar") 
@@ -57,11 +53,7 @@ public class ProductSearchController {
                       schema = @Schema(allowableValues = {"asc", "desc"})) 
             @RequestParam(defaultValue = "asc") String direction) {
         
-        Sort.Direction sortDirection = Sort.Direction.fromString(direction.toUpperCase());
-        Pageable pageable = PageRequest.of(page, size, Sort.by(sortDirection, sortBy));
-        
-        Page<ProductSearchDTOResponse> results = ProductSearchService.searchProducts(keyword, lang, pageable);
-        return ResponseEntity.ok(results);
+        return ResponseEntity.ok(ProductSearchService.searchProductsPaginated(keyword, lang, page, size));
     }
 
     @ApiResponses(value = {
@@ -72,8 +64,8 @@ public class ProductSearchController {
         @ApiResponse(responseCode = "500", description = "Internal server error")
     })
     @GetMapping("/all-products")
-    @Operation(summary = "Get all products", description = "Get all products from both master and pharmacy products")
-    public ResponseEntity<Page<ProductSearchDTOResponse>> getAllProducts(
+    @Operation(summary = "Get all products", description = "Get all products from both master and pharmacy products with enhanced pagination")
+    public ResponseEntity<?> getAllProducts(
             @Parameter(description = "Language code", example = "ar") 
             @RequestParam(defaultValue = "ar") String lang,
             @Parameter(description = "Page number (0-based)", example = "0") 
@@ -86,10 +78,6 @@ public class ProductSearchController {
                       schema = @Schema(allowableValues = {"asc", "desc"})) 
             @RequestParam(defaultValue = "asc") String direction) {
         
-        Sort.Direction sortDirection = Sort.Direction.fromString(direction.toUpperCase());
-        Pageable pageable = PageRequest.of(page, size, Sort.by(sortDirection, sortBy));
-        
-        Page<ProductSearchDTOResponse> results = ProductSearchService.getAllProducts(lang, pageable);
-        return ResponseEntity.ok(results);
+        return ResponseEntity.ok(ProductSearchService.getAllProductsPaginated(lang, page, size));
     }
 } 

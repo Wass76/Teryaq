@@ -6,9 +6,6 @@ import com.Teryaq.product.service.PharmacyProductService;
 
 import jakarta.validation.Valid;
 
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -39,7 +36,7 @@ public class PharmacyProductController {
     @GetMapping
     @Operation(
         summary = "Get all pharmacy products",
-        description = "Retrieves all pharmacy products with pagination and sorting support"
+        description = "Retrieves all pharmacy products with enhanced pagination (same as purchase invoices)"
     )
     @ApiResponses(value = {
         @ApiResponse(responseCode = "200", description = "Successfully retrieved pharmacy products",
@@ -58,16 +55,16 @@ public class PharmacyProductController {
             @Parameter(description = "Sort direction", example = "desc", 
                       schema = @Schema(allowableValues = {"asc", "desc"})) 
                                                   @RequestParam(defaultValue = "desc") String direction) {
-        Sort.Direction sortDirection = Sort.Direction.fromString(direction.toUpperCase());
-        Pageable pageable = PageRequest.of(page , size , Sort.by(sortDirection,sortBy));
-        return ResponseEntity.ok(pharmacyProductService.getPharmacyProduct(lang, pageable));
+        return ResponseEntity.ok(pharmacyProductService.getPharmacyProductPaginated(lang, page, size));
     }
+
+
 
     @PreAuthorize("hasRole('PLATFORM_ADMIN')")
     @GetMapping("pharmacy/{pharmacyId}")
     @Operation(
         summary = "Get pharmacy products by pharmacy ID",
-        description = "Retrieves all products for a specific pharmacy. Requires PLATFORM_ADMIN role."
+        description = "Retrieves all products for a specific pharmacy with enhanced pagination. Requires PLATFORM_ADMIN role."
     )
     @ApiResponses(value = {
         @ApiResponse(responseCode = "200", description = "Successfully retrieved pharmacy products",
@@ -89,10 +86,10 @@ public class PharmacyProductController {
             @Parameter(description = "Sort direction", example = "desc", 
                       schema = @Schema(allowableValues = {"asc", "desc"})) 
                                                            @RequestParam(defaultValue = "desc") String direction) {
-        Sort.Direction sortDirection = Sort.Direction.fromString(direction.toUpperCase());
-        Pageable pageable = PageRequest.of(page, size, Sort.by(sortDirection, sortBy));
-        return ResponseEntity.ok(pharmacyProductService.getPharmacyProductByPharmacyId(pharmacyId, lang, pageable));
+        return ResponseEntity.ok(pharmacyProductService.getPharmacyProductByPharmacyIdPaginated(pharmacyId, lang, page, size));
     }
+
+
 
     @GetMapping("{id}")
     @Operation(

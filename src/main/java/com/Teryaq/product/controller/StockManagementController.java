@@ -5,6 +5,7 @@ import com.Teryaq.product.entity.StockItem;
 import com.Teryaq.product.service.StockService;
 import com.Teryaq.product.Enum.ProductType;
 import com.Teryaq.product.dto.StockItemDTOResponse;
+import com.Teryaq.product.dto.StockItemDetailDTOResponse;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -26,17 +27,19 @@ import java.util.Map;
 public class StockManagementController {
 
     private final StockService stockService;
-
+    
     @Transactional
-    @PutMapping("/{stockItemId}/adjust")
-    @Operation(summary = "edit stock quantity", description = "edit stock quantity")
-    public ResponseEntity<StockItemDTOResponse> adjustStockQuantity(@PathVariable Long stockItemId,
-                                                        @Valid @RequestBody StockItemEditRequest request) {
-        Integer quantityChange = request.getQuantity();
+    @PutMapping("/{stockItemId}/edit")
+    @Operation(summary = "edit stock quantity and expiry date", description = "edit stock quantity and expiry date together")
+    public ResponseEntity<StockItemDTOResponse> adjustStockQuantityAndExpiryDate(
+            @PathVariable Long stockItemId,
+            @Valid @RequestBody StockItemEditRequest request) {
         
-        StockItemDTOResponse result = stockService.editStockQuantity(
+        StockItemDTOResponse result = stockService.editStockQuantityAndExpiryDate(
             stockItemId,
-            quantityChange,
+            request.getQuantity(),
+            request.getExpiryDate(),
+            request.getMinStockLevel(),
             request.getReasonCode(),
             request.getAdditionalNotes()
         );
@@ -108,6 +111,13 @@ public class StockManagementController {
     public ResponseEntity<Map<String, Object>> getProductStockDetails(@PathVariable Long productId) {
         Map<String, Object> productDetails = stockService.getProductStockDetails(productId);
         return ResponseEntity.ok(productDetails);
+    }
+    
+    @GetMapping("/{stockItemId}/detail")
+    @Operation(summary = "Get stock item detail", description = "Get detailed information about a specific stock item")
+    public ResponseEntity<StockItemDetailDTOResponse> getStockItemDetail(@PathVariable Long stockItemId) {
+        StockItemDetailDTOResponse stockItemDetail = stockService.getStockItemDetail(stockItemId);
+        return ResponseEntity.ok(stockItemDetail);
     }
     
 } 

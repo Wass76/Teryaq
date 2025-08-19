@@ -262,15 +262,33 @@ public class SaleService extends BaseSecurityService {
     }
 
     public List<SaleInvoiceDTOResponse> searchSaleInvoiceByDate(LocalDate createdDate) {
-    Long currentPharmacyId = getCurrentUserPharmacyId();
-    LocalDateTime startOfDay = createdDate.atStartOfDay();
-    LocalDateTime endOfDay = createdDate.atTime(23, 59, 59);
-    List<SaleInvoice> saleInvoices = saleInvoiceRepository.findByPharmacyIdAndInvoiceDateBetween(currentPharmacyId, startOfDay, endOfDay);
-    if (saleInvoices.isEmpty()) {
-        throw new EntityNotFoundException("No sale invoices found for date: " + createdDate);
+        Long currentPharmacyId = getCurrentUserPharmacyId();
+        LocalDateTime startOfDay = createdDate.atStartOfDay();
+        LocalDateTime endOfDay = createdDate.atTime(23, 59, 59);
+        List<SaleInvoice> saleInvoices = saleInvoiceRepository.findByPharmacyIdAndInvoiceDateBetween(currentPharmacyId, startOfDay, endOfDay);
+        if (saleInvoices.isEmpty()) {
+            throw new EntityNotFoundException("No sale invoices found for date: " + createdDate);
+        }
+        return saleInvoices.stream()
+                .map(saleMapper::toResponse)
+                .collect(Collectors.toList());
     }
-    return saleInvoices.stream()
-            .map(saleMapper::toResponse)
-            .collect(Collectors.toList());
-}
+    
+    public List<SaleInvoiceDTOResponse> searchSaleInvoiceByDateRange(LocalDate startDate, LocalDate endDate) {
+        Long currentPharmacyId = getCurrentUserPharmacyId();
+        
+        List<SaleInvoice> saleInvoices = saleInvoiceRepository.findByPharmacyIdAndInvoiceDateBetween(
+            currentPharmacyId, 
+            startDate.atStartOfDay(), 
+            endDate.atTime(23, 59, 59)
+        );
+        
+        if (saleInvoices.isEmpty()) {
+            throw new EntityNotFoundException("No sale invoices found between " + startDate + " and " + endDate);
+        }
+        
+        return saleInvoices.stream()
+                .map(saleMapper::toResponse)
+                .collect(Collectors.toList());
+    }
 } 

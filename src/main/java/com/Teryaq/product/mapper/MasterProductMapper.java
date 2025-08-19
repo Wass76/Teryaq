@@ -77,6 +77,7 @@ public class MasterProductMapper {
                 .size(product.getSize())
                 .refPurchasePrice(product.getRefPurchasePrice())
                 .refSellingPrice(product.getRefSellingPrice())
+                .minStockLevel(product.getMinStockLevel())
                 .notes(product.getNotes())
                 .tax(product.getTax())
                 .barcode(product.getBarcode())

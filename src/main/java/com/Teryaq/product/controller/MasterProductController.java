@@ -3,11 +3,9 @@ package com.Teryaq.product.controller;
 
 import com.Teryaq.product.dto.MProductDTORequest;
 import com.Teryaq.product.dto.ProductMultiLangDTOResponse;
+import com.Teryaq.product.dto.MasterProductMinStockLevelRequest;
 import com.Teryaq.product.service.MasterProductService;
 import io.swagger.v3.oas.annotations.Parameter;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -38,7 +36,7 @@ public class MasterProductController {
     @GetMapping
     @Operation(
         summary = "Get all master products",
-        description = "Retrieves all master products with pagination and sorting support"
+        description = "Retrieves all master products with enhanced pagination (same as purchase invoices)"
     )
     @ApiResponses(value = {
         @ApiResponse(responseCode = "200", description = "Successfully retrieved master products",
@@ -50,16 +48,13 @@ public class MasterProductController {
             @RequestParam(name = "lang", defaultValue = "ar") String lang,
             @Parameter(description = "Page number (0-based)", example = "0") 
             @RequestParam(defaultValue = "0") int page,
-            @Parameter(description = "Number of items per page", example = "10") 
             @RequestParam(defaultValue = "10") int size,
             @Parameter(description = "Sort field", example = "createdAt") 
             @RequestParam(defaultValue = "createdAt") String sortBy,
             @Parameter(description = "Sort direction (asc/desc)", example = "desc", 
                       schema = @Schema(allowableValues = {"asc", "desc"})) 
             @RequestParam(defaultValue = "desc") String direction) {
-        Sort.Direction sortDirection = Sort.Direction.fromString(direction.toUpperCase());
-        Pageable pageable = PageRequest.of(page , size , Sort.by(sortDirection,sortBy));
-        return ResponseEntity.ok(masterProductService.getMasterProduct(lang , pageable));
+        return ResponseEntity.ok(masterProductService.getMasterProductPaginated(lang, page, size));
     }
 
     @GetMapping("{id}")
@@ -180,6 +175,27 @@ public class MasterProductController {
     public ResponseEntity<?> getMasterProductByIdMultiLang(
             @Parameter(description = "Master product ID", example = "1") @PathVariable Long id) {
         return ResponseEntity.ok(masterProductService.getMasterProductByIdMultiLang(id));
+    }
+
+    @PatchMapping("/{id}/min-stock-level")
+    @Operation(
+        summary = "Update master product minimum stock level",
+        description = "Updates the minimum stock level for a master product. Available for pharmacy employees."
+    )
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Successfully updated minimum stock level",
+            content = @Content(mediaType = "application/json")),
+        @ApiResponse(responseCode = "400", description = "Invalid minimum stock level value"),
+        @ApiResponse(responseCode = "404", description = "Master product not found"),
+        @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
+    public ResponseEntity<?> updateMasterProductMinStockLevel(
+            @Parameter(description = "Master product ID", example = "1") @PathVariable Long id,
+            @Parameter(description = "Minimum stock level data", required = true)
+            @Valid @RequestBody MasterProductMinStockLevelRequest request,
+            @Parameter(description = "Language code", example = "ar") 
+            @RequestParam(name = "lang", defaultValue = "ar") String lang) {
+        return ResponseEntity.ok(masterProductService.updateMasterProductMinStockLevel(id, request.getMinStockLevel(), lang));
     }
 }
 
