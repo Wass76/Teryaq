@@ -4,6 +4,7 @@ import com.Teryaq.user.dto.EmployeeCreateRequestDTO;
 import com.Teryaq.user.dto.EmployeeUpdateRequestDTO;
 import com.Teryaq.user.dto.EmployeeResponseDTO;
 import com.Teryaq.user.dto.CreateWorkingHoursRequestDTO;
+import com.Teryaq.user.dto.UpsertWorkingHoursRequestDTO;
 import com.Teryaq.user.service.EmployeeService;
 
 import org.springframework.http.ResponseEntity;
@@ -133,8 +134,8 @@ public class EmployeeController {
     @PutMapping("/{employeeId}/working-hours")
     @PreAuthorize("hasRole('PHARMACY_MANAGER')")
     @Operation(
-        summary = "Create or update working hours for employee",
-        description = "Creates working hours schedule for a specific employee if they don't exist, or updates existing ones. Requires PHARMACY_MANAGER role."
+        summary = "Create or update multiple working hours for employee",
+        description = "Creates or updates working hours schedule for a specific employee. Accepts multiple working hours configurations for different days and shifts. Requires PHARMACY_MANAGER role."
     )
     @ApiResponses(value = {
         @ApiResponse(responseCode = "200", description = "Successfully created/updated working hours",
@@ -146,8 +147,8 @@ public class EmployeeController {
     })
     public ResponseEntity<?> upsertWorkingHoursForEmployee(
             @Parameter(description = "Employee ID", example = "1") @PathVariable Long employeeId,
-            @Parameter(description = "Working hours data", required = true)
-            @Valid @RequestBody CreateWorkingHoursRequestDTO request) {
+            @Parameter(description = "Multiple working hours configurations", required = true)
+            @Valid @RequestBody UpsertWorkingHoursRequestDTO request) {
         return ResponseEntity.ok(employeeService.upsertWorkingHoursForEmployee(employeeId, request));
     }
 } 

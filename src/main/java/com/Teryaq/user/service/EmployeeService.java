@@ -4,6 +4,7 @@ import com.Teryaq.user.dto.EmployeeCreateRequestDTO;
 import com.Teryaq.user.dto.EmployeeResponseDTO;
 import com.Teryaq.user.dto.EmployeeWorkingHoursDTO;
 import com.Teryaq.user.dto.CreateWorkingHoursRequestDTO;
+import com.Teryaq.user.dto.UpsertWorkingHoursRequestDTO;
 import com.Teryaq.user.dto.WorkShiftDTO;
 import com.Teryaq.user.dto.EmployeeUpdateRequestDTO;
 import com.Teryaq.user.entity.Employee;
@@ -211,11 +212,11 @@ public class EmployeeService extends BaseSecurityService {
                 .orElseThrow(() -> new ResourceNotFoundException("Employee not found"));
     }
     
-    public EmployeeResponseDTO upsertWorkingHoursForEmployee(Long employeeId, CreateWorkingHoursRequestDTO request) {
+    public EmployeeResponseDTO upsertWorkingHoursForEmployee(Long employeeId, UpsertWorkingHoursRequestDTO request) {
         // Validate that the current user is a pharmacy manager
         User currentUser = getCurrentUser();
         if (!(currentUser instanceof Employee)) {
-            throw new UnAuthorizedException("Only pharmacy employees can create working hours");
+            throw new UnAuthorizedException("Only pharmacy employees can manage working hours");
         }
         
         Employee manager = (Employee) currentUser;
@@ -224,13 +225,23 @@ public class EmployeeService extends BaseSecurityService {
         }
         
         Long managerPharmacyId = manager.getPharmacy().getId();
-        logger.info("Upserting working hours for employee ID: " + employeeId);
+        logger.info("Starting to upsert working hours for employee ID: " + employeeId);
         
         // Validate and get employee
         Employee employee = validateAndGetEmployee(employeeId, managerPharmacyId);
         
-        // Upsert working hours for each day
-        upsertWorkingHoursForMultipleDays(employee, request.getDaysOfWeek(), request.getShifts());
+        // Handle multiple working hours requests
+        if (request.getWorkingHoursRequests() != null && !request.getWorkingHoursRequests().isEmpty()) {
+            logger.info("Processing " + request.getWorkingHoursRequests().size() + " working hours requests");
+            
+            for (CreateWorkingHoursRequestDTO workingHoursRequest : request.getWorkingHoursRequests()) {
+                upsertWorkingHoursForMultipleDays(employee, workingHoursRequest.getDaysOfWeek(), workingHoursRequest.getShifts());
+            }
+            
+            logger.info("All working hours requests processed successfully");
+        } else {
+            logger.warning("No working hours requests provided");
+        }
         
         logger.info("Working hours upserted successfully for employee");
         return EmployeeMapper.toResponseDTO(employee);
