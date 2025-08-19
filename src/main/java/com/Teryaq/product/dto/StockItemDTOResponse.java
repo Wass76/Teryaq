@@ -20,6 +20,7 @@ public class StockItemDTOResponse {
     private Long productId;
     private String productName;
     private ProductType productType;
+    private List<String> barcodes;
     private Integer quantity;
     private Integer bonusQty;
 

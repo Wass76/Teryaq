@@ -39,11 +39,40 @@ public interface StockItemRepo extends JpaRepository<StockItem, Long> {
         SELECT si FROM StockItem si
         LEFT JOIN si.purchaseInvoice pi
         WHERE si.pharmacy.id = :pharmacyId
-          AND LOWER(pi.invoiceNumber) LIKE LOWER(CONCAT('%', :keyword, '%'))
+          AND (
+            LOWER(si.productName) LIKE LOWER(CONCAT('%', :keyword, '%'))
+            OR LOWER(si.barcode) LIKE LOWER(CONCAT('%', :keyword, '%'))
+            OR EXISTS (
+                SELECT 1 FROM PharmacyProduct pp 
+                WHERE pp.id = si.productId 
+                AND si.productType = com.Teryaq.product.Enum.ProductType.PHARMACY
+                AND (
+                    LOWER(pp.tradeName) LIKE LOWER(CONCAT('%', :keyword, '%'))
+                    OR EXISTS (
+                        SELECT 1 FROM PharmacyProductBarcode ppb 
+                        WHERE ppb.product.id = pp.id 
+                        AND LOWER(ppb.barcode) LIKE LOWER(CONCAT('%', :keyword, '%'))
+                    )
+                )
+            )
+            OR EXISTS (
+                SELECT 1 FROM MasterProduct mp 
+                WHERE mp.id = si.productId 
+                AND si.productType = com.Teryaq.product.Enum.ProductType.MASTER
+                AND (
+                    LOWER(mp.tradeName) LIKE LOWER(CONCAT('%', :keyword, '%'))
+                    OR LOWER(mp.barcode) LIKE LOWER(CONCAT('%', :keyword, '%'))
+                )
+            )
+          )
         """)
         List<StockItem> searchStockItems(
             @Param("keyword") String keyword,
             @Param("pharmacyId") Long pharmacyId);
+    
+    List<StockItem> findByBarcodeAndPharmacyId(String barcode, Long pharmacyId);
+    
+    List<StockItem> findByProductNameContainingIgnoreCaseAndPharmacyId(String productName, Long pharmacyId);
     
     // @Query("""
     //     SELECT new com.Teryaq.product.dto.StockItemDTOResponse(

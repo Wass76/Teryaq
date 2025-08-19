@@ -210,7 +210,7 @@ public class PharmacyProductService extends BaseSecurityService {
                 pharmacyProductTranslationRepo.saveAll(newTranslations);
             }
             
-            return pharmacyProductMapper.toResponse(pharmacyProductRepo.findByIdWithTranslations(saved.getId()).orElse(saved), lang);
+            return pharmacyProductMapper.toResponse(pharmacyProductRepo.findByIdAndPharmacyIdWithTranslations(saved.getId(), currentPharmacyId).orElse(saved), lang);
         }).orElseThrow(() -> new EntityNotFoundException("Pharmacy Product with ID " + id + " not found"));
     }
 

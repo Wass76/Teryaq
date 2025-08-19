@@ -113,10 +113,29 @@ public class SaleController {
         return ResponseEntity.ok().build();
     }
 
-    @GetMapping("/search-by-date")
-    public ResponseEntity<List<SaleInvoiceDTOResponse>> searchSaleInvoiceByDate(
-        @RequestParam("date") LocalDate createdAt) {
-        List<SaleInvoiceDTOResponse> response = saleService.searchSaleInvoiceByDate(createdAt);
+    // @GetMapping("/search-by-date")
+    // @Operation(
+    //     summary = "Search sale invoices by specific date",
+    //     description = "Search for sale invoices on a specific date"
+    // )
+    // public ResponseEntity<List<SaleInvoiceDTOResponse>> searchSaleInvoiceByDate(
+    //     @Parameter(description = "Search date", example = "2025-01-15")
+    //     @RequestParam("date") LocalDate createdAt) {
+    //     List<SaleInvoiceDTOResponse> response = saleService.searchSaleInvoiceByDate(createdAt);
+    //     return ResponseEntity.ok(response);
+    // }
+    
+    @GetMapping("/searchByDateRange")
+    @Operation(
+        summary = "Search sale invoices by date range",
+        description = "Search for sale invoices between two dates"
+    )
+    public ResponseEntity<List<SaleInvoiceDTOResponse>> searchSaleInvoiceByDateRange(
+        @Parameter(description = "Start date", example = "2025-01-01")
+        @RequestParam("startDate") LocalDate startDate,
+        @Parameter(description = "End date", example = "2025-01-31")
+        @RequestParam("endDate") LocalDate endDate) {
+        List<SaleInvoiceDTOResponse> response = saleService.searchSaleInvoiceByDateRange(startDate, endDate);
         return ResponseEntity.ok(response);
     }
 } 

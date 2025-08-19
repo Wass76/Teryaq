@@ -26,17 +26,18 @@ import java.util.Map;
 public class StockManagementController {
 
     private final StockService stockService;
-
+    
     @Transactional
-    @PutMapping("/{stockItemId}/adjust")
-    @Operation(summary = "edit stock quantity", description = "edit stock quantity")
-    public ResponseEntity<StockItemDTOResponse> adjustStockQuantity(@PathVariable Long stockItemId,
-                                                        @Valid @RequestBody StockItemEditRequest request) {
-        Integer quantityChange = request.getQuantity();
+    @PutMapping("/{stockItemId}/edit")
+    @Operation(summary = "edit stock quantity and expiry date", description = "edit stock quantity and expiry date together")
+    public ResponseEntity<StockItemDTOResponse> adjustStockQuantityAndExpiryDate(
+            @PathVariable Long stockItemId,
+            @Valid @RequestBody StockItemEditRequest request) {
         
-        StockItemDTOResponse result = stockService.editStockQuantity(
+        StockItemDTOResponse result = stockService.editStockQuantityAndExpiryDate(
             stockItemId,
-            quantityChange,
+            request.getQuantity(),
+            request.getExpiryDate(),
             request.getReasonCode(),
             request.getAdditionalNotes()
         );

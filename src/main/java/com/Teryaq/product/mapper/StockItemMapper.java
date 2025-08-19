@@ -8,6 +8,7 @@ import com.Teryaq.product.entity.StockItem;
 import com.Teryaq.product.entity.PharmacyProduct;
 import com.Teryaq.product.entity.MasterProduct;
 import com.Teryaq.product.entity.Category;
+import com.Teryaq.product.entity.PharmacyProductBarcode;
 import com.Teryaq.product.repo.PharmacyProductRepo;
 import com.Teryaq.product.repo.MasterProductRepo;
 import com.Teryaq.purchase.repository.PurchaseOrderItemRepo;
@@ -16,6 +17,7 @@ import org.springframework.stereotype.Component;
 
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.Optional;
@@ -51,11 +53,14 @@ public class StockItemMapper {
         
         Float sellingPrice = getProductSellingPrice(stockItem.getProductId(), stockItem.getProductType());
         
+        List<String> barcodes = getBarcodes(stockItem.getProductId(), stockItem.getProductType());
+        
         return StockItemDTOResponse.builder()
                 .id(stockItem.getId())
                 .productId(stockItem.getProductId())
                 .productName(productName)
                 .productType(stockItem.getProductType())
+                .barcodes(barcodes)
                 .quantity(stockItem.getQuantity())
                 .bonusQty(stockItem.getBonusQty())
                 .total(total)
@@ -283,5 +288,28 @@ public class StockItemMapper {
         } catch (Exception e) {
         }
         return 0;
+    }
+
+    private List<String> getBarcodes(Long productId, ProductType productType) {
+        List<String> barcodes = new ArrayList<>();
+        
+        try {
+            if (productType == ProductType.PHARMACY) {
+                Optional<PharmacyProduct> pharmacyProduct = pharmacyProductRepo.findById(productId);
+                if (pharmacyProduct.isPresent()) {
+                    barcodes = pharmacyProduct.get().getBarcodes().stream()
+                            .map(PharmacyProductBarcode::getBarcode)
+                            .collect(Collectors.toList());
+                }
+            } else if (productType == ProductType.MASTER) {
+                Optional<MasterProduct> masterProduct = masterProductRepo.findById(productId);
+                if (masterProduct.isPresent() && masterProduct.get().getBarcode() != null) {
+                    barcodes.add(masterProduct.get().getBarcode());
+                }
+            }
+        } catch (Exception e) {
+        }
+        
+        return barcodes;
     }
 } 

@@ -9,6 +9,7 @@ import com.Teryaq.user.service.BaseSecurityService;
 import com.Teryaq.user.entity.Employee;
 import com.Teryaq.user.entity.User;
 import com.Teryaq.utils.exception.UnAuthorizedException;
+import com.Teryaq.utils.exception.ConflictException;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -65,6 +66,62 @@ public class StockService extends BaseSecurityService {
         if (newQuantity == 0) {
             stockItemRepo.delete(stockItem);
             return null;
+        }
+        
+        stockItem.setLastModifiedBy(currentUser.getId());
+        stockItem.setUpdatedAt(LocalDateTime.now());
+        
+        StockItem savedStockItem = stockItemRepo.save(stockItem);
+        
+        StockItemDTOResponse response = stockItemMapper.toResponse(savedStockItem);
+        
+        response.setPharmacyId(savedStockItem.getPharmacy().getId());
+        
+        if (savedStockItem.getPurchaseInvoice() != null) {
+            response.setPurchaseInvoiceNumber(savedStockItem.getPurchaseInvoice().getInvoiceNumber());
+        }
+        
+        return response;
+    }
+    
+    public StockItemDTOResponse editStockQuantityAndExpiryDate(Long stockItemId, Integer newQuantity, 
+                                                              LocalDate newExpiryDate, String reasonCode, String additionalNotes) {
+        User currentUser = getCurrentUser();
+        if (!(currentUser instanceof Employee)) {
+            throw new UnAuthorizedException("only pharmacy employees can edit the stock");
+        }
+        
+        Employee employee = (Employee) currentUser;
+        if (employee.getPharmacy() == null) {
+            throw new UnAuthorizedException("the employee is not associated with any pharmacy");
+        }
+        
+        StockItem stockItem = stockItemRepo.findById(stockItemId)
+            .orElseThrow(() -> new EntityNotFoundException("stock item not found"));
+        
+        if (!stockItem.getPharmacy().getId().equals(employee.getPharmacy().getId())) {
+            throw new UnAuthorizedException("you can't edit stock of another pharmacy");
+        }
+        
+        if (newQuantity != null && newQuantity < 0) {
+            throw new ConflictException("the quantity can't be negative");
+        }
+        
+        if (newExpiryDate != null && newExpiryDate.isBefore(LocalDate.now())) {
+            throw new ConflictException("expiry date cannot be in the past");
+        }
+        
+        if (newQuantity != null) {
+            stockItem.setQuantity(newQuantity);
+            
+            if (newQuantity == 0) {
+                stockItemRepo.delete(stockItem);
+                return null;
+            }
+        }
+        
+        if (newExpiryDate != null) {
+            stockItem.setExpiryDate(newExpiryDate);
         }
         
         stockItem.setLastModifiedBy(currentUser.getId());
@@ -214,6 +271,14 @@ public class StockService extends BaseSecurityService {
         stockValue.put("profitMargin", totalPurchaseValue > 0 ? ((totalSellingValue - totalPurchaseValue) / totalPurchaseValue) * 100 : 0);
         
         return stockValue;
+    }
+
+    public StockItemDTOResponse deleteStockItem(Long stockItemId) {
+        StockItem stockItem = stockItemRepo.findById(stockItemId)
+            .orElseThrow(() -> new EntityNotFoundException("stock item not found"));
+        
+        stockItemRepo.delete(stockItem);
+        return stockItemMapper.toResponse(stockItem);
     }
 
 } 

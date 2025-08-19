@@ -1,12 +1,15 @@
 package com.Teryaq.product.dto;
 
+import java.time.LocalDate;
+
+import com.fasterxml.jackson.annotation.JsonFormat;
+
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 
@@ -24,9 +27,12 @@ import jakarta.validation.constraints.NotBlank;
 public class StockItemEditRequest {
 
     @Schema(description = "quantity", example = "10")
-    @NotNull(message = "quantity is required")
     @Min(value = 1, message = "quantity must be greater than 0")
     private Integer quantity;
+
+    @Schema(description = "expiry date", example = "2025-01-01")
+    @JsonFormat(pattern = "yyyy-MM-dd")
+    private LocalDate expiryDate;
     
     @Schema(description = "reason code", example = "Received Shipment")
     @NotBlank(message = "reason code is required")
