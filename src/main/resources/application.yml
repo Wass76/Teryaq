@@ -7,7 +7,7 @@ spring:
   datasource:
     url: jdbc:postgresql://localhost:5432/teryaq
     username: postgres
-    password: raneem2003
+    password: password
     driver-class-name: org.postgresql.Driver
     name: teryaq
   flyway:

@@ -11,4 +11,6 @@ public class PurchaseOrderItemDTOResponse {
     private String barcode;
     private Long productId;
     private com.Teryaq.product.Enum.ProductType productType;
+    private Double refSellingPrice;
+    private Integer minStockLevel;
 } 

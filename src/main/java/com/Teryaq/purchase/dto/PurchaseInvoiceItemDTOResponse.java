@@ -13,4 +13,6 @@ public class PurchaseInvoiceItemDTOResponse {
     private Double actualPrice;
     private String batchNo;
     private LocalDate expiryDate;
+    private Double refSellingPrice;
+    private Integer minStockLevel;
 } 

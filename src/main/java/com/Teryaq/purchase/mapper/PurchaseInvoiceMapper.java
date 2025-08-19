@@ -42,36 +42,39 @@ public class PurchaseInvoiceMapper {
         dto.setCreatedBy(invoice.getCreatedBy());
         dto.setItems(invoice.getItems().stream().map(item -> {
             String productName = null;
+            PharmacyProduct pharmacyProduct = null;
+            MasterProduct masterProduct = null;
+            
             if (item.getProductType() == ProductType.PHARMACY) {
-                PharmacyProduct product = pharmacyProducts.stream()
+                pharmacyProduct = pharmacyProducts.stream()
                     .filter(p -> p.getId().equals(item.getProductId()))
                     .findFirst().orElse(null);
-                if (product != null) {
+                if (pharmacyProduct != null) {
                     // Try to get translated name
-                    productName = product.getTranslations().stream()
+                    productName = pharmacyProduct.getTranslations().stream()
                         .filter(t -> t.getLanguage().getCode().equals(language))
                         .findFirst()
                         .map(PharmacyProductTranslation::getTradeName)
-                        .orElse(product.getTradeName()); // Fallback to default
+                        .orElse(pharmacyProduct.getTradeName()); // Fallback to default
                 } else {
                     productName = "N/A";
                 }
             } else if (item.getProductType() == ProductType.MASTER) {
-                MasterProduct product = masterProducts.stream()
+                masterProduct = masterProducts.stream()
                     .filter(p -> p.getId().equals(item.getProductId()))
                     .findFirst().orElse(null);
-                if (product != null) {
+                if (masterProduct != null) {
                     // Try to get translated name
-                    productName = product.getTranslations().stream()
+                    productName = masterProduct.getTranslations().stream()
                         .filter(t -> t.getLanguage().getCode().equals(language))
                         .findFirst()
                         .map(MasterProductTranslation::getTradeName)
-                        .orElse(product.getTradeName()); // Fallback to default
+                        .orElse(masterProduct.getTradeName()); // Fallback to default
                 } else {
                     productName = "N/A";
                 }
             }
-            return toItemResponse(item, productName);
+            return toItemResponse(item, productName, pharmacyProduct, masterProduct);
         }).toList());
         return dto;
     }
@@ -88,7 +91,7 @@ public class PurchaseInvoiceMapper {
         return item;
     }
 
-    public PurchaseInvoiceItemDTOResponse toItemResponse(PurchaseInvoiceItem item, String productName) {
+    public PurchaseInvoiceItemDTOResponse toItemResponse(PurchaseInvoiceItem item, String productName, PharmacyProduct pharmacyProduct, MasterProduct masterProduct) {
         PurchaseInvoiceItemDTOResponse dto = new PurchaseInvoiceItemDTOResponse();
         dto.setId(item.getId());
         dto.setProductName(productName);
@@ -98,6 +101,20 @@ public class PurchaseInvoiceMapper {
         dto.setActualPrice(item.getActualPrice());
         dto.setBatchNo(item.getBatchNo());
         dto.setExpiryDate(item.getExpiryDate());
+        
+        // Set refSellingPrice and minStockLevel based on product type
+        if (item.getProductType() == ProductType.PHARMACY && pharmacyProduct != null) {
+            dto.setRefSellingPrice((double) pharmacyProduct.getRefSellingPrice());
+            dto.setMinStockLevel(pharmacyProduct.getMinStockLevel());
+        } else if (item.getProductType() == ProductType.MASTER && masterProduct != null) {
+            dto.setRefSellingPrice((double) masterProduct.getRefSellingPrice());
+            // TODO: Implement minStockLevel for MASTER type products after fixing related issues
+            dto.setMinStockLevel(null);
+        } else {
+            dto.setRefSellingPrice(null);
+            dto.setMinStockLevel(null);
+        }
+        
         return dto;
     }
 } 
