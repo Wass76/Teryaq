@@ -1,7 +1,7 @@
 package com.Teryaq.product.service;
 
 import com.Teryaq.product.dto.PharmacyProductDTORequest;
-
+import com.Teryaq.product.Enum.ProductType;
 import com.Teryaq.product.dto.PharmacyProductDTOResponse;
 import com.Teryaq.product.dto.PharmacyProductListDTO;
 import com.Teryaq.product.dto.ProductMultiLangDTOResponse;
@@ -12,6 +12,7 @@ import com.Teryaq.product.repo.PharmacyProductBarcodeRepo;
 import com.Teryaq.product.repo.PharmacyProductRepo;
 import com.Teryaq.product.repo.PharmacyProductTranslationRepo;
 import com.Teryaq.product.repo.MasterProductRepo;
+import com.Teryaq.product.repo.StockItemRepo;
 import com.Teryaq.user.entity.Employee;
 import com.Teryaq.user.entity.User;
 import com.Teryaq.user.repository.UserRepository;
@@ -43,6 +44,7 @@ public class PharmacyProductService extends BaseSecurityService {
     private final LanguageRepo languageRepo;
     private final PharmacyProductTranslationRepo pharmacyProductTranslationRepo;
     private final MasterProductRepo masterProductRepo;
+    private final StockItemRepo stockItemRepo;
 
     public PharmacyProductService(PharmacyProductRepo pharmacyProductRepo,
                                 PharmacyProductBarcodeRepo pharmacyProductBarcodeRepo,
@@ -50,6 +52,7 @@ public class PharmacyProductService extends BaseSecurityService {
                                 LanguageRepo languageRepo,
                                 PharmacyProductTranslationRepo pharmacyProductTranslationRepo,
                                 MasterProductRepo masterProductRepo,
+                                StockItemRepo stockItemRepo,
                                 UserRepository userRepository) {
         super(userRepository);
         this.pharmacyProductRepo = pharmacyProductRepo;
@@ -58,6 +61,7 @@ public class PharmacyProductService extends BaseSecurityService {
         this.languageRepo = languageRepo;
         this.pharmacyProductTranslationRepo = pharmacyProductTranslationRepo;
         this.masterProductRepo = masterProductRepo;
+        this.stockItemRepo = stockItemRepo;
     }
 
 //    public Page<PharmacyProductListDTO> getPharmacyProduct(String lang, Pageable pageable) {
@@ -284,6 +288,13 @@ public class PharmacyProductService extends BaseSecurityService {
         if(!pharmacyProductRepo.existsByIdAndPharmacyId(id, currentPharmacyId)) {
             throw new EntityNotFoundException("Pharmacy Product with ID " + id + " not found in this pharmacy!") ;
         }
+        
+        // Check if product has stock items
+        Long stockCount = stockItemRepo.countByProductIdAndProductTypeAndPharmacyId(id, ProductType.PHARMACY, currentPharmacyId);
+        if (stockCount > 0) {
+            throw new ConflictException("Cannot delete pharmacy product. It has " + stockCount + " stock items. Please remove all stock items first.");
+        }
+        
         pharmacyProductRepo.deleteById(id);
     }
 

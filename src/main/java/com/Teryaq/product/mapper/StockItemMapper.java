@@ -3,6 +3,7 @@ package com.Teryaq.product.mapper;
 import com.Teryaq.product.Enum.ProductType;
 import com.Teryaq.product.dto.StockItemDTOResponse;
 import com.Teryaq.product.dto.StockItemDetailDTOResponse;
+import com.Teryaq.product.dto.StockProductOverallDTOResponse;
 import com.Teryaq.product.dto.StockReportDTOResponse;
 import com.Teryaq.product.dto.StockItemWithProductInfoDTOResponse;
 import com.Teryaq.product.entity.StockItem;
@@ -16,11 +17,14 @@ import com.Teryaq.purchase.repository.PurchaseOrderItemRepo;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
-import java.time.LocalDate; 
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.Optional;
+import java.time.temporal.ChronoUnit;
+import com.Teryaq.product.repo.StockItemRepo;
 
 @Component
 @RequiredArgsConstructor
@@ -29,6 +33,7 @@ public class StockItemMapper {
     private final PharmacyProductRepo pharmacyProductRepo;
     private final MasterProductRepo masterProductRepo;
     private final PurchaseOrderItemRepo purchaseOrderItemRepo;
+    private final StockItemRepo stockItemRepo;
     
     public StockItemDTOResponse toResponse(StockItem stockItem) {
         LocalDate today = LocalDate.now();
@@ -39,6 +44,11 @@ public class StockItemMapper {
             expiryDate.isAfter(today) && 
             expiryDate.isBefore(today.plusDays(30));
         
+        Integer daysUntilExpiry = null;
+        if (expiryDate != null && expiryDate.isAfter(today)) {
+            daysUntilExpiry = (int) ChronoUnit.DAYS.between(today, expiryDate);
+        }
+        
         String productName = getProductName(
             stockItem.getProductId(), stockItem.getProductType());
         
@@ -46,9 +56,14 @@ public class StockItemMapper {
         
         String supplier = getSupplierName(stockItem);
         List<String> categories = getCategories(stockItem.getProductId(), stockItem.getProductType());
-        Integer minStockLevel = getMinStockLevel(stockItem.getProductId(), stockItem.getProductType());
-                
+        // Use minStockLevel from StockItem directly, fallback to product if null
+        Integer minStockLevel = stockItem.getMinStockLevel() != null ? 
+            stockItem.getMinStockLevel() : 
+            getMinStockLevel(stockItem.getProductId(), stockItem.getProductType());
+
         List<String> barcodes = getBarcodes(stockItem.getProductId(), stockItem.getProductType());
+        
+        Float sellingPrice = getProductSellingPrice(stockItem.getProductId(), stockItem.getProductType());
         
         return StockItemDTOResponse.builder()
                 .id(stockItem.getId())
@@ -65,12 +80,14 @@ public class StockItemMapper {
                 .expiryDate(stockItem.getExpiryDate())
                 .batchNo(stockItem.getBatchNo())
                 .actualPurchasePrice(stockItem.getActualPurchasePrice())
+                .sellingPrice(sellingPrice)
                 .dateAdded(stockItem.getDateAdded())
                 .addedBy(stockItem.getCreatedBy() != null ? stockItem.getCreatedBy() : stockItem.getAddedBy())
                 .purchaseInvoiceId(stockItem.getPurchaseInvoice() != null ? 
                     stockItem.getPurchaseInvoice().getId() : null)
                 .isExpired(isExpired)
-                .isExpiringSoon(isExpiringSoon) 
+                .isExpiringSoon(isExpiringSoon)
+                .daysUntilExpiry(daysUntilExpiry)
                 .pharmacyId(stockItem.getPharmacy().getId())
                 .purchaseInvoiceNumber(stockItem.getPurchaseInvoice() != null ? 
                     stockItem.getPurchaseInvoice().getInvoiceNumber() : null)
@@ -144,21 +161,19 @@ public class StockItemMapper {
     }
     
     public StockItemDetailDTOResponse toDetailResponse(StockItem stockItem) {
-        LocalDate today = LocalDate.now();
-        LocalDate expiryDate = stockItem.getExpiryDate();
-        
         
         String productName = getProductName(
             stockItem.getProductId(), stockItem.getProductType());
         
         String supplier = getSupplierName(stockItem);
         List<String> categories = getCategories(stockItem.getProductId(), stockItem.getProductType());
-        Integer minStockLevel = getMinStockLevel(stockItem.getProductId(), stockItem.getProductType());
+       // Integer minStockLevel = getMinStockLevel(stockItem.getProductId(), stockItem.getProductType());
         
         List<String> barcodes = getBarcodes(stockItem.getProductId(), stockItem.getProductType());
         
-        // Calculate total value
         Double totalValue = stockItem.getQuantity() * stockItem.getActualPurchasePrice();
+
+        Boolean isRequiresPrescription = isProductRequiresPrescription(stockItem.getProductId(), stockItem.getProductType());
         
         return StockItemDetailDTOResponse.builder()
                 .id(stockItem.getId())
@@ -167,12 +182,12 @@ public class StockItemMapper {
                 .productType(stockItem.getProductType())
                 .barcodes(barcodes)
                 .currentStock(stockItem.getQuantity())
-                .minStockLevel(minStockLevel)
                 .actualPurchasePrice(stockItem.getActualPurchasePrice())
                 .totalValue(totalValue)
                 .categories(categories)
                 .supplier(supplier)
                 .expiryDate(stockItem.getExpiryDate())
+                .requiresPrescription(isRequiresPrescription)
                 .build();
     }
 
@@ -209,12 +224,25 @@ public class StockItemMapper {
         return List.of();
     }
     
-    private Integer getMinStockLevel(Long productId, ProductType productType) {
+    public Integer getMinStockLevel(Long productId, ProductType productType) {
         try {
+            List<StockItem> stockItems = stockItemRepo.findByProductIdAndProductTypeOrderByDateAddedDesc(productId, productType);
+            if (!stockItems.isEmpty()) {
+                Integer stockItemMinLevel = stockItems.get(0).getMinStockLevel();
+                if (stockItemMinLevel != null) {
+                    return stockItemMinLevel; // Return from StockItem if available
+                }
+            }
+            
             if (productType == ProductType.PHARMACY) {
                 Optional<PharmacyProduct> pharmacyProduct = pharmacyProductRepo.findById(productId);
                 if (pharmacyProduct.isPresent()) {
                     return pharmacyProduct.get().getMinStockLevel();
+                }
+            } else if (productType == ProductType.MASTER) {
+                Optional<MasterProduct> masterProduct = masterProductRepo.findById(productId);
+                if (masterProduct.isPresent()) {
+                    return masterProduct.get().getMinStockLevel();
                 }
             }
         } catch (Exception e) {
@@ -305,7 +333,6 @@ public class StockItemMapper {
             if (!orderItems.isEmpty()) {
                 com.Teryaq.purchase.entity.PurchaseOrderItem orderItem = orderItems.get(0);
                 
-                // استخدام total من PurchaseOrder
                 if (orderItem.getPurchaseOrder() != null) {
                     return orderItem.getPurchaseOrder().getTotal() != null ? 
                            orderItem.getPurchaseOrder().getTotal().intValue() : 0;
@@ -337,5 +364,64 @@ public class StockItemMapper {
         }
         
         return barcodes;
+    }
+    
+    public StockProductOverallDTOResponse toProductSummary(Long productId, ProductType productType, List<StockItem> stockItems, Long pharmacyId) {
+        if (stockItems.isEmpty()) {
+            return null;
+        }
+        
+        Integer totalQuantity = stockItems.stream().mapToInt(StockItem::getQuantity).sum();
+        Integer totalBonusQuantity = stockItems.stream().mapToInt(item -> item.getBonusQty() != null ? item.getBonusQty() : 0).sum();
+        Double averagePurchasePrice = stockItems.stream()
+            .mapToDouble(item -> item.getActualPurchasePrice() * item.getQuantity())
+            .sum() / totalQuantity;
+        Double totalValue = totalQuantity * averagePurchasePrice;
+        
+        String productName = getProductName(productId, productType);
+        List<String> categories = getCategories(productId, productType);
+        Float sellingPrice = getProductSellingPrice(productId, productType);
+        Integer minStockLevel = getMinStockLevel(productId, productType);
+        List<String> barcodes = getBarcodes(productId, productType);
+        
+        LocalDate today = LocalDate.now();
+        Boolean hasExpiredItems = stockItems.stream()
+            .anyMatch(item -> item.getExpiryDate() != null && item.getExpiryDate().isBefore(today));
+        Boolean hasExpiringSoonItems = stockItems.stream()
+            .anyMatch(item -> item.getExpiryDate() != null && 
+                item.getExpiryDate().isAfter(today) && 
+                item.getExpiryDate().isBefore(today.plusDays(30)));
+        
+        LocalDate earliestExpiryDate = stockItems.stream()
+            .map(StockItem::getExpiryDate)
+            .filter(Objects::nonNull)
+            .min(LocalDate::compareTo)
+            .orElse(null);
+        
+        LocalDate latestExpiryDate = stockItems.stream()
+            .map(StockItem::getExpiryDate)
+            .filter(Objects::nonNull)
+            .max(LocalDate::compareTo)
+            .orElse(null);
+        
+        return StockProductOverallDTOResponse.builder()
+            .productId(productId)
+            .productName(productName)
+            .productType(productType)
+            .barcodes(barcodes)
+            .totalQuantity(totalQuantity)
+            .totalBonusQuantity(totalBonusQuantity)
+            .averagePurchasePrice(averagePurchasePrice)
+            .totalValue(totalValue)
+            .categories(categories)
+            .sellingPrice(sellingPrice)
+            .minStockLevel(minStockLevel)
+            .hasExpiredItems(hasExpiredItems)
+            .hasExpiringSoonItems(hasExpiringSoonItems)
+            .earliestExpiryDate(earliestExpiryDate)
+            .latestExpiryDate(latestExpiryDate)
+            .numberOfBatches(stockItems.size())
+            .pharmacyId(pharmacyId)
+            .build();
     }
 } 

@@ -166,6 +166,8 @@ public class PurchaseInvoiceService extends BaseSecurityService {
             throw new ConflictException("Cannot edit invoice for a completed order");
         }
     }
+    
+
 
 
     public PaginationDTO<PurchaseInvoiceDTOResponse> listAllPaginated(int page, int size, String language) {
@@ -355,6 +357,17 @@ public class PurchaseInvoiceService extends BaseSecurityService {
             stockItem.setBonusQty(item.getBonusQty());
             stockItem.setActualPurchasePrice(actualPurchasePrice);
             
+            // Set minStockLevel from request
+            PurchaseInvoiceItemDTORequest requestItem = request.getItems().stream()
+                .filter(reqItem -> reqItem.getProductId().equals(item.getProductId()) && 
+                                 reqItem.getProductType() == item.getProductType())
+                .findFirst()
+                .orElse(null);
+            
+            if (requestItem != null && requestItem.getMinStockLevel() != null) {
+                stockItem.setMinStockLevel(requestItem.getMinStockLevel());
+            }
+            
             // Set batch and invoice details
             stockItem.setBatchNo(item.getBatchNo());
             stockItem.setInvoiceNumber(item.getInvoiceNumber());
@@ -373,8 +386,8 @@ public class PurchaseInvoiceService extends BaseSecurityService {
             // Save the stock item
             stockItemRepo.save(stockItem);
             
-            // Update PharmacyProduct refPurchasePrice if price changed
-            updatePharmacyProductPriceIfChanged(item, actualPurchasePrice, request);
+            // Update product information if changed (prices, minStockLevel)
+            updateProductInformationIfChanged(item, actualPurchasePrice, request);
         }
         
         // Save the updated PurchaseInvoiceItem entities
@@ -421,53 +434,78 @@ public class PurchaseInvoiceService extends BaseSecurityService {
         return (item.getReceivedQty() * item.getInvoicePrice()) / totalQty;
     }
 
-    // Update PharmacyProduct refPurchasePrice if price changed
-    private void updatePharmacyProductPriceIfChanged(PurchaseInvoiceItem item, Double actualPurchasePrice, PurchaseInvoiceDTORequest request) {
+    // Update product information if changed (prices, minStockLevel)
+    private void updateProductInformationIfChanged(PurchaseInvoiceItem item, Double actualPurchasePrice, PurchaseInvoiceDTORequest request) {
+        // Find the corresponding item in the request to get additional information
+        PurchaseInvoiceItemDTORequest requestItem = request.getItems().stream()
+            .filter(reqItem -> reqItem.getProductId().equals(item.getProductId()) && 
+                             reqItem.getProductType() == item.getProductType())
+            .findFirst()
+            .orElse(null);
+        
+        if (requestItem == null) return;
+        
         if (item.getProductType() == ProductType.PHARMACY) {
-            PharmacyProduct product = pharmacyProductRepo.findById(item.getProductId())
-                .orElse(null);
-            
-            if (product != null) {
-                boolean updated = false;
-                
-                // Update refPurchasePrice if it's different
-                if (actualPurchasePrice != null && !actualPurchasePrice.equals(product.getRefPurchasePrice())) {
-                    product.setRefPurchasePrice(actualPurchasePrice.floatValue());
-                    updated = true;
-                    logger.info("Updated refPurchasePrice for PharmacyProduct {} from {} to {}", 
-                        product.getId(), product.getRefPurchasePrice(), actualPurchasePrice);
-                }
-                
-                // Find the corresponding item in the request to get sellingPrice and minStockLevel
-                PurchaseInvoiceItemDTORequest requestItem = request.getItems().stream()
-                    .filter(reqItem -> reqItem.getProductId().equals(item.getProductId()) && 
-                                     reqItem.getProductType() == item.getProductType())
-                    .findFirst()
-                    .orElse(null);
-                
-                if (requestItem != null) {
-                    // Update refSellingPrice if provided in the request
-                    if (requestItem.getSellingPrice() != null && !requestItem.getSellingPrice().equals(product.getRefSellingPrice())) {
-                        product.setRefSellingPrice(requestItem.getSellingPrice().floatValue());
-                        updated = true;
-                        logger.info("Updated refSellingPrice for PharmacyProduct {} from {} to {}", 
-                            product.getId(), product.getRefSellingPrice(), requestItem.getSellingPrice());
-                    }
-                    
-                    // Update minStockLevel if provided in the request
-                    if (requestItem.getMinStockLevel() != null && !requestItem.getMinStockLevel().equals(product.getMinStockLevel())) {
-                        product.setMinStockLevel(requestItem.getMinStockLevel());
-                        updated = true;
-                        logger.info("Updated minStockLevel for PharmacyProduct {} from {} to {}", 
-                            product.getId(), product.getMinStockLevel(), requestItem.getMinStockLevel());
-                    }
-                }
-                
-                // Save the product if any field was updated
-                if (updated) {
-                    pharmacyProductRepo.save(product);
-                }
-            }
+            updatePharmacyProductInformation(item, actualPurchasePrice, requestItem);
+        } else if (item.getProductType() == ProductType.MASTER) {
+            updateMasterProductInformation(item, requestItem);
+        }
+    }
+    
+    private void updatePharmacyProductInformation(PurchaseInvoiceItem item, Double actualPurchasePrice, PurchaseInvoiceItemDTORequest requestItem) {
+        PharmacyProduct product = pharmacyProductRepo.findById(item.getProductId()).orElse(null);
+        if (product == null) return;
+        
+        boolean updated = false;
+        
+        // Update refPurchasePrice if it's different
+        if (actualPurchasePrice != null && !actualPurchasePrice.equals(product.getRefPurchasePrice())) {
+            product.setRefPurchasePrice(actualPurchasePrice.floatValue());
+            updated = true;
+            logger.info("Updated refPurchasePrice for PharmacyProduct {} from {} to {}", 
+                product.getId(), product.getRefPurchasePrice(), actualPurchasePrice);
+        }
+        
+        // Update refSellingPrice if provided in the request
+        if (requestItem.getSellingPrice() != null && !requestItem.getSellingPrice().equals(product.getRefSellingPrice())) {
+            product.setRefSellingPrice(requestItem.getSellingPrice().floatValue());
+            updated = true;
+            logger.info("Updated refSellingPrice for PharmacyProduct {} from {} to {}", 
+                product.getId(), product.getRefSellingPrice(), requestItem.getSellingPrice());
+        }
+        
+        // Update minStockLevel if provided in the request
+        if (requestItem.getMinStockLevel() != null && !requestItem.getMinStockLevel().equals(product.getMinStockLevel())) {
+            product.setMinStockLevel(requestItem.getMinStockLevel());
+            updated = true;
+            logger.info("Updated minStockLevel for PharmacyProduct {} from {} to {}", 
+                product.getId(), product.getMinStockLevel(), requestItem.getMinStockLevel());
+        }
+        
+        // Save the product if any field was updated
+        if (updated) {
+            pharmacyProductRepo.save(product);
+        }
+    }
+    
+    private void updateMasterProductInformation(PurchaseInvoiceItem item, PurchaseInvoiceItemDTORequest requestItem) {
+        MasterProduct product = masterProductRepo.findById(item.getProductId()).orElse(null);
+        if (product == null) return;
+        
+        boolean updated = false;
+        
+        // Update minStockLevel if provided in the request
+        if (requestItem.getMinStockLevel() != null && !requestItem.getMinStockLevel().equals(product.getMinStockLevel())) {
+            product.setMinStockLevel(requestItem.getMinStockLevel());
+            product.setUpdatedAt(LocalDateTime.now());
+            updated = true;
+            logger.info("Updated minStockLevel for MasterProduct {} from {} to {}", 
+                product.getId(), product.getMinStockLevel(), requestItem.getMinStockLevel());
+        }
+        
+        // Save the product if any field was updated
+        if (updated) {
+            masterProductRepo.save(product);
         }
     }
 

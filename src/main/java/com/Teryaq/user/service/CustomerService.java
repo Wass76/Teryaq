@@ -14,7 +14,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
 import jakarta.persistence.EntityNotFoundException;
-import jakarta.validation.ValidationException;
+import com.Teryaq.utils.exception.ConflictException;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -32,7 +32,6 @@ public class CustomerService extends BaseSecurityService {
     }
 
     public List<CustomerDTOResponse> getAllCustomers() {
-        // التحقق من أن المستخدم الحالي هو موظف
         User currentUser = getCurrentUser();
         if (!(currentUser instanceof Employee)) {
             throw new UnAuthorizedException("Only pharmacy employees can access customers");
@@ -51,7 +50,6 @@ public class CustomerService extends BaseSecurityService {
     }
 
     public CustomerDTOResponse getCustomerById(Long id) {
-        // التحقق من أن المستخدم الحالي هو موظف
         User currentUser = getCurrentUser();
         if (!(currentUser instanceof Employee)) {
             throw new UnAuthorizedException("Only pharmacy employees can access customers");
@@ -70,10 +68,9 @@ public class CustomerService extends BaseSecurityService {
 
     public CustomerDTOResponse getCustomerByName(String name) {
         if (!StringUtils.hasText(name)) {
-            throw new ValidationException("Customer name cannot be empty");
+            throw new ConflictException("Customer name cannot be empty");
         }
         
-        // التحقق من أن المستخدم الحالي هو موظف
         User currentUser = getCurrentUser();
         if (!(currentUser instanceof Employee)) {
             throw new UnAuthorizedException("Only pharmacy employees can access customers");
@@ -91,7 +88,6 @@ public class CustomerService extends BaseSecurityService {
     }
 
     public List<CustomerDTOResponse> searchCustomersByName(String name) {
-        // التحقق من أن المستخدم الحالي هو موظف
         User currentUser = getCurrentUser();
         if (!(currentUser instanceof Employee)) {
             throw new UnAuthorizedException("Only pharmacy employees can access customers");
@@ -118,7 +114,6 @@ public class CustomerService extends BaseSecurityService {
     }
 
     public List<CustomerDTOResponse> getCustomersWithDebts() {
-        // التحقق من أن المستخدم الحالي هو موظف
         User currentUser = getCurrentUser();
         if (!(currentUser instanceof Employee)) {
             throw new UnAuthorizedException("Only pharmacy employees can access customers");
@@ -139,7 +134,6 @@ public class CustomerService extends BaseSecurityService {
     }
 
     public List<CustomerDTOResponse> getCustomersWithActiveDebts() {
-        // التحقق من أن المستخدم الحالي هو موظف
         User currentUser = getCurrentUser();
         if (!(currentUser instanceof Employee)) {
             throw new UnAuthorizedException("Only pharmacy employees can access customers");
@@ -162,7 +156,6 @@ public class CustomerService extends BaseSecurityService {
     public CustomerDTOResponse createCustomer(CustomerDTORequest dto) {
         validateCustomerRequest(dto);
         
-        // التحقق من أن المستخدم الحالي هو موظف
         User currentUser = getCurrentUser();
         if (!(currentUser instanceof Employee)) {
             throw new UnAuthorizedException("Only pharmacy employees can create customers");
@@ -175,11 +168,10 @@ public class CustomerService extends BaseSecurityService {
         
         Long currentPharmacyId = employee.getPharmacy().getId();
         
-        // التحقق من عدم وجود عميل بنفس الاسم في نفس الصيدلية إذا كان الاسم محدداً
         if (StringUtils.hasText(dto.getName()) && !"cash customer".equals(dto.getName())) {
             customerRepo.findByNameAndPharmacyId(dto.getName(), currentPharmacyId)
-                    .ifPresent(existingCustomer -> {
-                        throw new ValidationException("Customer with name '" + dto.getName() + "' already exists in this pharmacy");
+                    .ifPresent(existingCustomer -> { 
+                        throw new ConflictException("Customer with name '" + dto.getName() + "' already exists in this pharmacy");
                     });
         }
         
@@ -192,7 +184,6 @@ public class CustomerService extends BaseSecurityService {
     public CustomerDTOResponse updateCustomer(Long id, CustomerDTORequest dto) {
         validateCustomerRequest(dto);
         
-        // التحقق من أن المستخدم الحالي هو موظف
         User currentUser = getCurrentUser();
         if (!(currentUser instanceof Employee)) {
             throw new UnAuthorizedException("Only pharmacy employees can update customers");
@@ -207,12 +198,11 @@ public class CustomerService extends BaseSecurityService {
         Customer customer = customerRepo.findByIdAndPharmacyId(id, currentPharmacyId)
                 .orElseThrow(() -> new EntityNotFoundException("Customer with ID " + id + " not found in this pharmacy"));
 
-        // التحقق من عدم وجود عميل آخر بنفس الاسم في نفس الصيدلية إذا تم تغيير الاسم
         if (StringUtils.hasText(dto.getName()) && !dto.getName().equals(customer.getName())) {
             customerRepo.findByNameAndPharmacyId(dto.getName(), currentPharmacyId)
                     .ifPresent(existingCustomer -> {
                         if (!existingCustomer.getId().equals(id)) {
-                            throw new ValidationException("Customer with name '" + dto.getName() + "' already exists in this pharmacy");
+                            throw new ConflictException("Customer with name '" + dto.getName() + "' already exists in this pharmacy");
                         }
                     });
         }
@@ -223,7 +213,6 @@ public class CustomerService extends BaseSecurityService {
     }
 
     public void deleteCustomer(Long id) {
-        // التحقق من أن المستخدم الحالي هو موظف
         User currentUser = getCurrentUser();
         if (!(currentUser instanceof Employee)) {
             throw new UnAuthorizedException("Only pharmacy employees can delete customers");
@@ -238,13 +227,12 @@ public class CustomerService extends BaseSecurityService {
         Customer customer = customerRepo.findByIdAndPharmacyId(id, currentPharmacyId)
                 .orElseThrow(() -> new EntityNotFoundException("Customer with ID " + id + " not found in this pharmacy"));
         
-        // التحقق من عدم وجود ديون نشطة قبل الحذف
         if (customer.getDebts() != null && !customer.getDebts().isEmpty()) {
             boolean hasActiveDebts = customer.getDebts().stream()
                     .anyMatch(debt -> "ACTIVE".equals(debt.getStatus()) && debt.getRemainingAmount() > 0);
             
             if (hasActiveDebts) {
-                throw new ValidationException("Cannot delete customer with active debts. Please settle all debts first.");
+                throw new ConflictException("Cannot delete customer with active debts. Please settle all debts first.");
             }
         }
         
@@ -253,19 +241,17 @@ public class CustomerService extends BaseSecurityService {
 
     private void validateCustomerRequest(CustomerDTORequest dto) {
         if (dto == null) {
-            throw new ValidationException("Customer request cannot be null");
+            throw new ConflictException("Customer request cannot be null");
         }
         
-        // التحقق من صحة رقم الهاتف إذا تم توفيره
         if (StringUtils.hasText(dto.getPhoneNumber())) {
             if (!dto.getPhoneNumber().matches("^[0-9]{10}$")) {
-                throw new ValidationException("Phone number must be 10 digits");
+                throw new ConflictException("Phone number must be 10 digits");
             }
         }
     }
 
     public List<CustomerDTOResponse> getCustomersByDebtRange(Float minDebt, Float maxDebt) {
-        // التحقق من أن المستخدم الحالي هو موظف
         User currentUser = getCurrentUser();
         if (!(currentUser instanceof Employee)) {
             throw new UnAuthorizedException("Only pharmacy employees can access customers");
@@ -287,9 +273,7 @@ public class CustomerService extends BaseSecurityService {
                 .collect(Collectors.toList());
     }
 
-    // دوال جديدة للتعامل مع الصيدليات المحددة
     public List<CustomerDTOResponse> getCustomersByPharmacyId(Long pharmacyId) {
-        // التحقق من أن المستخدم الحالي هو موظف
         User currentUser = getCurrentUser();
         if (!(currentUser instanceof Employee)) {
             throw new UnAuthorizedException("Only pharmacy employees can access customers");
@@ -300,7 +284,6 @@ public class CustomerService extends BaseSecurityService {
             throw new UnAuthorizedException("Employee is not associated with any pharmacy");
         }
         
-        // التحقق من أن المستخدم يملك صلاحية الوصول للصيدلية المطلوبة
         validatePharmacyAccess(pharmacyId);
         
         return customerRepo.findByPharmacyId(pharmacyId)
@@ -310,7 +293,6 @@ public class CustomerService extends BaseSecurityService {
     }
 
     public CustomerDTOResponse getCustomerByIdAndPharmacyId(Long id, Long pharmacyId) {
-        // التحقق من أن المستخدم الحالي هو موظف
         User currentUser = getCurrentUser();
         if (!(currentUser instanceof Employee)) {
             throw new UnAuthorizedException("Only pharmacy employees can access customers");
@@ -321,7 +303,6 @@ public class CustomerService extends BaseSecurityService {
             throw new UnAuthorizedException("Employee is not associated with any pharmacy");
         }
         
-        // التحقق من أن المستخدم يملك صلاحية الوصول للصيدلية المطلوبة
         validatePharmacyAccess(pharmacyId);
         
         Customer customer = customerRepo.findByIdAndPharmacyId(id, pharmacyId)
@@ -330,7 +311,6 @@ public class CustomerService extends BaseSecurityService {
     }
 
     public List<CustomerDTOResponse> searchCustomersByNameAndPharmacyId(String name, Long pharmacyId) {
-        // التحقق من أن المستخدم الحالي هو موظف
         User currentUser = getCurrentUser();
         if (!(currentUser instanceof Employee)) {
             throw new UnAuthorizedException("Only pharmacy employees can access customers");
@@ -341,7 +321,6 @@ public class CustomerService extends BaseSecurityService {
             throw new UnAuthorizedException("Employee is not associated with any pharmacy");
         }
         
-        // التحقق من أن المستخدم يملك صلاحية الوصول للصيدلية المطلوبة
         validatePharmacyAccess(pharmacyId);
         
         if (!StringUtils.hasText(name)) {
@@ -358,7 +337,6 @@ public class CustomerService extends BaseSecurityService {
     }
 
     public List<CustomerDTOResponse> getCustomersWithDebtsByPharmacyId(Long pharmacyId) {
-        // التحقق من أن المستخدم الحالي هو موظف
         User currentUser = getCurrentUser();
         if (!(currentUser instanceof Employee)) {
             throw new UnAuthorizedException("Only pharmacy employees can access customers");
@@ -369,7 +347,6 @@ public class CustomerService extends BaseSecurityService {
             throw new UnAuthorizedException("Employee is not associated with any pharmacy");
         }
         
-        // التحقق من أن المستخدم يملك صلاحية الوصول للصيدلية المطلوبة
         validatePharmacyAccess(pharmacyId);
         
         return customerRepo.findByPharmacyId(pharmacyId)
@@ -381,7 +358,6 @@ public class CustomerService extends BaseSecurityService {
     }
 
     public List<CustomerDTOResponse> getCustomersWithActiveDebtsByPharmacyId(Long pharmacyId) {
-        // التحقق من أن المستخدم الحالي هو موظف
         User currentUser = getCurrentUser();
         if (!(currentUser instanceof Employee)) {
             throw new UnAuthorizedException("Only pharmacy employees can access customers");
@@ -392,7 +368,6 @@ public class CustomerService extends BaseSecurityService {
             throw new UnAuthorizedException("Employee is not associated with any pharmacy");
         }
         
-        // التحقق من أن المستخدم يملك صلاحية الوصول للصيدلية المطلوبة
         validatePharmacyAccess(pharmacyId);
         
         return customerRepo.findByPharmacyId(pharmacyId)
@@ -404,7 +379,6 @@ public class CustomerService extends BaseSecurityService {
     }
 
     public List<CustomerDTOResponse> getCustomersByDebtRangeAndPharmacyId(Float minDebt, Float maxDebt, Long pharmacyId) {
-        // التحقق من أن المستخدم الحالي هو موظف
         User currentUser = getCurrentUser();
         if (!(currentUser instanceof Employee)) {
             throw new UnAuthorizedException("Only pharmacy employees can access customers");
@@ -415,7 +389,6 @@ public class CustomerService extends BaseSecurityService {
             throw new UnAuthorizedException("Employee is not associated with any pharmacy");
         }
         
-        // التحقق من أن المستخدم يملك صلاحية الوصول للصيدلية المطلوبة
         validatePharmacyAccess(pharmacyId);
         
         return customerRepo.findByPharmacyId(pharmacyId)

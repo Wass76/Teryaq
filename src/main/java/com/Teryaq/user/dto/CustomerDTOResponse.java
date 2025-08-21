@@ -20,13 +20,14 @@ public class CustomerDTOResponse {
     private String name;
     private String phoneNumber;
     private String address;
+    private String notes;
     
     @Schema(description = "Pharmacy ID", example = "1")
     private Long pharmacyId;
     
-    private Float totalDebt; // إجمالي الديون
-    private Float totalPaid; // إجمالي المدفوع
-    private Float remainingDebt; // المتبقي من الديون
-    private int activeDebtsCount; // عدد الديون النشطة
-    private List<CustomerDebtDTOResponse> debts; // تفاصيل الديون
+    private Float totalDebt; 
+    private Float totalPaid; 
+    private Float remainingDebt; 
+    private int activeDebtsCount; 
+    private List<CustomerDebtDTOResponse> debts; 
 }
