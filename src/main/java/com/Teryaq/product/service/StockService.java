@@ -250,19 +250,14 @@ public class StockService extends BaseSecurityService {
     public Map<String, Object> getProductStockDetails(Long productId, ProductType productType) {
         Long currentPharmacyId = getCurrentUserPharmacyId();
         List<StockItem> stockItems = stockItemRepo.findByProductIdAndProductTypeAndPharmacyId(productId, productType, currentPharmacyId);
-        
-        if (stockItems.isEmpty()) {
-            throw new EntityNotFoundException("No stock items found for this product");
-        }
-        StockItem firstStockItem = stockItems.get(0);
-        Integer minStockLevel = firstStockItem.getMinStockLevel();
+        StockItem stockItem = stockItemRepo.findByProductIdAndProductTypeOrderByDateAddedDesc(productId, productType).get(0);
 
         Map<String, Object> details = new HashMap<>();
         details.put("productId", productId);
         details.put("productType", productType);
         details.put("totalQuantity", stockItems.stream().mapToInt(StockItem::getQuantity).sum());
-        details.put("minStockLevel", minStockLevel);
         details.put("stockItems", stockItemMapper.toResponseList(stockItems));
+        details.put("minStockLevel", stockItemMapper.getMinStockLevel(stockItem.getProductId(), stockItem.getProductType()));
         
         return details;
     }
