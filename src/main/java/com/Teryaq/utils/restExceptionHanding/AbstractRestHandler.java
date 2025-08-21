@@ -1,9 +1,11 @@
 package com.Teryaq.utils.restExceptionHanding;
 
 import com.Teryaq.utils.exception.*;
+import jakarta.persistence.EntityExistsException;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -108,5 +110,27 @@ public class AbstractRestHandler {
                 LocalDateTime.now()
         );
         return new ResponseEntity<>(apiException,notFound);
+    }
+
+    @ExceptionHandler(value = {HttpMessageNotReadableException.class})
+    public ResponseEntity<Object> handleHttpMessageNotReadableException(HttpMessageNotReadableException e){
+        HttpStatus badRequest = HttpStatus.BAD_REQUEST;
+        ApiException apiException = new ApiException(
+                e.getMessage(),
+                badRequest,
+                LocalDateTime.now()
+        );
+        return new ResponseEntity<>(apiException,badRequest);
+    }
+
+    @ExceptionHandler(value = {Exception.class})
+    public ResponseEntity<?> handleGlobalException(Exception e){
+        HttpStatus globalException = HttpStatus.INTERNAL_SERVER_ERROR;
+        ApiException apiException = new ApiException(
+                e.getMessage(),
+                globalException,
+                LocalDateTime.now()
+        );
+        return new ResponseEntity<>(apiException,globalException);
     }
 }
