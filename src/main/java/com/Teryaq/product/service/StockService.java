@@ -25,6 +25,7 @@ import java.util.Objects;
 import com.Teryaq.product.mapper.StockItemMapper;
 import org.springframework.context.annotation.Lazy;
 import java.util.stream.Collectors;
+import java.util.ArrayList;
 
 @Service
 @Transactional
@@ -153,10 +154,31 @@ public class StockService extends BaseSecurityService {
         return response;
     }
     
-    public List<StockItemDTOResponse> stockItemSearch(String keyword) {
+    public List<StockProductOverallDTOResponse> stockItemSearch(String keyword) {
         Long currentPharmacyId = getCurrentUserPharmacyId();
-        List<StockItem> stockItems = stockItemRepo.searchStockItems(keyword, currentPharmacyId);
-        return stockItemMapper.toResponseList(stockItems);
+        
+        List<StockItem> matchingStockItems = stockItemRepo.searchStockItems(keyword, currentPharmacyId);
+        
+        if (matchingStockItems.isEmpty()) {
+            return new ArrayList<>();
+        }
+        
+        Map<String, List<StockItem>> groupedByProduct = matchingStockItems.stream()
+            .collect(Collectors.groupingBy(item -> 
+                item.getProductId() + "_" + item.getProductType()));
+        
+        return groupedByProduct.values().stream()
+            .map(stockItems -> {
+                if (stockItems.isEmpty()) return null;
+                
+                StockItem firstItem = stockItems.get(0);
+                Long productId = firstItem.getProductId();
+                ProductType productType = firstItem.getProductType();
+                
+                return stockItemMapper.toProductSummary(productId, productType, stockItems, currentPharmacyId);
+            })
+            .filter(Objects::nonNull)
+            .collect(Collectors.toList());
     }
     
     public List<StockItem> getExpiredItems() {

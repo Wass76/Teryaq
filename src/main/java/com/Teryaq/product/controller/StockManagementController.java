@@ -47,11 +47,11 @@ public class StockManagementController {
     }
     
     @GetMapping("/search")
-    @Operation(summary = "Search for Stock Item", description = "Search by Invoice Number")
-    public ResponseEntity<List<StockItemDTOResponse>> advancedStockSearch(
+    @Operation(summary = "Search for Stock Products", description = "Search for unique products in stock by product name, barcode, or trade name. Returns each product once with aggregated stock information.")
+    public ResponseEntity<List<StockProductOverallDTOResponse>> advancedStockSearch(
             @RequestParam(required = false) String keyword) {
-        List<StockItemDTOResponse> stockItems = stockService.stockItemSearch(keyword);
-        return ResponseEntity.ok(stockItems);
+        List<StockProductOverallDTOResponse> stockProducts = stockService.stockItemSearch(keyword);
+        return ResponseEntity.ok(stockProducts);
     }
 
     @DeleteMapping("/{stockItemId}")
