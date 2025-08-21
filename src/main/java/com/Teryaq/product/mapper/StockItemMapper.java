@@ -405,6 +405,7 @@ public class StockItemMapper {
             .orElse(null);
         
         return StockProductOverallDTOResponse.builder()
+            .id(stockItems.get(0).getId())
             .productId(productId)
             .productName(productName)
             .productType(productType)

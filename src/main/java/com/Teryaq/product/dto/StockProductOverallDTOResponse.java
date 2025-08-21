@@ -17,6 +17,7 @@ import java.util.List;
 public class StockProductOverallDTOResponse {
     
     // Product Identification
+    private Long id;
     private Long productId;
     private String productName;
     private ProductType productType;
