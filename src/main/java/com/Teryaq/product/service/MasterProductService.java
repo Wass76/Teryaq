@@ -4,6 +4,8 @@ import com.Teryaq.product.dto.MProductDTORequest;
 import com.Teryaq.product.dto.MProductDTOResponse;
 import com.Teryaq.product.dto.ProductMultiLangDTOResponse;
 import com.Teryaq.product.dto.SearchDTORequest;
+import com.Teryaq.product.Enum.ProductType;
+import com.Teryaq.product.repo.StockItemRepo;
 import com.Teryaq.product.entity.MasterProduct;
 import com.Teryaq.product.entity.MasterProductTranslation;
 import com.Teryaq.product.mapper.MasterProductMapper;
@@ -40,12 +42,14 @@ public class MasterProductService extends BaseSecurityService {
     private final PharmacyProductRepo pharmacyProductRepo;
     private final MasterProductTranslationRepo masterProductTranslationRepo;
     private final LanguageRepo languageRepo;
+    private final StockItemRepo stockItemRepo;
 
     public MasterProductService(MasterProductRepo masterProductRepo,
                                MasterProductMapper masterProductMapper,
                                PharmacyProductRepo pharmacyProductRepo,
                                MasterProductTranslationRepo masterProductTranslationRepo,
                                LanguageRepo languageRepo,
+                               StockItemRepo stockItemRepo,
                                UserRepository userRepository) {
         super(userRepository);
         this.masterProductRepo = masterProductRepo;
@@ -53,6 +57,7 @@ public class MasterProductService extends BaseSecurityService {
         this.pharmacyProductRepo = pharmacyProductRepo;
         this.masterProductTranslationRepo = masterProductTranslationRepo;
         this.languageRepo = languageRepo;
+        this.stockItemRepo = stockItemRepo;
     }
 
 
@@ -150,13 +155,17 @@ public class MasterProductService extends BaseSecurityService {
             throw new EntityNotFoundException("Master Product with ID " + id + " not found!") ;
         }
         
-        // التحقق من عدم وجود منتجات صيدلية مرتبطة بنفس الباركود
         MasterProduct masterProduct = masterProductRepo.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Master Product with ID " + id + " not found!"));
         
-        // التحقق من وجود منتجات صيدلية تستخدم نفس الباركود
+        // Check if there are pharmacy products using the same barcode
         if (pharmacyProductRepo.existsByBarcode(masterProduct.getBarcode())) {
             throw new ConflictException("Cannot delete master product. There are pharmacy products using the same barcode: " + masterProduct.getBarcode());
+        }
+        
+        // Check if there are stock items for this master product in any pharmacy
+        if (stockItemRepo.existsByProductIdAndProductType(id, ProductType.MASTER)) {
+            throw new ConflictException("Cannot delete master product. It has stock items in pharmacies. Please remove all stock items first.");
         }
         
         masterProductRepo.deleteById(id);
@@ -177,25 +186,39 @@ public class MasterProductService extends BaseSecurityService {
     }
 
     
-    public MProductDTOResponse updateMasterProductMinStockLevel(Long id, Integer minStockLevel, String lang) {
+        public MProductDTOResponse updateMasterProductMinStockLevel(Long id, Integer minStockLevel, String lang) {
        User currentUser = getCurrentUser();
        if (!(currentUser instanceof Employee)) {
         throw new UnAuthorizedException("Only pharmacy employees can update master products");
        }
-       
+
         MasterProduct product = masterProductRepo.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Master Product with ID " + id + " not found"));
-        
+
         if (minStockLevel != null && minStockLevel < 0) {
             throw new ConflictException("Minimum stock level must be greater than or equal to 0");
         }
-        
+
         product.setMinStockLevel(minStockLevel);
-        product.setLastModifiedBy(currentUser.getId()); 
+        product.setLastModifiedBy(currentUser.getId());
         product.setUpdatedAt(java.time.LocalDateTime.now());
-        
+
         MasterProduct saved = masterProductRepo.save(product);
         return masterProductMapper.toResponse(saved, lang);
+    }
+    
+    public void updateMasterProductMinStockLevelFromPurchaseInvoice(Long masterProductId, Integer minStockLevel) {
+        MasterProduct product = masterProductRepo.findById(masterProductId)
+                .orElseThrow(() -> new EntityNotFoundException("Master Product with ID " + masterProductId + " not found"));
+
+        if (minStockLevel != null && minStockLevel < 0) {
+            throw new ConflictException("Minimum stock level must be greater than or equal to 0");
+        }
+
+        product.setMinStockLevel(minStockLevel);
+        product.setUpdatedAt(java.time.LocalDateTime.now());
+        
+        masterProductRepo.save(product);
     }
 
 }

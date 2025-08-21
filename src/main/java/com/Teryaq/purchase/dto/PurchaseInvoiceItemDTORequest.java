@@ -7,20 +7,19 @@ import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.Data;
 
 @Data
-@Schema(description = "Purchase Invoice Item Request", example = """
-{
-  "productId": 1,
-  "receivedQty": 100,
-  "bonusQty": 10,
-  "invoicePrice": 5.50,
-  "batchNo": "BATCH001",
-  "invoiceNumber": "INV-2024-001",
-  "expiryDate": "2025-12-31",
-  "productType": "PHARMACY",
-  "sellingPrice": 8.50,
-  "minStockLevel": 10
-}
-""")
+    @Schema(description = "Purchase Invoice Item Request", example = """
+    {
+      "productId": 1,
+      "receivedQty": 100,
+      "bonusQty": 10,
+      "invoicePrice": 5.50,
+      "batchNo": "BATCH001",
+      "expiryDate": "2025-12-31",
+      "productType": "PHARMACY",
+      "sellingPrice": 8.50,
+      "minStockLevel": 10
+    }
+    """)
 public class PurchaseInvoiceItemDTORequest {
     
     @Schema(description = "Product ID", example = "1")

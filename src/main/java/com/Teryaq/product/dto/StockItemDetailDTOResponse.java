@@ -25,12 +25,13 @@ public class StockItemDetailDTOResponse {
     
     // Stock Information
     private Integer currentStock;
-    private Integer minStockLevel; 
+   // private Integer minStockLevel; 
     private Double actualPurchasePrice; 
     private Double totalValue; 
     
     // Product Information
     private List<String> categories;
+    private Boolean requiresPrescription;
     private String supplier;
     
     @JsonFormat(pattern = "yyyy-MM-dd")

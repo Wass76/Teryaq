@@ -23,6 +23,7 @@ public class CustomerMapper {
                 .phoneNumber(customer.getPhoneNumber())
                 .address(customer.getAddress())
                 .pharmacyId(customer.getPharmacy() != null ? customer.getPharmacy().getId() : null)
+                .notes(customer.getNotes())
                 .build();
 
         // حساب إجمالي الديون والمبالغ المدفوعة
@@ -87,7 +88,7 @@ public class CustomerMapper {
         customer.setName(name);
         customer.setPhoneNumber(dto.getPhoneNumber());
         customer.setAddress(dto.getAddress());
-        
+        customer.setNotes(dto.getNotes());
         return customer;
     }
 
@@ -98,5 +99,6 @@ public class CustomerMapper {
         customer.setName(name);
         customer.setPhoneNumber(dto.getPhoneNumber());
         customer.setAddress(dto.getAddress());
+        customer.setNotes(dto.getNotes());
     }
 }

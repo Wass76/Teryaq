@@ -34,6 +34,9 @@ public class Customer extends AuditedEntity{
     @Column(nullable = true)
     private String address;
 
+    @Column(nullable = true)
+    private String notes;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "pharmacy_id", nullable = false)
     private Pharmacy pharmacy;

@@ -11,13 +11,19 @@ import com.Teryaq.product.entity.MasterProduct;
 import com.Teryaq.user.entity.Supplier;
 import com.Teryaq.product.entity.PharmacyProductTranslation;
 import com.Teryaq.product.entity.MasterProductTranslation;
+import com.Teryaq.product.repo.StockItemRepo;
 import org.springframework.stereotype.Component;
+import org.springframework.beans.factory.annotation.Autowired;
 import java.util.List;
 import java.util.stream.Collectors;
 import com.Teryaq.product.Enum.ProductType;
 
 @Component
 public class PurchaseInvoiceMapper {
+    
+    @Autowired
+    private StockItemRepo stockItemRepo;
+    
     public PurchaseInvoice toEntity(PurchaseInvoiceDTORequest dto, Supplier supplier, List<PurchaseInvoiceItem> items) {
         PurchaseInvoice invoice = new PurchaseInvoice();
         invoice.setPurchaseOrder(null); // Set in service if needed
@@ -105,16 +111,34 @@ public class PurchaseInvoiceMapper {
         // Set refSellingPrice and minStockLevel based on product type
         if (item.getProductType() == ProductType.PHARMACY && pharmacyProduct != null) {
             dto.setRefSellingPrice((double) pharmacyProduct.getRefSellingPrice());
-            dto.setMinStockLevel(pharmacyProduct.getMinStockLevel());
+            // Use minStockLevel from StockItem if available, otherwise from product
+            dto.setMinStockLevel(getMinStockLevelFromStockItem(item.getProductId(), item.getProductType()) != null ? 
+                getMinStockLevelFromStockItem(item.getProductId(), item.getProductType()) : 
+                pharmacyProduct.getMinStockLevel());
         } else if (item.getProductType() == ProductType.MASTER && masterProduct != null) {
             dto.setRefSellingPrice((double) masterProduct.getRefSellingPrice());
-            // TODO: Implement minStockLevel for MASTER type products after fixing related issues
-            dto.setMinStockLevel(null);
+            // Use minStockLevel from StockItem if available, otherwise from product
+            dto.setMinStockLevel(getMinStockLevelFromStockItem(item.getProductId(), item.getProductType()) != null ? 
+                getMinStockLevelFromStockItem(item.getProductId(), item.getProductType()) : 
+                masterProduct.getMinStockLevel());
         } else {
             dto.setRefSellingPrice(null);
             dto.setMinStockLevel(null);
         }
         
         return dto;
+    }
+    
+    // Helper method to get minStockLevel from StockItem
+    private Integer getMinStockLevelFromStockItem(Long productId, ProductType productType) {
+        try {
+            // Find the most recent StockItem for this product
+            List<com.Teryaq.product.entity.StockItem> stockItems = stockItemRepo.findByProductIdAndProductTypeOrderByDateAddedDesc(productId, productType);
+            if (!stockItems.isEmpty()) {
+                return stockItems.get(0).getMinStockLevel();
+            }
+        } catch (Exception e) {
+        }
+        return null;
     }
 } 

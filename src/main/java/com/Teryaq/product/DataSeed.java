@@ -232,10 +232,13 @@ public class DataSeed {
 
     private void seedCustomers() {
         try {
-            if (customerRepository.count() == 0) {
-                // Get the pharmacy first
-                Pharmacy pharmacy = pharmacyRepository.findAll().get(0);
-                
+            // Get the pharmacy first
+            Pharmacy pharmacy = pharmacyRepository.findAll().get(0);
+            
+            // Always ensure cash customer exists
+            ensureCashCustomerExists(pharmacy);
+            
+            if (customerRepository.count() == 1) { // Only cash customer exists
                 List<Customer> customers = List.of(
                     createCustomer("أحمد محمد", "0991111111", "دمشق - المزة", pharmacy),
                     createCustomer("فاطمة علي", "0992222222", "دمشق - باب شرقي", pharmacy),
@@ -244,13 +247,51 @@ public class DataSeed {
                     createCustomer("علي محمود", "0995555555", "دمشق - الميدان", pharmacy)
                 );
                 customerRepository.saveAll(customers);
-                logger.info("✅ Customers seeded");
+                logger.info("✅ Additional customers seeded");
+            } else if (customerRepository.count() == 0) {
+                // No customers exist, create all including cash customer
+                List<Customer> customers = List.of(
+                    createCashCustomer(pharmacy),  // Cash Customer for direct sales
+                    createCustomer("أحمد محمد", "0991111111", "دمشق - المزة", pharmacy),
+                    createCustomer("فاطمة علي", "0992222222", "دمشق - باب شرقي", pharmacy),
+                    createCustomer("محمد حسن", "0993333333", "دمشق - أبو رمانة", pharmacy),
+                    createCustomer("عائشة أحمد", "0994444444", "دمشق - القابون", pharmacy),
+                    createCustomer("علي محمود", "0995555555", "دمشق - الميدان", pharmacy)
+                );
+                customerRepository.saveAll(customers);
+                logger.info("✅ All customers seeded including cash customer");
             } else {
-                logger.info("Customers already exist, skipping seeding");
+                // Customers exist, but still ensure cash customer exists
+                ensureCashCustomerExists(pharmacy);
+                logger.info("Customers already exist, ensuring cash customer exists");
             }
         } catch (Exception e) {
             logger.error("Error seeding customers: {}", e.getMessage());
         }
+    }
+    
+    private void ensureCashCustomerExists(Pharmacy pharmacy) {
+        try {
+            // Check if cash customer already exists
+            if (!customerRepository.findByNameAndPharmacyId("cash customer", pharmacy.getId()).isPresent()) {
+                Customer cashCustomer = createCashCustomer(pharmacy);
+                customerRepository.save(cashCustomer);
+                logger.info("✅ Cash customer created for pharmacy: {}", pharmacy.getName());
+            } else {
+                logger.info("Cash customer already exists for pharmacy: {}", pharmacy.getName());
+            }
+        } catch (Exception e) {
+            logger.error("Error ensuring cash customer exists: {}", e.getMessage());
+        }
+    }
+    
+    private Customer createCashCustomer(Pharmacy pharmacy) {
+        Customer cashCustomer = new Customer();
+        cashCustomer.setName("cash customer");
+        cashCustomer.setPhoneNumber(null);  // لا يوجد رقم هاتف
+        cashCustomer.setAddress(null);      // لا يوجد عنوان
+        cashCustomer.setPharmacy(pharmacy);
+        return cashCustomer;
     }
     
     private Customer createCustomer(String name, String phoneNumber, String address, Pharmacy pharmacy) {

@@ -4,6 +4,7 @@ import com.Teryaq.product.entity.StockItem;
 import com.Teryaq.product.Enum.ProductType;
 import com.Teryaq.product.dto.StockItemDTOResponse;
 import com.Teryaq.product.dto.StockItemDetailDTOResponse;
+import com.Teryaq.product.dto.StockProductOverallDTOResponse;
 import com.Teryaq.product.repo.StockItemRepo;
 import com.Teryaq.user.repository.UserRepository;
 import com.Teryaq.user.service.BaseSecurityService;
@@ -20,8 +21,10 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.HashMap;
+import java.util.Objects;
 import com.Teryaq.product.mapper.StockItemMapper;
 import org.springframework.context.annotation.Lazy;
+import java.util.stream.Collectors;
 
 @Service
 @Transactional
@@ -218,11 +221,25 @@ public class StockService extends BaseSecurityService {
         List<StockItem> stockItems = stockItemRepo.findByPharmacyId(currentPharmacyId);
         return stockItemMapper.toResponseList(stockItems);
     }
-
-    public List<StockItemDTOResponse> getAllStockItemsWithProductInfo() {
-        List<StockItem> stockItems = stockItemRepo.findByPharmacyId(getCurrentUserPharmacyId());
-        return stockItemMapper.toResponseList(stockItems);
+    
+    public List<StockProductOverallDTOResponse> getAllStockProductsOverall() {
+        Long currentPharmacyId = getCurrentUserPharmacyId();
+        List<Object[]> uniqueProducts = stockItemRepo.findUniqueProductsCombined(currentPharmacyId);
+        
+        return uniqueProducts.stream()
+            .map(productData -> {
+                Long productId = (Long) productData[0];
+                ProductType productType = (ProductType) productData[1];
+                
+                List<StockItem> stockItems = stockItemRepo.findByProductIdAndProductTypeAndPharmacyId(productId, productType, currentPharmacyId);
+                
+                return stockItemMapper.toProductSummary(productId, productType, stockItems, currentPharmacyId);
+            })
+            .filter(Objects::nonNull)
+            .collect(Collectors.toList());
     }
+
+
 
     public boolean isQuantityAvailable(Long productId, Integer requiredQuantity, ProductType productType) {
         Integer availableQuantity = stockItemRepo.getTotalQuantity(productId, getCurrentUserPharmacyId(), productType);
@@ -230,17 +247,27 @@ public class StockService extends BaseSecurityService {
     }
     
     
-    public Map<String, Object> getProductStockDetails(Long productId) {
+    public Map<String, Object> getProductStockDetails(Long productId, ProductType productType) {
         Long currentPharmacyId = getCurrentUserPharmacyId();
-        List<StockItem> stockItems = stockItemRepo.findByProductIdAndPharmacyId(productId, currentPharmacyId);
+        List<StockItem> stockItems = stockItemRepo.findByProductIdAndProductTypeAndPharmacyId(productId, productType, currentPharmacyId);
         
+        if (stockItems.isEmpty()) {
+            throw new EntityNotFoundException("No stock items found for this product");
+        }
+        StockItem firstStockItem = stockItems.get(0);
+        Integer minStockLevel = firstStockItem.getMinStockLevel();
+
         Map<String, Object> details = new HashMap<>();
         details.put("productId", productId);
+        details.put("productType", productType);
         details.put("totalQuantity", stockItems.stream().mapToInt(StockItem::getQuantity).sum());
+        details.put("minStockLevel", minStockLevel);
         details.put("stockItems", stockItemMapper.toResponseList(stockItems));
         
         return details;
     }
+    
+
     
     public StockItemDetailDTOResponse getStockItemDetail(Long stockItemId) {
         Long currentPharmacyId = getCurrentUserPharmacyId();
