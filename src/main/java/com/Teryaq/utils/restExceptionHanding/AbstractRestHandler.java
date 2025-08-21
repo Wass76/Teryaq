@@ -5,6 +5,7 @@ import jakarta.persistence.EntityExistsException;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageConversionException;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
@@ -112,8 +113,8 @@ public class AbstractRestHandler {
         return new ResponseEntity<>(apiException,notFound);
     }
 
-    @ExceptionHandler(value = {HttpMessageNotReadableException.class})
-    public ResponseEntity<Object> handleHttpMessageNotReadableException(HttpMessageNotReadableException e){
+    @ExceptionHandler(value = {HttpMessageConversionException.class})
+    public ResponseEntity<Object> handleHttpMessageConversionException(HttpMessageConversionException e){
         HttpStatus badRequest = HttpStatus.BAD_REQUEST;
         ApiException apiException = new ApiException(
                 e.getMessage(),
