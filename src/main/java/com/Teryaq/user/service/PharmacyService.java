@@ -92,10 +92,8 @@ public class PharmacyService {
         Role managerRole = roleRepository.findByName(RoleConstants.PHARMACY_MANAGER).orElseThrow();
         Employee manager = new Employee();
 
-        // Remove spaces from licenseNumber and pharmacyName for email
-        String cleanLicenseNumber = dto.getLicenseNumber().replaceAll("\\s+", "");
-        String cleanPharmacyName = dto.getPharmacyName().replaceAll("\\s+", "");
-        String managerEmail = "manager." + cleanLicenseNumber + "@" + cleanPharmacyName + ".com";
+        // Generate professional manager email using @teryaq domain
+        String managerEmail = generateManagerEmail(dto, pharmacy);
         logger.info("Generated manager email: " + managerEmail);
 
         manager.setEmail(managerEmail);
@@ -110,6 +108,139 @@ public class PharmacyService {
         
         logger.info("Pharmacy creation completed successfully");
         return PharmacyMapper.toResponseDTO(pharmacy, manager);
+    }
+
+    /**
+     * Generates a professional manager email using the @teryaq domain
+     * @param dto Pharmacy creation request
+     * @param pharmacy The created pharmacy entity
+     * @return Unique professional email address
+     */
+    private String generateManagerEmail(PharmacyCreateRequestDTO dto, Pharmacy pharmacy) {
+        // Convert Arabic pharmacy name to English transliteration for email generation
+        String transliteratedName = transliterateArabicToEnglish(dto.getPharmacyName());
+        
+        // Clean transliterated name for email generation
+        String cleanPharmacyName = transliteratedName
+            .replaceAll("[^a-zA-Z0-9]", "")
+            .toLowerCase();
+        
+        // Clean license number for email generation (shorter version for uniqueness)
+        String cleanLicenseNumber = dto.getLicenseNumber()
+            .replaceAll("[^a-zA-Z0-9]", "")
+            .toLowerCase();
+        
+        // Use first 4 characters of license number to ensure uniqueness
+        String licenseSuffix = cleanLicenseNumber.length() > 4 ? 
+            cleanLicenseNumber.substring(0, 4) : cleanLicenseNumber;
+        
+        // Generate base email - combining transliterated pharmacy name and license suffix for uniqueness
+        String baseEmail = "manager." + cleanPharmacyName + "." + licenseSuffix + "@teryaq.com";
+        
+        // Ensure email uniqueness (this will handle any remaining conflicts)
+        return ensureEmailUniqueness(baseEmail);
+    }
+    
+    /**
+     * Transliterates Arabic text to English for email generation
+     * @param arabicText The Arabic text to transliterate
+     * @return English transliteration
+     */
+    private String transliterateArabicToEnglish(String arabicText) {
+        if (arabicText == null || arabicText.trim().isEmpty()) {
+            return "pharmacy";
+        }
+        
+        // Common Arabic pharmacy names and their English equivalents
+        String transliterated = arabicText
+            // Common pharmacy prefixes
+            .replaceAll("صيدلية\\s*", "pharmacy") // صيدلية -> pharmacy
+            .replaceAll("صيدلية", "pharmacy")
+            .replaceAll("صيدليات\\s*", "pharmacies") // صيدليات -> pharmacies
+            .replaceAll("صيدليات", "pharmacies")
+            
+            // Common Arabic words
+            .replaceAll("ال", "al") // ال -> al (the)
+            .replaceAll("بن", "bin") // بن -> bin (son of)
+            .replaceAll("أبو", "abu") // أبو -> abu (father of)
+            .replaceAll("أم", "um") // أم -> um (mother of)
+            
+            // Common Arabic letters transliteration
+            .replaceAll("أ", "a")
+            .replaceAll("إ", "i")
+            .replaceAll("آ", "aa")
+            .replaceAll("ع", "a")
+            .replaceAll("غ", "gh")
+            .replaceAll("ح", "h")
+            .replaceAll("خ", "kh")
+            .replaceAll("ق", "q")
+            .replaceAll("ف", "f")
+            .replaceAll("ث", "th")
+            .replaceAll("ص", "s")
+            .replaceAll("ض", "d")
+            .replaceAll("ط", "t")
+            .replaceAll("ك", "k")
+            .replaceAll("م", "m")
+            .replaceAll("ن", "n")
+            .replaceAll("ه", "h")
+            .replaceAll("و", "w")
+            .replaceAll("ي", "y")
+            .replaceAll("ة", "a")
+            .replaceAll("ى", "a")
+            
+            // Remove remaining Arabic characters and special symbols
+            .replaceAll("[\\u0600-\\u06FF]", "") // Remove all Arabic Unicode characters
+            .replaceAll("[^a-zA-Z0-9\\s]", "") // Remove special characters except spaces
+            .trim();
+        
+        // If transliteration resulted in empty string, use fallback
+        if (transliterated.isEmpty() || transliterated.matches("\\s*")) {
+            return "pharmacy";
+        }
+        
+        // Clean up multiple spaces and convert to single words
+        transliterated = transliterated.replaceAll("\\s+", "");
+        
+        return transliterated;
+    }
+    
+    /**
+     * Ensures email uniqueness by appending numbers if needed
+     * @param baseEmail The base email to check
+     * @return Unique email address
+     */
+    private String ensureEmailUniqueness(String baseEmail) {
+        String email = baseEmail;
+        int counter = 1;
+        
+        while (isEmailExists(email)) {
+            // Extract username and domain parts
+            String[] parts = baseEmail.split("@");
+            String username = parts[0];
+            String domain = parts[1];
+            
+            // Append counter to username
+            email = username + counter + "@" + domain;
+            counter++;
+            
+            // Prevent infinite loop (safety check)
+            if (counter > 1000) {
+                logger.severe("Unable to generate unique email after 1000 attempts for base: " + baseEmail);
+                throw new RuntimeException("Unable to generate unique email. Please contact support.");
+            }
+        }
+        
+        return email;
+    }
+    
+    /**
+     * Checks if an email already exists in the system
+     * @param email The email to check
+     * @return true if email exists, false otherwise
+     */
+    private boolean isEmailExists(String email) {
+        return userRepository.findByEmail(email).isPresent() || 
+               employeeRepository.findByEmail(email).isPresent();
     }
 
     @Transactional

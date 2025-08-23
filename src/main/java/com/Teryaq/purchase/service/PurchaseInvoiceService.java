@@ -25,6 +25,7 @@ import com.Teryaq.user.repository.SupplierRepository;
 import com.Teryaq.user.service.BaseSecurityService;
 import com.Teryaq.utils.exception.ConflictException;
 import com.Teryaq.utils.exception.ResourceNotFoundException;
+import com.Teryaq.moneybox.service.MoneyBoxIntegrationService;
 import jakarta.transaction.Transactional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -50,6 +51,7 @@ public class PurchaseInvoiceService extends BaseSecurityService {
     private final PurchaseInvoiceMapper purchaseInvoiceMapper;
     private final StockItemRepo stockItemRepo;
     private final MasterProductRepo masterProductRepo;
+    private final MoneyBoxIntegrationService moneyBoxIntegrationService;
 
     public PurchaseInvoiceService(PurchaseInvoiceRepo purchaseInvoiceRepo,
                                 PurchaseInvoiceItemRepo purchaseInvoiceItemRepo,
@@ -59,6 +61,7 @@ public class PurchaseInvoiceService extends BaseSecurityService {
                                 PurchaseInvoiceMapper purchaseInvoiceMapper,
                                 StockItemRepo stockItemRepo,
                                 MasterProductRepo masterProductRepo,
+                                MoneyBoxIntegrationService moneyBoxIntegrationService,
                                 com.Teryaq.user.repository.UserRepository userRepository) {
         super(userRepository);
         this.purchaseInvoiceRepo = purchaseInvoiceRepo;
@@ -69,6 +72,7 @@ public class PurchaseInvoiceService extends BaseSecurityService {
         this.purchaseInvoiceMapper = purchaseInvoiceMapper;
         this.stockItemRepo = stockItemRepo;
         this.masterProductRepo = masterProductRepo;
+        this.moneyBoxIntegrationService = moneyBoxIntegrationService;
     }
 
     @Transactional
@@ -148,6 +152,23 @@ public class PurchaseInvoiceService extends BaseSecurityService {
         invoice.setTotal(total);
         
         PurchaseInvoice saved = purchaseInvoiceRepo.save(invoice);
+        
+        // Integrate with Money Box for cash payments (if payment method changed to cash)
+        if (request.getPaymentMethod() == com.Teryaq.product.Enum.PaymentMethod.CASH) {
+            try {
+                moneyBoxIntegrationService.recordCashPurchase(
+                    java.math.BigDecimal.valueOf(saved.getTotal()),
+                    request.getCurrency().toString(),
+                    saved.getId(),
+                    "INV-" + saved.getId() // Use ID as reference number
+                );
+                logger.info("Cash purchase recorded in Money Box for edited invoice: {}", saved.getId());
+            } catch (Exception e) {
+                logger.warn("Failed to record cash purchase in Money Box for edited invoice {}: {}", 
+                           saved.getId(), e.getMessage());
+                // Don't fail the edit if Money Box integration fails
+            }
+        }
         
         // Get products for response mapping
         List<PharmacyProduct> pharmacyProducts = getPharmacyProducts(saved);
@@ -304,6 +325,23 @@ public class PurchaseInvoiceService extends BaseSecurityService {
         
         PurchaseInvoice saved = purchaseInvoiceRepo.save(invoice);
         saveInvoiceItems(saved);
+        
+        // Integrate with Money Box for cash payments
+        if (request.getPaymentMethod() == com.Teryaq.product.Enum.PaymentMethod.CASH) {
+            try {
+                moneyBoxIntegrationService.recordCashPurchase(
+                    java.math.BigDecimal.valueOf(saved.getTotal()),
+                    request.getCurrency().toString(),
+                    saved.getId(),
+                    "INV-" + saved.getId() // Use ID as reference number
+                );
+                logger.info("Cash purchase recorded in Money Box for invoice: {}", saved.getId());
+            } catch (Exception e) {
+                logger.warn("Failed to record cash purchase in Money Box for invoice {}: {}", 
+                           saved.getId(), e.getMessage());
+                // Don't fail the purchase if Money Box integration fails
+            }
+        }
         
         return purchaseInvoiceRepo.findById(saved.getId()).orElse(saved);
     }

@@ -25,6 +25,9 @@ import com.fasterxml.jackson.annotation.JsonFormat;
 @Table(name = "sale_invoices")
 public class SaleInvoice extends AuditedEntity{
 
+    @Column(unique = true)
+    private String invoiceNumber;
+
     @ManyToOne
     @JoinColumn(name = "customer_id")
     private Customer customer;

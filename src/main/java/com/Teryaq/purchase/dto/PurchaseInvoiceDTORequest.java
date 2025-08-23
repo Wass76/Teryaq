@@ -1,6 +1,7 @@
 package com.Teryaq.purchase.dto;
 
 import com.Teryaq.user.Enum.Currency;
+import com.Teryaq.product.Enum.PaymentMethod;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 import java.util.List;
@@ -39,6 +40,11 @@ public class PurchaseInvoiceDTORequest {
     
     @Schema(description = "Invoice number (optional)", example = "INV-2024-001")
     private String invoiceNumber;
+    
+    // Payment method is optional and defaults to CASH if not specified
+    @Schema(description = "Payment method (optional, defaults to CASH)", example = "CASH",
+            allowableValues = {"CASH", "BANK_ACCOUNT", "CHECK"})
+    private PaymentMethod paymentMethod = PaymentMethod.CASH;
     
     @Schema(description = "List of invoice items")
     private List<PurchaseInvoiceItemDTORequest> items;

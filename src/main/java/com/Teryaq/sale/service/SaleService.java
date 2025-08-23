@@ -1,5 +1,6 @@
 package com.Teryaq.sale.service;
 
+import com.Teryaq.moneybox.service.MoneyBoxIntegrationService;
 import com.Teryaq.sale.dto.SaleInvoiceDTORequest;
 import com.Teryaq.sale.dto.SaleInvoiceDTOResponse;
 import com.Teryaq.sale.entity.SaleInvoice;
@@ -57,6 +58,8 @@ public class SaleService extends BaseSecurityService {
     private CustomerDebtRepository customerDebtRepository;
     @Autowired
     private StockItemMapper stockItemMapper;
+    @Autowired
+    private MoneyBoxIntegrationService moneyBoxIntegrationService;
 
     @Autowired
     private SaleMapper saleMapper;
@@ -71,6 +74,7 @@ public class SaleService extends BaseSecurityService {
                       CustomerDebtRepository customerDebtRepository,
                       SaleMapper saleMapper,
                       StockItemMapper stockItemMapper,
+                      MoneyBoxIntegrationService moneyBoxIntegrationService,
                       com.Teryaq.user.repository.UserRepository userRepository) {
         super(userRepository);
         this.saleInvoiceRepository = saleInvoiceRepository;
@@ -83,6 +87,7 @@ public class SaleService extends BaseSecurityService {
         this.customerDebtRepository = customerDebtRepository;
         this.saleMapper = saleMapper;
         this.stockItemMapper = stockItemMapper;
+        this.moneyBoxIntegrationService = moneyBoxIntegrationService;
     }
 
     @Transactional
@@ -104,6 +109,10 @@ public class SaleService extends BaseSecurityService {
         }
         
         SaleInvoice invoice = saleMapper.toEntityWithCustomerAndDate(requestDTO, customer, currentPharmacy);
+        
+        // Generate invoice number
+        String invoiceNumber = "INV-" + System.currentTimeMillis() + "-" + currentPharmacy.getId();
+        invoice.setInvoiceNumber(invoiceNumber);
         
         List<Long> stockItemIds = requestDTO.getItems().stream()
             .map(SaleInvoiceItemDTORequest::getStockItemId)
@@ -182,6 +191,23 @@ public class SaleService extends BaseSecurityService {
         
         SaleInvoice savedInvoice = saleInvoiceRepository.save(invoice);
         saleInvoiceItemRepository.saveAll(items);
+        
+        // Integrate with Money Box for cash payments
+        if (requestDTO.getPaymentMethod() == com.Teryaq.product.Enum.PaymentMethod.CASH) {
+            try {
+                moneyBoxIntegrationService.recordCashSale(
+                    java.math.BigDecimal.valueOf(savedInvoice.getTotalAmount()),
+                    requestDTO.getCurrency().toString(),
+                    savedInvoice.getId(),
+                    "INV-" + savedInvoice.getId() // Use ID instead of invoice number
+                );
+                logger.info("Cash sale recorded in Money Box for invoice: {}", savedInvoice.getId());
+            } catch (Exception e) {
+                logger.warn("Failed to record cash sale in Money Box for invoice {}: {}", 
+                           savedInvoice.getId(), e.getMessage());
+                // Don't fail the sale if Money Box integration fails
+            }
+        }
         
         if (customer != null && remainingAmount > 0) {
             createCustomerDebt(customer, remainingAmount, savedInvoice);
