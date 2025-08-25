@@ -2,41 +2,67 @@ package com.Teryaq.user.service;
 
 import com.Teryaq.user.dto.CustomerDebtDTORequest;
 import com.Teryaq.user.dto.CustomerDebtDTOResponse;
+import com.Teryaq.user.dto.PayCustomerDebtsRequest;
+import com.Teryaq.user.dto.PayCustomerDebtsResponse;
 import com.Teryaq.user.dto.PayDebtDTORequest;
 import com.Teryaq.user.entity.Customer;
 import com.Teryaq.user.entity.CustomerDebt;
 import com.Teryaq.user.mapper.CustomerDebtMapper;
 import com.Teryaq.user.repository.CustomerDebtRepository;
 import com.Teryaq.user.repository.CustomerRepo;
+import com.Teryaq.user.repository.UserRepository;
 import com.Teryaq.utils.exception.ResourceNotFoundException;
 import com.Teryaq.utils.exception.ConflictException;
+import com.Teryaq.product.Enum.PaymentMethod;
+import com.Teryaq.moneybox.service.MoneyBoxIntegrationService;
+import com.Teryaq.utils.exception.UnAuthorizedException;
+    
 
-import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
-@RequiredArgsConstructor
-public class CustomerDebtService {
+public class CustomerDebtService extends BaseSecurityService {
+
+    private static final Logger logger = LoggerFactory.getLogger(CustomerDebtService.class);
 
     private final CustomerDebtRepository customerDebtRepository;
     private final CustomerRepo customerRepo;
     private final CustomerDebtMapper customerDebtMapper;
+    private final MoneyBoxIntegrationService moneyBoxIntegrationService;
 
-    /**
-     * إنشاء دين جديد للعميل
-     */
+    public CustomerDebtService(CustomerDebtRepository customerDebtRepository,
+                       CustomerRepo customerRepo,
+                       CustomerDebtMapper customerDebtMapper,
+                       MoneyBoxIntegrationService moneyBoxIntegrationService,
+                       UserRepository userRepository) {
+        super(userRepository);
+        this.customerDebtRepository = customerDebtRepository;
+        this.customerRepo = customerRepo;
+        this.customerDebtMapper = customerDebtMapper;
+        this.moneyBoxIntegrationService = moneyBoxIntegrationService;
+    }
+
     @Transactional
     public CustomerDebtDTOResponse createDebt(CustomerDebtDTORequest request) {
+       Long currentPharmacyId = getCurrentUserPharmacyId();
         validateDebtRequest(request);
         
         Customer customer = customerRepo.findById(request.getCustomerId())
                 .orElseThrow(() -> new ResourceNotFoundException("Customer not found with ID: " + request.getCustomerId()));
+
+        if (customer.getPharmacy().getId() != currentPharmacyId) {
+            throw new UnAuthorizedException("You are not authorized to create debt for this customer");
+        }
 
         CustomerDebt debt = customerDebtMapper.toEntity(request);
         debt.setCustomer(customer);
@@ -48,56 +74,63 @@ public class CustomerDebtService {
         return customerDebtMapper.toResponse(savedDebt);
     }
 
-    /**
-     * الحصول على ديون العميل
-     */
+ 
     public List<CustomerDebtDTOResponse> getCustomerDebts(Long customerId) {
+        Long currentPharmacyId = getCurrentUserPharmacyId();
         validateCustomerExists(customerId);
         List<CustomerDebt> debts = customerDebtRepository.findByCustomerIdOrderByCreatedAtDesc(customerId);
+        if (debts.isEmpty()) {
+            throw new ResourceNotFoundException("No debts found for customer with ID: " + customerId);
+        }
+
+        if (!debts.stream().allMatch(debt -> debt.getCustomer().getPharmacy().getId() == currentPharmacyId)) {
+            throw new UnAuthorizedException("You are not authorized to access debts for this customer");
+        }
         return debts.stream()
                 .map(customerDebtMapper::toResponse)
                 .collect(Collectors.toList());
     }
 
-    /**
-     * الحصول على ديون العميل حسب الحالة
-     */
     public List<CustomerDebtDTOResponse> getCustomerDebtsByStatus(Long customerId, String status) {
+        Long currentPharmacyId = getCurrentUserPharmacyId();
         validateCustomerExists(customerId);
         validateStatus(status);
         
         List<CustomerDebt> debts = customerDebtRepository.findByCustomerIdAndStatusOrderByCreatedAtDesc(customerId, status);
+        if(debts.isEmpty()){
+            throw new ResourceNotFoundException("No debts found for customer with ID: " + customerId);
+        }
+        if(!debts.stream().allMatch(debt -> debt.getCustomer().getPharmacy().getId() == currentPharmacyId)){
+            throw new UnAuthorizedException("You are not authorized to access debts for this customer");
+        }
         return debts.stream()
                 .map(customerDebtMapper::toResponse)
                 .collect(Collectors.toList());
     }
 
-    /**
-     * الحصول على دين محدد
-     */
+
     public CustomerDebtDTOResponse getDebtById(Long debtId) {
+        Long currentPharmacyId = getCurrentUserPharmacyId();    
         CustomerDebt debt = customerDebtRepository.findById(debtId)
                 .orElseThrow(() -> new ResourceNotFoundException("Debt not found with ID: " + debtId));
+            if (debt.getCustomer().getPharmacy().getId() != currentPharmacyId) {
+                throw new UnAuthorizedException("You are not authorized to access this debt");
+            }
         return customerDebtMapper.toResponse(debt);
     }
 
-    /**
-     * الحصول على إجمالي ديون العميل
-     */
-    public Float getCustomerTotalDebt(Long customerId) {
-        validateCustomerExists(customerId);
-        return customerDebtRepository.getTotalDebtByCustomerId(customerId).floatValue();
-    }
-
-    /**
-     * دفع الدين
-     */
     @Transactional
     public CustomerDebtDTOResponse payDebt(PayDebtDTORequest request) {
+        Long currentPharmacyId = getCurrentUserPharmacyId();
         validatePaymentRequest(request);
         
+
         CustomerDebt debt = customerDebtRepository.findById(request.getDebtId())
                 .orElseThrow(() -> new ResourceNotFoundException("Debt not found with ID: " + request.getDebtId()));
+
+        if (debt.getCustomer().getPharmacy().getId() != currentPharmacyId) {
+            throw new UnAuthorizedException("You are not authorized to pay this debt");
+        }
 
         if ("PAID".equals(debt.getStatus())) {
             throw new ConflictException("Debt is already paid");
@@ -107,13 +140,13 @@ public class CustomerDebtService {
         Float newPaidAmount = debt.getPaidAmount() + paymentAmount;
         Float newRemainingAmount = debt.getAmount() - newPaidAmount;
 
-        // التحقق من أن المبلغ المدفوع لا يتجاوز الدين
         if (newPaidAmount > debt.getAmount()) {
             throw new ConflictException("Payment amount cannot exceed debt amount");
         }
 
         debt.setPaidAmount(newPaidAmount);
         debt.setRemainingAmount(newRemainingAmount);
+        debt.setPaymentMethod(request.getPaymentMethod());
 
         if (newRemainingAmount <= 0) {
             debt.setStatus("PAID");
@@ -122,75 +155,96 @@ public class CustomerDebtService {
             debt.setStatus("OVERDUE");
         }
 
-        // إضافة ملاحظات الدفع
         if (StringUtils.hasText(request.getNotes())) {
             String paymentNote = "Payment: " + paymentAmount + " - " + request.getNotes();
             debt.setNotes(debt.getNotes() != null ? debt.getNotes() + "\n" + paymentNote : paymentNote);
         }
 
         CustomerDebt savedDebt = customerDebtRepository.save(debt);
+        
+        // تسجيل العملية في الصندوق إذا كان الدفع نقدي
+        if (request.getPaymentMethod() == PaymentMethod.CASH) {
+            try {
+                // TODO: Integrate with MoneyBox for debt payment
+                moneyBoxIntegrationService.recordCashSale(
+                    BigDecimal.valueOf(paymentAmount),
+                    "SYP", 
+                    debt.getId(),
+                    "DEBT-" + debt.getId()
+                );
+            } catch (Exception e) {
+                logger.warn("Failed to record debt payment in MoneyBox: {}", e.getMessage());
+            }
+        }
+        
         return customerDebtMapper.toResponse(savedDebt);
     }
 
-    /**
-     * الحصول على الديون المتأخرة
-     */
+   
     public List<CustomerDebtDTOResponse> getOverdueDebts() {
-        List<CustomerDebt> overdueDebts = customerDebtRepository.getOverdueDebts();
+        Long currentPharmacyId = getCurrentUserPharmacyId();
+        List<CustomerDebt> overdueDebts = customerDebtRepository.getOverdueDebtsByPharmacyId(currentPharmacyId);
         return overdueDebts.stream()
                 .map(customerDebtMapper::toResponse)
                 .collect(Collectors.toList());
     }
 
-    /**
-     * الحصول على إجمالي الديون المتأخرة
-     */
+  
     public Float getTotalOverdueDebts() {
-        return customerDebtRepository.getTotalOverdueDebts().floatValue();
+        Long currentPharmacyId = getCurrentUserPharmacyId();
+        return customerDebtRepository.getTotalOverdueDebtsByPharmacyId(currentPharmacyId).floatValue();
     }
 
-    /**
-     * الحصول على الديون حسب الحالة
-     */
+
     public List<CustomerDebtDTOResponse> getDebtsByStatus(String status) {
+        Long currentPharmacyId = getCurrentUserPharmacyId();
         validateStatus(status);
         List<CustomerDebt> debts = customerDebtRepository.findByStatusOrderByCreatedAtDesc(status);
+        if (debts.isEmpty()) {
+            throw new ResourceNotFoundException("No debts found with status: " + status);
+        }
+        if (!debts.stream().allMatch(debt -> debt.getCustomer().getPharmacy().getId() == currentPharmacyId)) {
+            throw new UnAuthorizedException("You are not authorized to access debts with status: " + status);
+        }
         return debts.stream()
                 .map(customerDebtMapper::toResponse)
                 .collect(Collectors.toList());
     }
 
-    /**
-     * الحصول على الديون ضمن نطاق تاريخي
-     */
+ 
     public List<CustomerDebtDTOResponse> getDebtsByDateRange(LocalDate startDate, LocalDate endDate) {
-        List<CustomerDebt> allDebts = customerDebtRepository.findAll();
-        return allDebts.stream()
-                .filter(debt -> debt.getCreatedAt().toLocalDate().isAfter(startDate) && debt.getCreatedAt().toLocalDate().isBefore(endDate))
+        Long currentPharmacyId = getCurrentUserPharmacyId();
+        List<CustomerDebt> debts = customerDebtRepository.findByDateRangeAndPharmacyId(
+            startDate.atStartOfDay(), 
+            endDate.atTime(23, 59, 59), 
+            currentPharmacyId
+        );
+        return debts.stream()
                 .map(customerDebtMapper::toResponse)
                 .collect(Collectors.toList());
     }
 
-    /**
-     * الحصول على الديون ضمن نطاق مالي
-     */
+  
     public List<CustomerDebtDTOResponse> getDebtsByAmountRange(Float minAmount, Float maxAmount) {
-        List<CustomerDebt> allDebts = customerDebtRepository.findAll();
-        return allDebts.stream()
-                .filter(debt -> debt.getAmount() >= minAmount && debt.getAmount() <= maxAmount)
+        Long currentPharmacyId = getCurrentUserPharmacyId();
+        List<CustomerDebt> debts = customerDebtRepository.findByAmountRangeAndPharmacyId(minAmount, maxAmount, currentPharmacyId);
+        return debts.stream()
                 .map(customerDebtMapper::toResponse)
                 .collect(Collectors.toList());
     }
 
-    /**
-     * تحديث حالة الدين
-     */
+  
     @Transactional
     public CustomerDebtDTOResponse updateDebtStatus(Long debtId, String status) {
+       Long currentPharmacyId = getCurrentUserPharmacyId();
         validateStatus(status);
         
         CustomerDebt debt = customerDebtRepository.findById(debtId)
                 .orElseThrow(() -> new ResourceNotFoundException("Debt not found with ID: " + debtId));
+
+        if (debt.getCustomer().getPharmacy().getId() != currentPharmacyId) {
+            throw new UnAuthorizedException("You are not authorized to update this debt");
+        }
 
         debt.setStatus(status);
         
@@ -202,15 +256,17 @@ public class CustomerDebtService {
         return customerDebtMapper.toResponse(savedDebt);
     }
 
-    /**
-     * حذف الدين
-     */
+    
     @Transactional
     public void deleteDebt(Long debtId) {
+        Long currentPharmacyId = getCurrentUserPharmacyId();
         CustomerDebt debt = customerDebtRepository.findById(debtId)
                 .orElseThrow(() -> new ResourceNotFoundException("Debt not found with ID: " + debtId));
+
+        if (debt.getCustomer().getPharmacy().getId() != currentPharmacyId) {
+            throw new UnAuthorizedException("You are not authorized to delete this debt");
+        }
         
-        // منع حذف الديون المدفوعة
         if ("PAID".equals(debt.getStatus())) {
             throw new ConflictException("Cannot delete paid debt");
         }
@@ -218,20 +274,19 @@ public class CustomerDebtService {
         customerDebtRepository.delete(debt);
     }
 
-    /**
-     * الحصول على إحصائيات الديون
-     */
+  
     public DebtStatistics getDebtStatistics() {
-        List<CustomerDebt> allDebts = customerDebtRepository.findAll();
+        Long currentPharmacyId = getCurrentUserPharmacyId();
+        Object[] stats = customerDebtRepository.getDebtStatisticsByPharmacyId(currentPharmacyId);
         
-        long totalDebts = allDebts.size();
-        long activeDebts = allDebts.stream().filter(d -> "ACTIVE".equals(d.getStatus())).count();
-        long paidDebts = allDebts.stream().filter(d -> "PAID".equals(d.getStatus())).count();
-        long overdueDebts = allDebts.stream().filter(d -> "OVERDUE".equals(d.getStatus())).count();
+        long totalDebts = ((Number) stats[0]).longValue();
+        long activeDebts = ((Number) stats[1]).longValue();
+        long paidDebts = ((Number) stats[2]).longValue();
+        long overdueDebts = ((Number) stats[3]).longValue();
         
-        Float totalAmount = allDebts.stream().map(CustomerDebt::getAmount).reduce(0f, Float::sum);
-        Float totalPaid = allDebts.stream().map(CustomerDebt::getPaidAmount).reduce(0f, Float::sum);
-        Float totalRemaining = allDebts.stream().map(CustomerDebt::getRemainingAmount).reduce(0f, Float::sum);
+        Float totalAmount = ((Number) stats[4]).floatValue();
+        Float totalPaid = ((Number) stats[5]).floatValue();
+        Float totalRemaining = ((Number) stats[6]).floatValue();
         
         return DebtStatistics.builder()
                 .totalDebts(totalDebts)
@@ -270,6 +325,9 @@ public class CustomerDebtService {
         if (request.getPaymentAmount() == null || request.getPaymentAmount().floatValue() <= 0) {
             throw new IllegalArgumentException("Payment amount must be greater than zero");
         }
+        if (request.getPaymentMethod() == null) {
+            throw new IllegalArgumentException("Payment method is required");
+        }
     }
 
     private void validateCustomerExists(Long customerId) {
@@ -287,7 +345,124 @@ public class CustomerDebtService {
         }
     }
 
-    // Inner class for statistics
+    @Transactional
+    public PayCustomerDebtsResponse autoPayDebt(Long customerId, PayCustomerDebtsRequest request) {
+        Long currentPharmacyId = getCurrentUserPharmacyId();
+        
+        Customer customer = customerRepo.findById(customerId)
+                .orElseThrow(() -> new ResourceNotFoundException("Customer not found with ID: " + customerId));
+        
+        if (!customer.getPharmacy().getId().equals(currentPharmacyId)) {
+            throw new UnAuthorizedException("Customer does not belong to the current pharmacy");
+        }
+        
+        List<CustomerDebt> activeDebts = customerDebtRepository.findByCustomerIdAndStatusOrderByCreatedAtDesc(customerId, "ACTIVE");
+        if (activeDebts.isEmpty()) {
+            throw new ConflictException("No active debts found for this customer");
+        }
+        
+        List<CustomerDebt> sortedDebts = sortDebtsByStrategy(activeDebts, request.getPaymentStrategy());
+        
+        float remainingPaymentAmount = request.getTotalPaymentAmount().floatValue();
+        List<PayCustomerDebtsResponse.DebtPaymentDetail> paymentDetails = new ArrayList<>();
+        
+        for (CustomerDebt debt : sortedDebts) {
+            if (remainingPaymentAmount <= 0) break;
+            
+            float debtRemainingAmount = debt.getRemainingAmount();
+            float amountToPay = Math.min(remainingPaymentAmount, debtRemainingAmount);
+            
+            float newPaidAmount = debt.getPaidAmount() + amountToPay;
+            float newRemainingAmount = debtRemainingAmount - amountToPay;
+            
+            debt.setPaidAmount(newPaidAmount);
+            debt.setRemainingAmount(newRemainingAmount);
+            debt.setPaymentMethod(request.getPaymentMethod());
+            
+            if (newRemainingAmount <= 0) {
+                debt.setStatus("PAID");
+                debt.setPaidAt(LocalDate.now());
+            } else if (debt.getDueDate().isBefore(LocalDate.now())) {
+                debt.setStatus("OVERDUE");
+            }
+            
+            customerDebtRepository.save(debt);
+            
+            PayCustomerDebtsResponse.DebtPaymentDetail detail = PayCustomerDebtsResponse.DebtPaymentDetail.builder()
+                    .debtId(debt.getId())
+                    .originalAmount(debt.getAmount())
+                    .amountPaid(amountToPay)
+                    .remainingAmount(newRemainingAmount)
+                    .status(debt.getStatus())
+                    .dueDate(debt.getDueDate().toString())
+                    .build();
+            paymentDetails.add(detail);
+            
+            remainingPaymentAmount -= amountToPay;
+        }
+        
+        if (request.getPaymentMethod() == PaymentMethod.CASH) {
+            try {
+                float actualPaidAmount = request.getTotalPaymentAmount().floatValue() - remainingPaymentAmount;
+                moneyBoxIntegrationService.recordCashSale(
+                    BigDecimal.valueOf(actualPaidAmount),
+                    "SYP",
+                    customerId,
+                    "CUSTOMER-DEBTS-" + customerId
+                );
+            } catch (Exception e) {
+                logger.warn("Failed to record debt payment in MoneyBox: {}", e.getMessage());
+            }
+        }
+        
+        float totalRemainingDebt = activeDebts.stream()
+                .map(CustomerDebt::getRemainingAmount)
+                .reduce(0f, Float::sum);
+        
+        return PayCustomerDebtsResponse.builder()
+                .customerId(customerId)
+                .customerName(customer.getName())
+                .totalPaymentAmount(request.getTotalPaymentAmount().floatValue())
+                .totalRemainingDebt(totalRemainingDebt)
+                .paymentStrategy(request.getPaymentStrategy().toString())
+                .debtPayments(paymentDetails)
+                .notes(request.getNotes())
+                .build();
+    }
+    
+    private List<CustomerDebt> sortDebtsByStrategy(List<CustomerDebt> debts, PayCustomerDebtsRequest.PaymentStrategy strategy) {
+        List<CustomerDebt> sortedDebts = new ArrayList<CustomerDebt>(debts);
+        
+        switch (strategy) {
+            case OVERDUE_FIRST:
+                sortedDebts.sort((d1, d2) -> {
+                    boolean d1Overdue = d1.getDueDate().isBefore(LocalDate.now());
+                    boolean d2Overdue = d2.getDueDate().isBefore(LocalDate.now());
+                    
+                    if (d1Overdue && !d2Overdue) return -1;
+                    if (!d1Overdue && d2Overdue) return 1;
+                    
+                    return d1.getDueDate().compareTo(d2.getDueDate());
+                });
+                break;
+                
+            case FIFO:
+                sortedDebts.sort((d1, d2) -> d1.getCreatedAt().compareTo(d2.getCreatedAt()));
+                break;
+                
+            case LIFO:
+                sortedDebts.sort((d1, d2) -> d2.getCreatedAt().compareTo(d1.getCreatedAt()));
+                break;
+                
+            case HIGHEST_AMOUNT_FIRST:
+                sortedDebts.sort((d1, d2) -> Float.compare(d2.getRemainingAmount(), d1.getRemainingAmount()));
+                break;
+        }
+        
+        return sortedDebts;
+    }
+
+ 
     @lombok.Data
     @lombok.Builder
     public static class DebtStatistics {

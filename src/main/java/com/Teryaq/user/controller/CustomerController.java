@@ -35,16 +35,16 @@ public class CustomerController {
         return ResponseEntity.ok(customers);
     }
 
-    @GetMapping("pharmacy/{pharmacyId}")
-    @Operation(summary = "Get all customers by pharmacy", description = "Retrieve all customers for a specific pharmacy")
-    public ResponseEntity<List<CustomerDTOResponse>> getCustomersByPharmacy(
-            @Parameter(description = "Pharmacy ID", example = "1") 
-            @PathVariable Long pharmacyId) {
-        logger.info("Fetching customers for pharmacy ID: {}", pharmacyId);
-        List<CustomerDTOResponse> customers = customerService.getCustomersByPharmacyId(pharmacyId);
-        logger.info("Retrieved {} customers for pharmacy", customers.size());
-        return ResponseEntity.ok(customers);
-    }
+    // @GetMapping("pharmacy/{pharmacyId}")
+    // @Operation(summary = "Get all customers by pharmacy", description = "Retrieve all customers for a specific pharmacy")
+    // public ResponseEntity<List<CustomerDTOResponse>> getCustomersByPharmacy(
+    //         @Parameter(description = "Pharmacy ID", example = "1") 
+    //         @PathVariable Long pharmacyId) {
+    //     logger.info("Fetching customers for pharmacy ID: {}", pharmacyId);
+    //     List<CustomerDTOResponse> customers = customerService.getCustomersByPharmacyId(pharmacyId);
+    //     logger.info("Retrieved {} customers for pharmacy", customers.size());
+    //     return ResponseEntity.ok(customers);
+    // }
 
     @GetMapping("{id}")
     @Operation(summary = "Get customer by ID", description = "Retrieve a specific customer by ID with debt details")
@@ -57,18 +57,18 @@ public class CustomerController {
         return ResponseEntity.ok(customer);
     }
 
-    @GetMapping("pharmacy/{pharmacyId}/{id}")
-    @Operation(summary = "Get customer by ID and pharmacy", description = "Retrieve a specific customer by ID for a specific pharmacy")
-    public ResponseEntity<CustomerDTOResponse> getCustomerByIdAndPharmacy(
-            @Parameter(description = "Pharmacy ID", example = "1") 
-            @PathVariable Long pharmacyId,
-            @Parameter(description = "Customer ID", example = "1") 
-            @PathVariable Long id) {
-        logger.info("Fetching customer with ID: {} for pharmacy ID: {}", id, pharmacyId);
-        CustomerDTOResponse customer = customerService.getCustomerByIdAndPharmacyId(id, pharmacyId);
-        logger.info("Retrieved customer: {}", customer.getName());
-        return ResponseEntity.ok(customer);
-    }
+    // @GetMapping("pharmacy/{pharmacyId}/{id}")
+    // @Operation(summary = "Get customer by ID and pharmacy", description = "Retrieve a specific customer by ID for a specific pharmacy")
+    // public ResponseEntity<CustomerDTOResponse> getCustomerByIdAndPharmacy(
+    //         @Parameter(description = "Pharmacy ID", example = "1") 
+    //         @PathVariable Long pharmacyId,
+    //         @Parameter(description = "Customer ID", example = "1") 
+    //         @PathVariable Long id) {
+    //     logger.info("Fetching customer with ID: {} for pharmacy ID: {}", id, pharmacyId);
+    //     CustomerDTOResponse customer = customerService.getCustomerByIdAndPharmacyId(id, pharmacyId);
+    //     logger.info("Retrieved customer: {}", customer.getName());
+    //     return ResponseEntity.ok(customer);
+    // }
 
     @GetMapping("search")
     @Operation(summary = "Search customers by name", description = "Search customers by name (partial match)")
@@ -114,16 +114,16 @@ public class CustomerController {
         return ResponseEntity.ok(customers);
     }
 
-    @GetMapping("pharmacy/{pharmacyId}/with-debts")
-    @Operation(summary = "Get customers with debts by pharmacy", description = "Retrieve customers who have remaining debts for a specific pharmacy")
-    public ResponseEntity<List<CustomerDTOResponse>> getCustomersWithDebtsByPharmacy(
-            @Parameter(description = "Pharmacy ID", example = "1") 
-            @PathVariable Long pharmacyId) {
-        logger.info("Fetching customers with debts for pharmacy ID: {}", pharmacyId);
-        List<CustomerDTOResponse> customers = customerService.getCustomersWithDebtsByPharmacyId(pharmacyId);
-        logger.info("Found {} customers with debts", customers.size());
-        return ResponseEntity.ok(customers);
-    }
+    // @GetMapping("pharmacy/{pharmacyId}/with-debts")
+    // @Operation(summary = "Get customers with debts by pharmacy", description = "Retrieve customers who have remaining debts for a specific pharmacy")
+    // public ResponseEntity<List<CustomerDTOResponse>> getCustomersWithDebtsByPharmacy(
+    //         @Parameter(description = "Pharmacy ID", example = "1") 
+    //         @PathVariable Long pharmacyId) {
+    //     logger.info("Fetching customers with debts for pharmacy ID: {}", pharmacyId);
+    //     List<CustomerDTOResponse> customers = customerService.getCustomersWithDebtsByPharmacyId(pharmacyId);
+    //     logger.info("Found {} customers with debts", customers.size());
+    //     return ResponseEntity.ok(customers);
+    // }
 
     @GetMapping("with-active-debts")
     @Operation(summary = "Get customers with active debts", description = "Retrieve customers who have active (unpaid) debts")
@@ -134,59 +134,59 @@ public class CustomerController {
         return ResponseEntity.ok(customers);
     }
 
-    @GetMapping("pharmacy/{pharmacyId}/with-active-debts")
-    @Operation(summary = "Get customers with active debts by pharmacy", description = "Retrieve customers who have active (unpaid) debts for a specific pharmacy")
-    public ResponseEntity<List<CustomerDTOResponse>> getCustomersWithActiveDebtsByPharmacy(
-            @Parameter(description = "Pharmacy ID", example = "1") 
-            @PathVariable Long pharmacyId) {
-        logger.info("Fetching customers with active debts for pharmacy ID: {}", pharmacyId);
-        List<CustomerDTOResponse> customers = customerService.getCustomersWithActiveDebtsByPharmacyId(pharmacyId);
-        logger.info("Found {} customers with active debts", customers.size());
-        return ResponseEntity.ok(customers);
-    }
+    // @GetMapping("pharmacy/{pharmacyId}/with-active-debts")
+    // @Operation(summary = "Get customers with active debts by pharmacy", description = "Retrieve customers who have active (unpaid) debts for a specific pharmacy")
+    // public ResponseEntity<List<CustomerDTOResponse>> getCustomersWithActiveDebtsByPharmacy(
+    //         @Parameter(description = "Pharmacy ID", example = "1") 
+    //         @PathVariable Long pharmacyId) {
+    //     logger.info("Fetching customers with active debts for pharmacy ID: {}", pharmacyId);
+    //     List<CustomerDTOResponse> customers = customerService.getCustomersWithActiveDebtsByPharmacyId(pharmacyId);
+    //     logger.info("Found {} customers with active debts", customers.size());
+    //     return ResponseEntity.ok(customers);
+    // }
 
-    @GetMapping("debt-range")
-    @Operation(summary = "Get customers by debt range", description = "Retrieve customers within a specific debt range")
-    public ResponseEntity<List<CustomerDTOResponse>> getCustomersByDebtRange(
-            @Parameter(description = "Minimum debt amount", example = "100.0") 
-            @RequestParam Float minDebt,
-            @Parameter(description = "Maximum debt amount", example = "1000.0") 
-            @RequestParam Float maxDebt) {
-        logger.info("Fetching customers with debt range: {} - {}", minDebt, maxDebt);
-        List<CustomerDTOResponse> customers = customerService.getCustomersByDebtRange(minDebt, maxDebt);
-        logger.info("Found {} customers in debt range", customers.size());
-        return ResponseEntity.ok(customers);
-    }
+    // @GetMapping("debt-range")
+    // @Operation(summary = "Get customers by debt range", description = "Retrieve customers within a specific debt range")
+    // public ResponseEntity<List<CustomerDTOResponse>> getCustomersByDebtRange(
+    //         @Parameter(description = "Minimum debt amount", example = "100.0") 
+    //         @RequestParam Float minDebt,
+    //         @Parameter(description = "Maximum debt amount", example = "1000.0") 
+    //         @RequestParam Float maxDebt) {
+    //     logger.info("Fetching customers with debt range: {} - {}", minDebt, maxDebt);
+    //     List<CustomerDTOResponse> customers = customerService.getCustomersByDebtRange(minDebt, maxDebt);
+    //     logger.info("Found {} customers in debt range", customers.size());
+    //     return ResponseEntity.ok(customers);
+    // }
 
-    @GetMapping("pharmacy/{pharmacyId}/debt-range")
-    @Operation(summary = "Get customers by debt range and pharmacy", description = "Retrieve customers within a specific debt range for a specific pharmacy")
-    public ResponseEntity<List<CustomerDTOResponse>> getCustomersByDebtRangeAndPharmacy(
-            @Parameter(description = "Pharmacy ID", example = "1") 
-            @PathVariable Long pharmacyId,
-            @Parameter(description = "Minimum debt amount", example = "100.0") 
-            @RequestParam Float minDebt,
-            @Parameter(description = "Maximum debt amount", example = "1000.0") 
-            @RequestParam Float maxDebt) {
-        logger.info("Fetching customers with debt range: {} - {} for pharmacy ID: {}", minDebt, maxDebt, pharmacyId);
-        List<CustomerDTOResponse> customers = customerService.getCustomersByDebtRangeAndPharmacyId(minDebt, maxDebt, pharmacyId);
-        logger.info("Found {} customers in debt range", customers.size());
-        return ResponseEntity.ok(customers);
-    }
+    // @GetMapping("pharmacy/{pharmacyId}/debt-range")
+    // @Operation(summary = "Get customers by debt range and pharmacy", description = "Retrieve customers within a specific debt range for a specific pharmacy")
+    // public ResponseEntity<List<CustomerDTOResponse>> getCustomersByDebtRangeAndPharmacy(
+    //         @Parameter(description = "Pharmacy ID", example = "1") 
+    //         @PathVariable Long pharmacyId,
+    //         @Parameter(description = "Minimum debt amount", example = "100.0") 
+    //         @RequestParam Float minDebt,
+    //         @Parameter(description = "Maximum debt amount", example = "1000.0") 
+    //         @RequestParam Float maxDebt) {
+    //     logger.info("Fetching customers with debt range: {} - {} for pharmacy ID: {}", minDebt, maxDebt, pharmacyId);
+    //     List<CustomerDTOResponse> customers = customerService.getCustomersByDebtRangeAndPharmacyId(minDebt, maxDebt, pharmacyId);
+    //     logger.info("Found {} customers in debt range", customers.size());
+    //     return ResponseEntity.ok(customers);
+    // }
 
-    @GetMapping("pharmacy/{pharmacyId}/debt-range/with-active-debts")
-    @Operation(summary = "Get customers by debt range and pharmacy", description = "Retrieve customers within a specific debt range for a specific pharmacy")
-    public ResponseEntity<List<CustomerDTOResponse>> getCustomersByDebtRangeAndPharmacyWithActiveDebts(
-            @Parameter(description = "Pharmacy ID", example = "1") 
-            @PathVariable Long pharmacyId,
-            @Parameter(description = "Minimum debt amount", example = "100.0") 
-            @RequestParam Float minDebt,
-            @Parameter(description = "Maximum debt amount", example = "1000.0") 
-            @RequestParam Float maxDebt) {
-        logger.info("Fetching customers with debt range: {} - {} for pharmacy ID: {}", minDebt, maxDebt, pharmacyId);
-        List<CustomerDTOResponse> customers = customerService.getCustomersByDebtRangeAndPharmacyId(minDebt, maxDebt, pharmacyId);
-        logger.info("Found {} customers in debt range", customers.size());
-        return ResponseEntity.ok(customers);
-    }
+    // @GetMapping("pharmacy/{pharmacyId}/debt-range/with-active-debts")
+    // @Operation(summary = "Get customers by debt range and pharmacy", description = "Retrieve customers within a specific debt range for a specific pharmacy")
+    // public ResponseEntity<List<CustomerDTOResponse>> getCustomersByDebtRangeAndPharmacyWithActiveDebts(
+    //         @Parameter(description = "Pharmacy ID", example = "1") 
+    //         @PathVariable Long pharmacyId,
+    //         @Parameter(description = "Minimum debt amount", example = "100.0") 
+    //         @RequestParam Float minDebt,
+    //         @Parameter(description = "Maximum debt amount", example = "1000.0") 
+    //         @RequestParam Float maxDebt) {
+    //     logger.info("Fetching customers with debt range: {} - {} for pharmacy ID: {}", minDebt, maxDebt, pharmacyId);
+    //     List<CustomerDTOResponse> customers = customerService.getCustomersByDebtRangeAndPharmacyId(minDebt, maxDebt, pharmacyId);
+    //     logger.info("Found {} customers in debt range", customers.size());
+    //     return ResponseEntity.ok(customers);
+    // }
 
     @PostMapping
     @Operation(

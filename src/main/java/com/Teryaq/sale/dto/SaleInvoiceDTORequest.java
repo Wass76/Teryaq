@@ -15,6 +15,7 @@ import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Size;
 import java.util.List;
+import java.time.LocalDate;
 
 @Data
 @AllArgsConstructor
@@ -70,6 +71,9 @@ public class SaleInvoiceDTORequest {
     @Min(value = 0, message = "Paid amount must be non-negative")
     @Schema(description = "Paid Amount (null for auto-calculate)", example = "null")
     private Float paidAmount;
+    
+    @Schema(description = "Debt due date (required when paymentType is CREDIT)", example = "2024-12-31")
+    private LocalDate debtDueDate;
     
     @NotNull(message = "Items list is required")
     @Size(min = 1, message = "At least one item is required")

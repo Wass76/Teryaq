@@ -6,6 +6,10 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.math.BigDecimal;
+
+import com.Teryaq.product.Enum.PaymentMethod;
+
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
@@ -14,6 +18,7 @@ import lombok.NoArgsConstructor;
 {
   "debtId": 1,
   "paymentAmount": 100.00,
+  "paymentMethod": "CASH",
   "notes": "Partial payment"
 }
 """)
@@ -21,10 +26,10 @@ public class PayDebtDTORequest {
     
     @Schema(description = "Debt ID to pay", example = "1")
     private Long debtId;
-    
     @Schema(description = "Payment amount", example = "100.00")
-    private Float paymentAmount;
-    
+    private BigDecimal paymentAmount;
+    @Schema(description = "Payment method", example = "CASH")
+    private PaymentMethod paymentMethod;
     @Schema(description = "Payment notes", example = "Partial payment")
     private String notes;
 } 

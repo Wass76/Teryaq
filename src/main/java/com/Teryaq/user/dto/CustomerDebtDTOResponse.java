@@ -9,6 +9,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import com.Teryaq.product.Enum.PaymentMethod;
 
 @Data
 @AllArgsConstructor
@@ -20,6 +21,7 @@ public class CustomerDebtDTOResponse {
     
     @Schema(description = "اسم العميل", example = "cash customer")
     private String customerName;
+    private Long pharmacyId;
     
     private Float amount;
     
@@ -40,4 +42,7 @@ public class CustomerDebtDTOResponse {
     
     @JsonFormat(pattern = "yyyy-MM-dd")
     private LocalDate paidAt;
+    
+    @Schema(description = "طريقة الدفع المستخدمة", example = "CASH")
+    private PaymentMethod paymentMethod;
 } 

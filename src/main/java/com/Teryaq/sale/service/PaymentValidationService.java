@@ -18,7 +18,8 @@ public class PaymentValidationService {
                        paymentMethod == PaymentMethod.BANK_ACCOUNT;
                        
             case CREDIT:
-                return paymentMethod == PaymentMethod.BANK_ACCOUNT;
+                return paymentMethod == PaymentMethod.CASH ||
+                       paymentMethod == PaymentMethod.BANK_ACCOUNT;
                        
             default:
                 return false;
