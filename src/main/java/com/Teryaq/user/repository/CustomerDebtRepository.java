@@ -11,47 +11,54 @@ import java.util.List;
 @Repository
 public interface CustomerDebtRepository extends JpaRepository<CustomerDebt, Long> {
 
-    /**
-     * البحث عن ديون العميل
-     */
     List<CustomerDebt> findByCustomerIdOrderByCreatedAtDesc(Long customerId);
 
-    /**
-     * البحث عن جميع ديون العميل
-     */
     List<CustomerDebt> findByCustomerId(Long customerId);
 
-    /**
-     * البحث عن ديون العميل حسب الحالة
-     */
     List<CustomerDebt> findByCustomerIdAndStatusOrderByCreatedAtDesc(Long customerId, String status);
 
-    /**
-     * إجمالي ديون العميل
-     */
     @Query("SELECT COALESCE(SUM(d.remainingAmount), 0) FROM CustomerDebt d WHERE d.customer.id = :customerId AND d.status = 'ACTIVE'")
     Float getTotalDebtByCustomerId(@Param("customerId") Long customerId);
 
-    /**
-     * الديون النشطة للعميل
-     */
+  
     @Query("SELECT d FROM CustomerDebt d WHERE d.customer.id = :customerId AND d.status = 'ACTIVE' ORDER BY d.dueDate ASC")
     List<CustomerDebt> getActiveDebtsByCustomerId(@Param("customerId") Long customerId);
 
-    /**
-     * الديون المتأخرة
-     */
+   
     @Query("SELECT d FROM CustomerDebt d WHERE d.dueDate < CURRENT_TIMESTAMP AND d.status = 'ACTIVE' ORDER BY d.dueDate ASC")
     List<CustomerDebt> getOverdueDebts();
 
-    /**
-     * إجمالي الديون المتأخرة
-     */
+
     @Query("SELECT COALESCE(SUM(d.remainingAmount), 0) FROM CustomerDebt d WHERE d.dueDate < CURRENT_TIMESTAMP AND d.status = 'ACTIVE'")
     Float getTotalOverdueDebts();
 
-    /**
-     * الديون حسب الحالة
-     */
+  
     List<CustomerDebt> findByStatusOrderByCreatedAtDesc(String status);
+
+
+
+    @Query("SELECT d FROM CustomerDebt d WHERE d.dueDate < CURRENT_TIMESTAMP AND d.status = 'ACTIVE' AND d.customer.pharmacy.id = :pharmacyId ORDER BY d.dueDate ASC")
+    List<CustomerDebt> getOverdueDebtsByPharmacyId(@Param("pharmacyId") Long pharmacyId);
+
+    @Query("SELECT COALESCE(SUM(d.remainingAmount), 0) FROM CustomerDebt d WHERE d.dueDate < CURRENT_TIMESTAMP AND d.status = 'ACTIVE' AND d.customer.pharmacy.id = :pharmacyId")
+    Float getTotalOverdueDebtsByPharmacyId(@Param("pharmacyId") Long pharmacyId);
+
+    @Query("SELECT d FROM CustomerDebt d WHERE d.status = :status AND d.customer.pharmacy.id = :pharmacyId ORDER BY d.createdAt DESC")
+    List<CustomerDebt> findByStatusAndPharmacyIdOrderByCreatedAtDesc(@Param("status") String status, @Param("pharmacyId") Long pharmacyId);
+
+    @Query("SELECT d FROM CustomerDebt d WHERE d.createdAt >= :startDate AND d.createdAt <= :endDate AND d.customer.pharmacy.id = :pharmacyId ORDER BY d.createdAt DESC")
+    List<CustomerDebt> findByDateRangeAndPharmacyId(@Param("startDate") java.time.LocalDateTime startDate, @Param("endDate") java.time.LocalDateTime endDate, @Param("pharmacyId") Long pharmacyId);
+
+    @Query("SELECT d FROM CustomerDebt d WHERE d.amount >= :minAmount AND d.amount <= :maxAmount AND d.customer.pharmacy.id = :pharmacyId ORDER BY d.amount DESC")
+    List<CustomerDebt> findByAmountRangeAndPharmacyId(@Param("minAmount") Float minAmount, @Param("maxAmount") Float maxAmount, @Param("pharmacyId") Long pharmacyId);
+
+    @Query("SELECT COUNT(d), " +
+           "SUM(CASE WHEN d.status = 'ACTIVE' THEN 1 ELSE 0 END), " +
+           "SUM(CASE WHEN d.status = 'PAID' THEN 1 ELSE 0 END), " +
+           "SUM(CASE WHEN d.dueDate < CURRENT_TIMESTAMP AND d.status = 'ACTIVE' THEN 1 ELSE 0 END), " +
+           "COALESCE(SUM(d.amount), 0), " +
+           "COALESCE(SUM(d.paidAmount), 0), " +
+           "COALESCE(SUM(d.remainingAmount), 0) " +
+           "FROM CustomerDebt d WHERE d.customer.pharmacy.id = :pharmacyId")
+    Object[] getDebtStatisticsByPharmacyId(@Param("pharmacyId") Long pharmacyId);
 } 

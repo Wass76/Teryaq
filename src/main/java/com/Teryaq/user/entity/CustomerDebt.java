@@ -9,6 +9,7 @@ import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
 
 import java.time.LocalDate;
+import com.Teryaq.product.Enum.PaymentMethod;
 
 @Entity
 @Data
@@ -24,25 +25,29 @@ public class CustomerDebt extends AuditedEntity {
     private Customer customer;
 
     @Column(nullable = false)
-    private Float amount; // مبلغ الدين
+    private Float amount; 
 
     @Column(nullable = false)
-    private Float paidAmount; // المبلغ المدفوع
+    private Float paidAmount;
 
     @Column(nullable = false)
-    private Float remainingAmount; // المبلغ المتبقي
+    private Float remainingAmount; 
 
     @Column(nullable = false)
-    private LocalDate dueDate; // تاريخ استحقاق الدين
+    private LocalDate dueDate; 
 
     @Column
-    private String notes; // ملاحظات
+    private String notes;
 
     @Column(nullable = false)
     private String status; // ACTIVE, PAID, OVERDUE
 
     @Column
-    private LocalDate paidAt; // تاريخ الدفع
+    private LocalDate paidAt;
+    
+    @Enumerated(EnumType.STRING)
+    @Column
+    private PaymentMethod paymentMethod;
 
     @PrePersist
     protected void onCreate() {

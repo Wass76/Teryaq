@@ -9,6 +9,7 @@ import lombok.NoArgsConstructor;
 import java.time.LocalDate;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.Teryaq.product.Enum.PaymentMethod;
 
 @Data
 @AllArgsConstructor
@@ -19,7 +20,8 @@ import com.fasterxml.jackson.annotation.JsonFormat;
   "customerId": 1,
   "amount": 150.50,
   "dueDate": "2024-12-31",
-  "notes": "Payment for medication"
+  "notes": "Payment for medication",
+  "paymentMethod": "CASH"
 }
 """)
 public class CustomerDebtDTORequest {
@@ -36,4 +38,7 @@ public class CustomerDebtDTORequest {
     
     @Schema(description = "Additional notes about the debt", example = "Payment for medication")
     private String notes;
+    
+    @Schema(description = "Payment method for the debt", example = "CASH", allowableValues = {"CASH", "BANK_ACCOUNT"})
+    private PaymentMethod paymentMethod;
 } 

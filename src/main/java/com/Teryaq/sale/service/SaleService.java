@@ -17,6 +17,7 @@ import com.Teryaq.user.repository.CustomerRepo;
 import com.Teryaq.user.service.BaseSecurityService;
 import com.Teryaq.utils.exception.ConflictException;
 import com.Teryaq.utils.exception.RequestNotValidException;
+import com.Teryaq.utils.exception.UnAuthorizedException;
 
 import jakarta.persistence.EntityNotFoundException;
 
@@ -35,6 +36,8 @@ import java.time.LocalDateTime;
 
 import com.Teryaq.user.repository.CustomerDebtRepository;
 import com.Teryaq.product.mapper.StockItemMapper;
+import com.Teryaq.user.mapper.CustomerDebtMapper;
+import com.Teryaq.user.repository.UserRepository;
 
 @Service
 public class SaleService extends BaseSecurityService {
@@ -63,19 +66,23 @@ public class SaleService extends BaseSecurityService {
 
     @Autowired
     private SaleMapper saleMapper;
+    
+    @Autowired
+    private CustomerDebtMapper customerDebtMapper;
 
-    public SaleService(SaleInvoiceRepository saleInvoiceRepository,
-                      SaleInvoiceItemRepository saleInvoiceItemRepository,
-                      CustomerRepo customerRepository,
-                      StockItemRepo stockItemRepo,
-                      StockService stockService,
-                      DiscountCalculationService discountCalculationService,
-                      PaymentValidationService paymentValidationService,
-                      CustomerDebtRepository customerDebtRepository,
-                      SaleMapper saleMapper,
-                      StockItemMapper stockItemMapper,
-                      MoneyBoxIntegrationService moneyBoxIntegrationService,
-                      com.Teryaq.user.repository.UserRepository userRepository) {
+        public SaleService(SaleInvoiceRepository saleInvoiceRepository,
+                       SaleInvoiceItemRepository saleInvoiceItemRepository,
+                       CustomerRepo customerRepository,
+                       StockItemRepo stockItemRepo,
+                       StockService stockService,
+                       DiscountCalculationService discountCalculationService,
+                       PaymentValidationService paymentValidationService,
+                       CustomerDebtRepository customerDebtRepository,
+                       SaleMapper saleMapper,
+                       StockItemMapper stockItemMapper,
+                       MoneyBoxIntegrationService moneyBoxIntegrationService,
+                       CustomerDebtMapper customerDebtMapper,
+                       UserRepository userRepository) {
         super(userRepository);
         this.saleInvoiceRepository = saleInvoiceRepository;
         this.saleInvoiceItemRepository = saleInvoiceItemRepository;
@@ -88,19 +95,36 @@ public class SaleService extends BaseSecurityService {
         this.saleMapper = saleMapper;
         this.stockItemMapper = stockItemMapper;
         this.moneyBoxIntegrationService = moneyBoxIntegrationService;
+        this.customerDebtMapper = customerDebtMapper;
     }
 
     @Transactional
     public SaleInvoiceDTOResponse createSaleInvoice(SaleInvoiceDTORequest requestDTO) {
         Pharmacy currentPharmacy = getCurrentUserPharmacy();
+        if (currentPharmacy == null) {
+            throw new UnAuthorizedException("You are not authorized to create a sale invoice");
+        }
         
         Customer customer = null;
         if (requestDTO.getCustomerId() != null) {
             customer = customerRepository.findById(requestDTO.getCustomerId()).orElse(null);
+        } else {
+            customer = getOrCreateCashCustomer(currentPharmacy);
         }
         
         if (!paymentValidationService.validatePayment(requestDTO.getPaymentType(), requestDTO.getPaymentMethod())) {
             throw new ConflictException("the payment type and payment method are not compatible");
+        }
+        
+        if (customer == null) {
+            throw new ConflictException("Cannot create sale invoice without a customer");
+        }
+        
+        // التحقق من أن العميل ينتمي للصيدلية الحالية
+        if (!customer.getPharmacy().getId().equals(currentPharmacy.getId())) {
+            throw new ConflictException("Customer with ID " + customer.getId() + 
+                " does not belong to the current pharmacy. Customer belongs to pharmacy: " + 
+                customer.getPharmacy().getName());
         }
         
         float paidAmount = requestDTO.getPaidAmount() != null ? requestDTO.getPaidAmount() : 0;
@@ -210,27 +234,49 @@ public class SaleService extends BaseSecurityService {
         }
         
         if (customer != null && remainingAmount > 0) {
-            createCustomerDebt(customer, remainingAmount, savedInvoice);
+            createCustomerDebt(customer, remainingAmount, savedInvoice, requestDTO);
         }
         
         return saleMapper.toResponse(savedInvoice);
     }
     
-    private void createCustomerDebt(Customer customer, float remainingAmount, SaleInvoice invoice) {
+    private void createCustomerDebt(Customer customer, float remainingAmount, SaleInvoice invoice, SaleInvoiceDTORequest request) {
         try {
-            CustomerDebt debt = CustomerDebt.builder()
-                .customer(customer)
-                .amount(remainingAmount)
-                .paidAmount(0f)
-                .remainingAmount(remainingAmount)
-                .dueDate(LocalDate.now().plusMonths(1)) 
-                .notes("دين من فاتورة بيع رقم: " + invoice.getId())
-                .status("ACTIVE")
-                .build();
+            LocalDate dueDate = request.getDebtDueDate() != null ? request.getDebtDueDate() : LocalDate.now().plusMonths(1);
+            
+            CustomerDebt debt = customerDebtMapper.toEntityFromSaleInvoice(request, remainingAmount, dueDate);
+            debt.setCustomer(customer);
+            debt.setNotes("Debt from sale invoice: " + invoice.getId());
             
             customerDebtRepository.save(debt);
+            logger.info("Created customer debt: {} for invoice: {} using mapper", remainingAmount, invoice.getId());
         } catch (Exception e) {
             logger.error("Error creating customer debt for invoice {}: {}", invoice.getId(), e.getMessage(), e);
+        }
+    }
+
+  
+    private Customer getOrCreateCashCustomer(Pharmacy pharmacy) {
+        try {
+            Customer cashCustomer = customerRepository.findByNameAndPharmacyId("cash customer", pharmacy.getId())
+                .orElse(null);
+            
+            if (cashCustomer == null) {
+                cashCustomer = new Customer();
+                cashCustomer.setName("cash customer");
+                cashCustomer.setPhoneNumber("0000000000");
+                cashCustomer.setAddress("pharmacy " + pharmacy.getName());
+                cashCustomer.setPharmacy(pharmacy);
+                cashCustomer.setNotes("cash customer");
+                
+                cashCustomer = customerRepository.save(cashCustomer);
+                logger.info("Created cash customer for pharmacy: {}", pharmacy.getId());
+            }
+            
+            return cashCustomer;
+        } catch (Exception e) {
+            logger.error("Error creating cash customer for pharmacy {}: {}", pharmacy.getId(), e.getMessage());
+            return null;
         }
     }
 
