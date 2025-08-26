@@ -1,6 +1,6 @@
 package com.Teryaq.sale.service;
 
-import com.Teryaq.moneybox.service.MoneyBoxIntegrationService;
+import com.Teryaq.moneybox.service.SalesIntegrationService;
 import com.Teryaq.sale.dto.SaleInvoiceDTORequest;
 import com.Teryaq.sale.dto.SaleInvoiceDTOResponse;
 import com.Teryaq.sale.entity.SaleInvoice;
@@ -62,7 +62,7 @@ public class SaleService extends BaseSecurityService {
     @Autowired
     private StockItemMapper stockItemMapper;
     @Autowired
-    private MoneyBoxIntegrationService moneyBoxIntegrationService;
+    private SalesIntegrationService salesIntegrationService;
 
     @Autowired
     private SaleMapper saleMapper;
@@ -80,7 +80,7 @@ public class SaleService extends BaseSecurityService {
                        CustomerDebtRepository customerDebtRepository,
                        SaleMapper saleMapper,
                        StockItemMapper stockItemMapper,
-                       MoneyBoxIntegrationService moneyBoxIntegrationService,
+                       SalesIntegrationService salesIntegrationService,
                        CustomerDebtMapper customerDebtMapper,
                        UserRepository userRepository) {
         super(userRepository);
@@ -94,7 +94,7 @@ public class SaleService extends BaseSecurityService {
         this.customerDebtRepository = customerDebtRepository;
         this.saleMapper = saleMapper;
         this.stockItemMapper = stockItemMapper;
-        this.moneyBoxIntegrationService = moneyBoxIntegrationService;
+        this.salesIntegrationService = salesIntegrationService;
         this.customerDebtMapper = customerDebtMapper;
     }
 
@@ -219,11 +219,13 @@ public class SaleService extends BaseSecurityService {
         // Integrate with Money Box for cash payments
         if (requestDTO.getPaymentMethod() == com.Teryaq.product.Enum.PaymentMethod.CASH) {
             try {
-                moneyBoxIntegrationService.recordCashSale(
-                    java.math.BigDecimal.valueOf(savedInvoice.getTotalAmount()),
-                    requestDTO.getCurrency().toString(),
+                // Get current pharmacy ID for MoneyBox integration
+                Long currentPharmacyId = getCurrentUserPharmacyId();
+                salesIntegrationService.recordSalePayment(
+                    currentPharmacyId,
                     savedInvoice.getId(),
-                    "INV-" + savedInvoice.getId() // Use ID instead of invoice number
+                    java.math.BigDecimal.valueOf(savedInvoice.getTotalAmount()),
+                    requestDTO.getCurrency().toString()
                 );
                 logger.info("Cash sale recorded in Money Box for invoice: {}", savedInvoice.getId());
             } catch (Exception e) {

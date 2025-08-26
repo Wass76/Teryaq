@@ -6,22 +6,21 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
 @Repository
 public interface ExchangeRateRepository extends JpaRepository<ExchangeRate, Long> {
     
-    Optional<ExchangeRate> findByFromCurrencyAndToCurrencyAndIsActiveTrue(
-        String fromCurrency, String toCurrency);
+    Optional<ExchangeRate> findByFromCurrencyAndToCurrencyAndIsActiveTrue(String fromCurrency, String toCurrency);
     
-    List<ExchangeRate> findByIsActiveTrue();
+    List<ExchangeRate> findByFromCurrencyAndIsActiveTrue(String fromCurrency);
     
-    @Query("SELECT e FROM ExchangeRate e WHERE e.fromCurrency = :fromCurrency " +
-           "AND e.toCurrency = :toCurrency AND e.effectiveFrom <= :date " +
-           "AND (e.effectiveTo IS NULL OR e.effectiveTo > :date) AND e.isActive = true")
-    Optional<ExchangeRate> findEffectiveRate(@Param("fromCurrency") String fromCurrency,
-                                           @Param("toCurrency") String toCurrency,
-                                           @Param("date") LocalDateTime date);
+    List<ExchangeRate> findByToCurrencyAndIsActiveTrue(String toCurrency);
+    
+    @Query("SELECT e FROM ExchangeRate e WHERE e.isActive = true AND (e.fromCurrency = :currency OR e.toCurrency = :currency)")
+    List<ExchangeRate> findActiveRatesByCurrency(@Param("currency") String currency);
+    
+    @Query("SELECT COUNT(e) FROM ExchangeRate e WHERE e.isActive = true AND e.fromCurrency = :fromCurrency AND e.toCurrency = :toCurrency")
+    Long countActiveRates(@Param("fromCurrency") String fromCurrency, @Param("toCurrency") String toCurrency);
 }

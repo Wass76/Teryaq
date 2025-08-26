@@ -1,10 +1,14 @@
 package com.Teryaq.moneybox.controller;
 
-import com.Teryaq.moneybox.dto.*;
-import com.Teryaq.moneybox.entity.MoneyBox;
-import com.Teryaq.moneybox.entity.MoneyBoxTransaction;
-import com.Teryaq.moneybox.Enum.TransactionType;
+import com.Teryaq.moneybox.dto.MoneyBoxRequestDTO;
+import com.Teryaq.moneybox.dto.MoneyBoxResponseDTO;
 import com.Teryaq.moneybox.service.MoneyBoxService;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -13,221 +17,144 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
-import lombok.RequiredArgsConstructor;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
-
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.DecimalMin;
+
 import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
+import java.time.LocalDateTime;
 
 @RestController
-@RequestMapping("/api/v1/money-box")
+@RequestMapping("/api/v1/moneybox")
+@Tag(name = "MoneyBox Management", description = "APIs for managing pharmacy cash money boxes and transactions")
 @RequiredArgsConstructor
-@Tag(name = "Money Box Management", description = "APIs for managing pharmacy cash operations")
+@Slf4j
 @SecurityRequirement(name = "BearerAuth")
-@CrossOrigin("*")
+@CrossOrigin(origins = "*")
 public class MoneyBoxController {
     
     private final MoneyBoxService moneyBoxService;
     
-    @PostMapping("/open")
-    @Operation(summary = "Open money box", description = "Open a new money box for the day")
+    @Operation(
+        summary = "Create a new money box for the current pharmacy", 
+        description = "Creates a new money box for the current user's pharmacy with initial balance and currency. " +
+                     "Each pharmacy can only have one money box. The pharmacy ID is automatically extracted from the current user context."
+    )
     @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "Money box opened successfully",
+        @ApiResponse(responseCode = "201", description = "Money box created successfully",
             content = @Content(mediaType = "application/json",
             schema = @Schema(implementation = MoneyBoxResponseDTO.class))),
-        @ApiResponse(responseCode = "400", description = "Invalid request data"),
-        @ApiResponse(responseCode = "409", description = "Money box already open for today"),
+        @ApiResponse(responseCode = "400", description = "Invalid request data or pharmacy already has a money box"),
+        @ApiResponse(responseCode = "409", description = "Pharmacy already has a money box"),
         @ApiResponse(responseCode = "500", description = "Internal server error")
     })
-    public ResponseEntity<MoneyBoxResponseDTO> openMoneyBox(@Valid @RequestBody MoneyBoxRequestDTO request) {
-        MoneyBox moneyBox = moneyBoxService.openMoneyBox(
-            request.getOpeningBalance(), 
-            request.getNotes()
-        );
-        
-        MoneyBoxResponseDTO response = mapToResponseDTO(moneyBox);
+    @PostMapping
+    public ResponseEntity<MoneyBoxResponseDTO> createMoneyBox(
+            @Parameter(description = "Money box creation request", required = true)
+            @Valid @RequestBody MoneyBoxRequestDTO request) {
+        log.info("Creating new money box for current pharmacy");
+        MoneyBoxResponseDTO response = moneyBoxService.createMoneyBox(request);
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+    
+    @Operation(
+        summary = "Get money box for current pharmacy", 
+        description = "Retrieves the money box information for the current user's pharmacy, " +
+                     "including current balance, status, and last reconciliation details."
+    )
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Money box retrieved successfully",
+            content = @Content(mediaType = "application/json",
+            schema = @Schema(implementation = MoneyBoxResponseDTO.class))),
+        @ApiResponse(responseCode = "404", description = "Money box not found for the pharmacy"),
+        @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
+    @GetMapping
+    public ResponseEntity<MoneyBoxResponseDTO> getMoneyBoxByCurrentPharmacy() {
+        MoneyBoxResponseDTO response = moneyBoxService.getMoneyBoxByCurrentPharmacy();
         return ResponseEntity.ok(response);
     }
     
-    @PostMapping("/{id}/close")
-    @Operation(summary = "Close money box", description = "Close the money box and reconcile")
-    @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "Money box closed successfully",
-            content = @Content(mediaType = "application/json",
-            schema = @Schema(implementation = MoneyBoxResponseDTO.class))),
-        @ApiResponse(responseCode = "400", description = "Invalid request data"),
-        @ApiResponse(responseCode = "404", description = "Money box not found"),
-        @ApiResponse(responseCode = "409", description = "Money box is not open"),
-        @ApiResponse(responseCode = "500", description = "Internal server error")
-    })
-    public ResponseEntity<MoneyBoxResponseDTO> closeMoneyBox(
-            @Parameter(description = "Money box ID", example = "1") @PathVariable Long id,
-            @Parameter(description = "Actual cash balance", example = "50000") @RequestParam BigDecimal actualBalance,
-            @Parameter(description = "Closing notes", example = "End of day reconciliation") @RequestParam String notes) {
-        
-        MoneyBox moneyBox = moneyBoxService.closeMoneyBox(id, actualBalance, notes);
-        MoneyBoxResponseDTO response = mapToResponseDTO(moneyBox);
-        return ResponseEntity.ok(response);
-    }
-    
-    @GetMapping("/{id}/summary")
-    @Operation(summary = "Get money box summary", description = "Get current status and totals")
-    @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "Summary retrieved successfully",
-            content = @Content(mediaType = "application/json",
-            schema = @Schema(implementation = MoneyBoxSummary.class))),
-        @ApiResponse(responseCode = "404", description = "Money box not found"),
-        @ApiResponse(responseCode = "500", description = "Internal server error")
-    })
-    public ResponseEntity<MoneyBoxSummary> getMoneyBoxSummary(
-            @Parameter(description = "Money box ID", example = "1") @PathVariable Long id) {
-        MoneyBoxSummary summary = moneyBoxService.getMoneyBoxSummary(id);
-        return ResponseEntity.ok(summary);
-    }
-    
-    @GetMapping("/pharmacy/current")
-    @Operation(summary = "Get current money box", description = "Get currently open money box for pharmacy")
-    @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "Current money box retrieved successfully",
-            content = @Content(mediaType = "application/json",
-            schema = @Schema(implementation = MoneyBoxResponseDTO.class))),
-        @ApiResponse(responseCode = "404", description = "No open money box found"),
-        @ApiResponse(responseCode = "500", description = "Internal server error")
-    })
-    public ResponseEntity<MoneyBoxResponseDTO> getCurrentMoneyBox() {
-
-        
-        Optional<MoneyBox> moneyBox = moneyBoxService.getCurrentMoneyBox();
-        
-        if (moneyBox.isPresent()) {
-            MoneyBoxResponseDTO response = mapToResponseDTO(moneyBox.get());
-            return ResponseEntity.ok(response);
-        } else {
-            return ResponseEntity.notFound().build();
-        }
-    }
-    
-    @PostMapping("/{id}/transactions")
-    @Operation(summary = "Add transaction", description = "Add a new transaction to the money box")
+    @Operation(
+        summary = "Add manual transaction to money box", 
+        description = "Adds a manual transaction (income or expense) to the current pharmacy's money box. " +
+                     "Positive amounts increase the balance (income), negative amounts decrease it (expense). " +
+                     "This is useful for recording cash expenses, deposits, or adjustments."
+    )
     @ApiResponses(value = {
         @ApiResponse(responseCode = "200", description = "Transaction added successfully",
             content = @Content(mediaType = "application/json",
-            schema = @Schema(implementation = TransactionResponseDTO.class))),
-        @ApiResponse(responseCode = "400", description = "Invalid request data"),
+            schema = @Schema(implementation = MoneyBoxResponseDTO.class))),
+        @ApiResponse(responseCode = "400", description = "Invalid amount or money box is closed"),
         @ApiResponse(responseCode = "404", description = "Money box not found"),
-        @ApiResponse(responseCode = "409", description = "Money box is not open"),
+        @ApiResponse(responseCode = "409", description = "Money box is not open for transactions"),
         @ApiResponse(responseCode = "500", description = "Internal server error")
     })
-    public ResponseEntity<TransactionResponseDTO> addTransaction(
-            @Parameter(description = "Money box ID", example = "1") @PathVariable Long id,
-            @Valid @RequestBody TransactionRequestDTO request) {
-        
-        TransactionType type = TransactionType.valueOf(request.getTransactionType());
-        MoneyBoxTransaction transaction = moneyBoxService.addTransaction(
-            id, type, request.getAmount(), request.getCurrency(), request.getDescription()
-        );
-        
-        TransactionResponseDTO response = mapToTransactionResponseDTO(transaction);
+    @PostMapping("/transaction")
+    public ResponseEntity<MoneyBoxResponseDTO> addTransaction(
+            @Parameter(description = "Transaction amount (positive for income, negative for expense)", 
+                      example = "100.50", required = true)
+            @NotNull @RequestParam BigDecimal amount,
+            
+            @Parameter(description = "Transaction description", example = "Office supplies expense")
+            @RequestParam(required = false) String description) {
+        log.info("Adding transaction for current pharmacy: amount={}, description={}", amount, description);
+        MoneyBoxResponseDTO response = moneyBoxService.addTransaction(amount, description);
         return ResponseEntity.ok(response);
     }
     
-    @PostMapping("/{id}/withdrawal")
-    @Operation(summary = "Add withdrawal transaction", description = "Record cash taken from money box")
+    @Operation(
+        summary = "Reconcile cash with physical count", 
+        description = "Reconciles the current pharmacy's money box balance with the actual physical cash count. " +
+                     "If there's a discrepancy, the system balance will be adjusted to match the actual count. " +
+                     "This is typically done at the end of each day or shift."
+    )
     @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "Withdrawal recorded successfully",
+        @ApiResponse(responseCode = "200", description = "Cash reconciled successfully",
             content = @Content(mediaType = "application/json",
-            schema = @Schema(implementation = TransactionResponseDTO.class))),
-        @ApiResponse(responseCode = "400", description = "Invalid request data"),
+            schema = @Schema(implementation = MoneyBoxResponseDTO.class))),
+        @ApiResponse(responseCode = "400", description = "Invalid cash count amount"),
         @ApiResponse(responseCode = "404", description = "Money box not found"),
-        @ApiResponse(responseCode = "409", description = "Money box is not open"),
         @ApiResponse(responseCode = "500", description = "Internal server error")
     })
-    public ResponseEntity<TransactionResponseDTO> addWithdrawal(
-            @Parameter(description = "Money box ID", example = "1") @PathVariable Long id,
-            @Parameter(description = "Withdrawal amount", example = "10000") @RequestParam BigDecimal amount,
-            @Parameter(description = "Currency", example = "SYP") @RequestParam String currency,
-            @Parameter(description = "Reason for withdrawal", example = "Bank deposit") @RequestParam String reason,
-            @Parameter(description = "Receipt number", example = "RCP-001") @RequestParam String receiptNumber) {
-        
-        MoneyBoxTransaction transaction = moneyBoxService.addWithdrawalTransaction(id, amount, currency, reason, receiptNumber);
-        TransactionResponseDTO response = mapToTransactionResponseDTO(transaction);
+    @PostMapping("/reconcile")
+    public ResponseEntity<MoneyBoxResponseDTO> reconcileCash(
+            @Parameter(description = "Actual physical cash count amount", 
+                      example = "1250.75", required = true)
+            @NotNull @DecimalMin("0.0") @RequestParam BigDecimal actualCashCount,
+            
+            @Parameter(description = "Reconciliation notes", example = "Daily end-of-shift count")
+            @RequestParam(required = false) String notes) {
+        log.info("Reconciling cash for current pharmacy: actual count={}, notes={}", actualCashCount, notes);
+        MoneyBoxResponseDTO response = moneyBoxService.reconcileCash(actualCashCount, notes);
         return ResponseEntity.ok(response);
     }
     
-    @PostMapping("/{id}/deposit")
-    @Operation(summary = "Add deposit transaction", description = "Record cash added to money box")
+    @Operation(
+        summary = "Get period summary for money box", 
+        description = "Retrieves a summary of transactions for the specified period for the current pharmacy, including " +
+                     "total income, total expenses, net amount, and transaction counts. " +
+                     "This is useful for financial reporting and analysis."
+    )
     @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "Deposit recorded successfully",
+        @ApiResponse(responseCode = "200", description = "Period summary retrieved successfully",
             content = @Content(mediaType = "application/json",
-            schema = @Schema(implementation = TransactionResponseDTO.class))),
-        @ApiResponse(responseCode = "400", description = "Invalid request data"),
-        @ApiResponse(responseCode = "404", description = "Money box not found"),
-        @ApiResponse(responseCode = "409", description = "Money box is not open"),
-        @ApiResponse(responseCode = "500", description = "Internal server error")
-    })
-    public ResponseEntity<TransactionResponseDTO> addDeposit(
-            @Parameter(description = "Money box ID", example = "1") @PathVariable Long id,
-            @Parameter(description = "Deposit amount", example = "50000") @RequestParam BigDecimal amount,
-            @Parameter(description = "Currency", example = "SYP") @RequestParam String currency,
-            @Parameter(description = "Reason for deposit", example = "Bank withdrawal") @RequestParam String reason,
-            @Parameter(description = "Receipt number", example = "RCP-002") @RequestParam String receiptNumber) {
-        
-        MoneyBoxTransaction transaction = moneyBoxService.addDepositTransaction(id, amount, currency, reason, receiptNumber);
-        TransactionResponseDTO response = mapToTransactionResponseDTO(transaction);
-        return ResponseEntity.ok(response);
-    }
-    
-    @GetMapping("/{id}/transactions")
-    @Operation(summary = "Get transactions", description = "Get all transactions for money box")
-    @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "Transactions retrieved successfully",
-            content = @Content(mediaType = "application/json",
-            schema = @Schema(implementation = TransactionResponseDTO.class))),
+            schema = @Schema(implementation = MoneyBoxService.MoneyBoxSummary.class))),
+        @ApiResponse(responseCode = "400", description = "Invalid date range"),
         @ApiResponse(responseCode = "404", description = "Money box not found"),
         @ApiResponse(responseCode = "500", description = "Internal server error")
     })
-    public ResponseEntity<List<TransactionResponseDTO>> getTransactions(
-            @Parameter(description = "Money box ID", example = "1") @PathVariable Long id) {
-        // TODO: Implement transaction retrieval
-        return ResponseEntity.ok(new ArrayList<>());
-    }
-    
-    private MoneyBoxResponseDTO mapToResponseDTO(MoneyBox moneyBox) {
-        return MoneyBoxResponseDTO.builder()
-            .id(moneyBox.getId())
-            .pharmacyId(moneyBox.getPharmacyId())
-            .businessDate(moneyBox.getBusinessDate())
-            .status(moneyBox.getStatus().name())
-            .periodType(moneyBox.getPeriodType().name())
-            .openingBalance(moneyBox.getOpeningBalance())
-            .currentBalance(moneyBox.getOpeningBalance().add(moneyBox.getTotalCashIn()).subtract(moneyBox.getTotalCashOut()))
-            .totalCashIn(moneyBox.getTotalCashIn())
-            .totalCashOut(moneyBox.getTotalCashOut())
-            .netCashFlow(moneyBox.getNetCashFlow())
-            .openedAt(moneyBox.getOpenedAt())
-            .openedBy("Employee " + moneyBox.getOpenedBy()) // TODO: Get actual employee name
-            .notes(moneyBox.getOpeningNotes())
-            .build();
-    }
-    
-    private TransactionResponseDTO mapToTransactionResponseDTO(MoneyBoxTransaction transaction) {
-        return TransactionResponseDTO.builder()
-            .id(transaction.getId())
-            .moneyBoxId(transaction.getMoneyBoxId())
-            .transactionType(transaction.getTransactionType().name())
-            .amount(transaction.getAmount())
-            .currency(transaction.getCurrency())
-            .amountInSYP(transaction.getAmountInSYP())
-            .description(transaction.getDescription())
-            .referenceType(transaction.getReferenceType())
-            .referenceNumber(transaction.getReferenceNumber())
-            .status(transaction.getStatus())
-            .transactionDate(transaction.getTransactionDate())
-            .employeeName("Employee " + transaction.getEmployeeId()) // TODO: Get actual employee name
-            .build();
+    @GetMapping("/summary")
+    public ResponseEntity<MoneyBoxService.MoneyBoxSummary> getPeriodSummary(
+            @Parameter(description = "Start date and time for the period", 
+                      example = "2024-01-01T00:00:00", required = true)
+            @RequestParam LocalDateTime startDate,
+            
+            @Parameter(description = "End date and time for the period", 
+                      example = "2024-01-31T23:59:59", required = true)
+            @RequestParam LocalDateTime endDate) {
+        log.info("Getting period summary for current pharmacy: period={} to {}", startDate, endDate);
+        MoneyBoxService.MoneyBoxSummary summary = moneyBoxService.getPeriodSummary(startDate, endDate);
+        return ResponseEntity.ok(summary);
     }
 }

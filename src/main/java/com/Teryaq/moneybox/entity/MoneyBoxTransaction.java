@@ -1,94 +1,59 @@
 package com.Teryaq.moneybox.entity;
 
-import com.Teryaq.moneybox.Enum.TransactionType;
-import com.Teryaq.utils.entity.AuditedEntity;
+import com.Teryaq.moneybox.enums.TransactionType;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.experimental.SuperBuilder;
+import org.hibernate.annotations.CreationTimestamp;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "money_box_transactions")
+@Table(name = "money_box_transaction")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@SuperBuilder
-public class MoneyBoxTransaction extends AuditedEntity {
+public class MoneyBoxTransaction {
     
-    @Column(nullable = false)
-    private Long moneyBoxId;
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
     
-    @Column(nullable = false)
-    private LocalDateTime transactionDate;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "money_box_id", nullable = false)
+    private MoneyBox moneyBox;
     
-    @Column(nullable = false)
     @Enumerated(EnumType.STRING)
+    @Column(name = "transaction_type", nullable = false)
     private TransactionType transactionType;
     
-    @Column(nullable = false, precision = 19, scale = 2)
+    @Column(name = "amount", precision = 15, scale = 2, nullable = false)
     private BigDecimal amount;
     
-    @Column(nullable = false, length = 3)
-    private String currency; // SYP, USD, EUR
+    @Column(name = "balance_before", precision = 15, scale = 2)
+    private BigDecimal balanceBefore;
     
-    @Column(precision = 19, scale = 6)
-    private BigDecimal exchangeRate; // Rate to SYP
+    @Column(name = "balance_after", precision = 15, scale = 2)
+    private BigDecimal balanceAfter;
     
-    @Column(nullable = false, precision = 19, scale = 2)
-    private BigDecimal amountInSYP; // Always stored in SYP
-    
-    // References (only for entity-based transactions)
-    @Column
-    private Long referenceId; // ID of related entity (nullable)
-    
-    @Column
-    private String referenceType; // SALE_INVOICE, PURCHASE_INVOICE, CUSTOMER_RETURN, CASH_MOVEMENT
-    
-    @Column
-    private String referenceNumber; // Human-readable reference
-    
-    // Parties Involved
-    @Column
-    private Long customerId; // For customer transactions
-    
-    @Column
-    private Long supplierId; // For supplier transactions
-    
-    @Column(nullable = false)
-    private Long employeeId; // Who performed transaction
-    
-    @Column
-    private Long authorizedBy; // Manager approval if needed
-    
-    // Business Context
-    @Column
+    @Column(name = "description")
     private String description;
     
-    @Column
-    private String notes;
+    @Column(name = "reference_id")
+    private String referenceId;
     
-    @Column(nullable = false)
-    private String status; // PENDING, COMPLETED, CANCELLED, REVERSED
+    @Column(name = "reference_type")
+    private String referenceType;
     
-    // Audit & Control
-    @Column
-    private String paymentMethod; // CASH, CARD, BANK_TRANSFER, CHECK
+    @Column(name = "currency", length = 3)
+    private String currency;
     
-    @Column
-    private String receiptNumber; // Physical receipt number
+    @CreationTimestamp
+    @Column(name = "created_at")
+    private LocalDateTime createdAt;
     
-    @Column(nullable = false)
-    private Boolean requiresApproval = false;
-    
-    @Column
-    private String approvalStatus; // PENDING, APPROVED, REJECTED
-    
-    @Override
-    protected String getSequenceName() {
-        return "money_box_transaction_id_seq";
-    }
+    @Column(name = "created_by")
+    private String createdBy;
 }

@@ -1,49 +1,41 @@
 package com.Teryaq.moneybox.entity;
 
-import com.Teryaq.utils.entity.AuditedEntity;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.experimental.SuperBuilder;
+import org.hibernate.annotations.CreationTimestamp;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "exchange_rates")
+@Table(name = "exchange_rate")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@SuperBuilder
-public class ExchangeRate extends AuditedEntity {
+public class ExchangeRate {
     
-    @Column(nullable = false, length = 3)
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+    
+    @Column(name = "from_currency", length = 3, nullable = false)
     private String fromCurrency;
     
-    @Column(nullable = false, length = 3)
+    @Column(name = "to_currency", length = 3, nullable = false)
     private String toCurrency;
     
-    @Column(nullable = false, precision = 19, scale = 6)
+    @Column(name = "rate", precision = 15, scale = 6, nullable = false)
     private BigDecimal rate;
     
-    @Column(nullable = false)
-    private LocalDateTime effectiveFrom;
-    
-    @Column
-    private LocalDateTime effectiveTo;
-    
-    @Column(nullable = false)
+    @Column(name = "is_active")
     private Boolean isActive = true;
     
-    @Column
-    private String source; // "MANUAL", "API", "SYSTEM"
+    @CreationTimestamp
+    @Column(name = "created_at")
+    private LocalDateTime createdAt;
     
-    @Column
-    private String notes;
-    
-    @Override
-    protected String getSequenceName() {
-        return "exchange_rate_id_seq";
-    }
+    @Column(name = "effective_date")
+    private LocalDateTime effectiveDate;
 }

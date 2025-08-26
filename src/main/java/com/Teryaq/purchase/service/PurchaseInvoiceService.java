@@ -25,13 +25,14 @@ import com.Teryaq.user.repository.SupplierRepository;
 import com.Teryaq.user.service.BaseSecurityService;
 import com.Teryaq.utils.exception.ConflictException;
 import com.Teryaq.utils.exception.ResourceNotFoundException;
-import com.Teryaq.moneybox.service.MoneyBoxIntegrationService;
+import com.Teryaq.moneybox.service.PurchaseIntegrationService;
 import jakarta.transaction.Transactional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -51,7 +52,7 @@ public class PurchaseInvoiceService extends BaseSecurityService {
     private final PurchaseInvoiceMapper purchaseInvoiceMapper;
     private final StockItemRepo stockItemRepo;
     private final MasterProductRepo masterProductRepo;
-    private final MoneyBoxIntegrationService moneyBoxIntegrationService;
+    private final PurchaseIntegrationService purchaseIntegrationService;
 
     public PurchaseInvoiceService(PurchaseInvoiceRepo purchaseInvoiceRepo,
                                 PurchaseInvoiceItemRepo purchaseInvoiceItemRepo,
@@ -61,7 +62,7 @@ public class PurchaseInvoiceService extends BaseSecurityService {
                                 PurchaseInvoiceMapper purchaseInvoiceMapper,
                                 StockItemRepo stockItemRepo,
                                 MasterProductRepo masterProductRepo,
-                                MoneyBoxIntegrationService moneyBoxIntegrationService,
+                                PurchaseIntegrationService purchaseIntegrationService,
                                 com.Teryaq.user.repository.UserRepository userRepository) {
         super(userRepository);
         this.purchaseInvoiceRepo = purchaseInvoiceRepo;
@@ -72,7 +73,7 @@ public class PurchaseInvoiceService extends BaseSecurityService {
         this.purchaseInvoiceMapper = purchaseInvoiceMapper;
         this.stockItemRepo = stockItemRepo;
         this.masterProductRepo = masterProductRepo;
-        this.moneyBoxIntegrationService = moneyBoxIntegrationService;
+        this.purchaseIntegrationService = purchaseIntegrationService;
     }
 
     @Transactional
@@ -156,11 +157,13 @@ public class PurchaseInvoiceService extends BaseSecurityService {
         // Integrate with Money Box for cash payments (if payment method changed to cash)
         if (request.getPaymentMethod() == com.Teryaq.product.Enum.PaymentMethod.CASH) {
             try {
-                moneyBoxIntegrationService.recordCashPurchase(
-                    java.math.BigDecimal.valueOf(saved.getTotal()),
-                    request.getCurrency().toString(),
+                // Get current pharmacy ID for MoneyBox integration
+                Long currentPharmacyId = getCurrentUserPharmacyId();
+                purchaseIntegrationService.recordPurchasePayment(
+                    currentPharmacyId,
                     saved.getId(),
-                    "INV-" + saved.getId() // Use ID as reference number
+                    java.math.BigDecimal.valueOf(saved.getTotal()),
+                    request.getCurrency().toString()
                 );
                 logger.info("Cash purchase recorded in Money Box for edited invoice: {}", saved.getId());
             } catch (Exception e) {
@@ -329,11 +332,13 @@ public class PurchaseInvoiceService extends BaseSecurityService {
         // Integrate with Money Box for cash payments
         if (request.getPaymentMethod() == com.Teryaq.product.Enum.PaymentMethod.CASH) {
             try {
-                moneyBoxIntegrationService.recordCashPurchase(
-                    java.math.BigDecimal.valueOf(saved.getTotal()),
-                    request.getCurrency().toString(),
+                // Get current pharmacy ID for MoneyBox integration
+                Long currentPharmacyId = getCurrentUserPharmacyId();
+                purchaseIntegrationService.recordPurchasePayment(
+                    currentPharmacyId,
                     saved.getId(),
-                    "INV-" + saved.getId() // Use ID as reference number
+                    BigDecimal.valueOf(saved.getTotal()),
+                    request.getCurrency().toString()
                 );
                 logger.info("Cash purchase recorded in Money Box for invoice: {}", saved.getId());
             } catch (Exception e) {

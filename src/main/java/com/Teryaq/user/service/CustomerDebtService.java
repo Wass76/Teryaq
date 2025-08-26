@@ -14,7 +14,7 @@ import com.Teryaq.user.repository.UserRepository;
 import com.Teryaq.utils.exception.ResourceNotFoundException;
 import com.Teryaq.utils.exception.ConflictException;
 import com.Teryaq.product.Enum.PaymentMethod;
-import com.Teryaq.moneybox.service.MoneyBoxIntegrationService;
+import com.Teryaq.moneybox.service.SalesIntegrationService;
 import com.Teryaq.utils.exception.UnAuthorizedException;
     
 
@@ -38,18 +38,18 @@ public class CustomerDebtService extends BaseSecurityService {
     private final CustomerDebtRepository customerDebtRepository;
     private final CustomerRepo customerRepo;
     private final CustomerDebtMapper customerDebtMapper;
-    private final MoneyBoxIntegrationService moneyBoxIntegrationService;
+    private final SalesIntegrationService salesIntegrationService;
 
     public CustomerDebtService(CustomerDebtRepository customerDebtRepository,
                        CustomerRepo customerRepo,
                        CustomerDebtMapper customerDebtMapper,
-                       MoneyBoxIntegrationService moneyBoxIntegrationService,
+                       SalesIntegrationService salesIntegrationService,
                        UserRepository userRepository) {
         super(userRepository);
         this.customerDebtRepository = customerDebtRepository;
         this.customerRepo = customerRepo;
         this.customerDebtMapper = customerDebtMapper;
-        this.moneyBoxIntegrationService = moneyBoxIntegrationService;
+        this.salesIntegrationService = salesIntegrationService;
     }
 
     @Transactional
@@ -71,6 +71,11 @@ public class CustomerDebtService extends BaseSecurityService {
         debt.setStatus("ACTIVE");
         
         CustomerDebt savedDebt = customerDebtRepository.save(debt);
+        
+        // Note: Debt creation doesn't affect MoneyBox as it's just a record of money owed
+        // MoneyBox will only be affected when the debt is actually paid (cash payment)
+        logger.info("Debt created for customer: {}, amount: {}", customer.getName(), request.getAmount());
+        
         return customerDebtMapper.toResponse(savedDebt);
     }
 
@@ -165,15 +170,17 @@ public class CustomerDebtService extends BaseSecurityService {
         // تسجيل العملية في الصندوق إذا كان الدفع نقدي
         if (request.getPaymentMethod() == PaymentMethod.CASH) {
             try {
-                // TODO: Integrate with MoneyBox for debt payment
-                moneyBoxIntegrationService.recordCashSale(
-                    BigDecimal.valueOf(paymentAmount),
-                    "SYP", 
+                // Get current pharmacy ID for MoneyBox integration
+                Long pharmacyId = getCurrentUserPharmacyId();
+                salesIntegrationService.recordSalePayment(
+                    pharmacyId,
                     debt.getId(),
-                    "DEBT-" + debt.getId()
+                    BigDecimal.valueOf(paymentAmount),
+                    "SYP"
                 );
+                logger.info("Debt payment recorded in MoneyBox for debt: {}", debt.getId());
             } catch (Exception e) {
-                logger.warn("Failed to record debt payment in MoneyBox: {}", e.getMessage());
+                logger.warn("Failed to record debt payment in MoneyBox for debt {}: {}", debt.getId(), e.getMessage());
             }
         }
         
@@ -404,14 +411,17 @@ public class CustomerDebtService extends BaseSecurityService {
         if (request.getPaymentMethod() == PaymentMethod.CASH) {
             try {
                 float actualPaidAmount = request.getTotalPaymentAmount().floatValue() - remainingPaymentAmount;
-                moneyBoxIntegrationService.recordCashSale(
+                // Get current pharmacy ID for MoneyBox integration
+                Long pharmacyId = getCurrentUserPharmacyId();
+                salesIntegrationService.recordSalePayment(
+                    pharmacyId,
+                    customerId, // Using customerId as reference ID for multiple debts
                     BigDecimal.valueOf(actualPaidAmount),
-                    "SYP",
-                    customerId,
-                    "CUSTOMER-DEBTS-" + customerId
+                    "SYP"
                 );
+                logger.info("Multiple debt payments recorded in MoneyBox for customer: {}", customerId);
             } catch (Exception e) {
-                logger.warn("Failed to record debt payment in MoneyBox: {}", e.getMessage());
+                logger.warn("Failed to record debt payment in MoneyBox for customer {}: {}", customerId, e.getMessage());
             }
         }
         

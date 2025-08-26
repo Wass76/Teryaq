@@ -1,7 +1,7 @@
 package com.Teryaq.moneybox.repository;
 
 import com.Teryaq.moneybox.entity.MoneyBoxTransaction;
-import com.Teryaq.moneybox.Enum.TransactionType;
+import com.Teryaq.moneybox.enums.TransactionType;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -14,20 +14,30 @@ import java.util.List;
 @Repository
 public interface MoneyBoxTransactionRepository extends JpaRepository<MoneyBoxTransaction, Long> {
     
-    List<MoneyBoxTransaction> findByMoneyBoxIdOrderByTransactionDateDesc(Long moneyBoxId);
+    List<MoneyBoxTransaction> findByMoneyBoxIdOrderByCreatedAtDesc(Long moneyBoxId);
     
-    List<MoneyBoxTransaction> findByMoneyBoxIdAndTransactionType(
-        Long moneyBoxId, TransactionType transactionType);
+    List<MoneyBoxTransaction> findByMoneyBoxIdAndTransactionTypeOrderByCreatedAtDesc(
+            Long moneyBoxId, TransactionType transactionType);
     
-    List<MoneyBoxTransaction> findByReferenceTypeAndReferenceId(
-        String referenceType, Long referenceId);
+    List<MoneyBoxTransaction> findByMoneyBoxIdAndCreatedAtBetweenOrderByCreatedAtDesc(
+            Long moneyBoxId, LocalDateTime startDate, LocalDateTime endDate);
     
-    @Query("SELECT COALESCE(SUM(t.amountInSYP), 0) FROM MoneyBoxTransaction t " +
-           "WHERE t.moneyBoxId = :moneyBoxId AND t.transactionType = :transactionType")
-    BigDecimal sumAmountByType(@Param("moneyBoxId") Long moneyBoxId, 
-                              @Param("transactionType") TransactionType transactionType);
+    @Query("SELECT SUM(t.amount) FROM MoneyBoxTransaction t WHERE t.moneyBox.id = :moneyBoxId AND t.transactionType = :transactionType")
+    BigDecimal getTotalAmountByType(@Param("moneyBoxId") Long moneyBoxId, @Param("transactionType") TransactionType transactionType);
     
-    @Query("SELECT t FROM MoneyBoxTransaction t WHERE t.moneyBoxId = :moneyBoxId " +
-           "ORDER BY t.transactionDate DESC")
-    List<MoneyBoxTransaction> findTransactionsByMoneyBox(@Param("moneyBoxId") Long moneyBoxId);
+    @Query("SELECT SUM(t.amount) FROM MoneyBoxTransaction t WHERE t.moneyBox.id = :moneyBoxId AND t.createdAt BETWEEN :startDate AND :endDate")
+    BigDecimal getTotalAmountByPeriod(@Param("moneyBoxId") Long moneyBoxId, 
+                                     @Param("startDate") LocalDateTime startDate, 
+                                     @Param("endDate") LocalDateTime endDate);
+    
+    @Query("SELECT SUM(t.amount) FROM MoneyBoxTransaction t WHERE t.moneyBox.id = :moneyBoxId AND t.transactionType = :transactionType AND t.createdAt BETWEEN :startDate AND :endDate")
+    BigDecimal getTotalAmountByTypeAndPeriod(@Param("moneyBoxId") Long moneyBoxId, 
+                                            @Param("transactionType") TransactionType transactionType,
+                                            @Param("startDate") LocalDateTime startDate, 
+                                            @Param("endDate") LocalDateTime endDate);
+    
+    @Query("SELECT COUNT(t) FROM MoneyBoxTransaction t WHERE t.moneyBox.id = :moneyBoxId AND t.transactionType = :transactionType")
+    Long countTransactionsByType(@Param("moneyBoxId") Long moneyBoxId, @Param("transactionType") TransactionType transactionType);
+    
+    List<MoneyBoxTransaction> findByReferenceIdAndReferenceType(String referenceId, String referenceType);
 }

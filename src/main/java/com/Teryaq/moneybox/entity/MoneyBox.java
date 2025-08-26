@@ -1,84 +1,54 @@
 package com.Teryaq.moneybox.entity;
 
-import com.Teryaq.moneybox.Enum.MoneyBoxStatus;
-import com.Teryaq.moneybox.Enum.PeriodType;
-import com.Teryaq.utils.entity.AuditedEntity;
+import com.Teryaq.moneybox.enums.MoneyBoxStatus;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.experimental.SuperBuilder;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 
 import java.math.BigDecimal;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "money_boxes")
+@Table(name = "money_box")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@SuperBuilder
-public class MoneyBox extends AuditedEntity {
+public class MoneyBox {
     
-    @Column(nullable = false)
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+    
+    @Column(name = "pharmacy_id", nullable = false)
     private Long pharmacyId;
     
-    @Column(nullable = false)
-    private LocalDate businessDate;
+    @Column(name = "current_balance", precision = 15, scale = 2, nullable = false)
+    private BigDecimal currentBalance;
     
-    @Column(nullable = false)
+    @Column(name = "initial_balance", precision = 15, scale = 2, nullable = false)
+    private BigDecimal initialBalance;
+    
+    @Column(name = "last_reconciled")
+    private LocalDateTime lastReconciled;
+    
+    @Column(name = "reconciled_balance", precision = 15, scale = 2)
+    private BigDecimal reconciledBalance;
+    
     @Enumerated(EnumType.STRING)
-    private MoneyBoxStatus status; // OPEN, CLOSED, RECONCILED
+    @Column(name = "status")
+    private MoneyBoxStatus status;
     
-    @Column(nullable = false)
-    @Enumerated(EnumType.STRING)
-    private PeriodType periodType; // DAILY, WEEKLY, MONTHLY, YEARLY
+    @Column(name = "currency", length = 3, nullable = false)
+    private String currency;
     
-    @Column
-    private Long parentMoneyBoxId; // For aggregation (daily → weekly → monthly)
+    @CreationTimestamp
+    @Column(name = "created_at")
+    private LocalDateTime createdAt;
     
-    @Column(nullable = false, precision = 19, scale = 2)
-    private BigDecimal openingBalance;
-    
-    @Column(precision = 19, scale = 2)
-    private BigDecimal closingBalance;
-    
-    @Column(precision = 19, scale = 2)
-    private BigDecimal expectedBalance;
-    
-    @Column(precision = 19, scale = 2)
-    private BigDecimal actualBalance;
-    
-    @Column
-    private LocalDateTime openedAt;
-    
-    @Column
-    private LocalDateTime closedAt;
-    
-    @Column
-    private Long openedBy; // Employee ID
-    
-    @Column
-    private Long closedBy; // Employee ID
-    
-    @Column
-    private String openingNotes;
-    
-    @Column
-    private String closingNotes;
-    
-    @Column(precision = 19, scale = 2)
-    private BigDecimal totalCashIn;
-    
-    @Column(precision = 19, scale = 2)
-    private BigDecimal totalCashOut;
-    
-    @Column(precision = 19, scale = 2)
-    private BigDecimal netCashFlow;
-    
-    @Override
-    protected String getSequenceName() {
-        return "money_box_id_seq";
-    }
+    @UpdateTimestamp
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt;
 }

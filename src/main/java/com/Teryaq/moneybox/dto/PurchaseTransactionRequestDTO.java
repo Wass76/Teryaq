@@ -1,6 +1,5 @@
 package com.Teryaq.moneybox.dto;
 
-import com.Teryaq.moneybox.enums.TransactionType;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -10,12 +9,10 @@ import java.math.BigDecimal;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class TransactionRequestDTO {
-    private Long moneyBoxId;
-    private TransactionType transactionType;
+public class PurchaseTransactionRequestDTO {
+    private Long pharmacyId;
+    private Long purchaseId;
     private BigDecimal amount;
-    private String description;
-    private String referenceId;
-    private String referenceType;
     private String currency;
+    private String paymentMethod; // CASH, CARD, etc.
 }
