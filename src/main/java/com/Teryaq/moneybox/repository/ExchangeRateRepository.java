@@ -1,6 +1,7 @@
 package com.Teryaq.moneybox.repository;
 
 import com.Teryaq.moneybox.entity.ExchangeRate;
+import com.Teryaq.user.Enum.Currency;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -12,15 +13,17 @@ import java.util.Optional;
 @Repository
 public interface ExchangeRateRepository extends JpaRepository<ExchangeRate, Long> {
     
-    Optional<ExchangeRate> findByFromCurrencyAndToCurrencyAndIsActiveTrue(String fromCurrency, String toCurrency);
+    Optional<ExchangeRate> findByFromCurrencyAndToCurrencyAndIsActiveTrue(Currency fromCurrency, Currency toCurrency);
     
-    List<ExchangeRate> findByFromCurrencyAndIsActiveTrue(String fromCurrency);
+    List<ExchangeRate> findByFromCurrencyAndIsActiveTrue(Currency fromCurrency);
     
-    List<ExchangeRate> findByToCurrencyAndIsActiveTrue(String toCurrency);
+    List<ExchangeRate> findByToCurrencyAndIsActiveTrue(Currency toCurrency);
+    
+    List<ExchangeRate> findByIsActiveTrue();
     
     @Query("SELECT e FROM ExchangeRate e WHERE e.isActive = true AND (e.fromCurrency = :currency OR e.toCurrency = :currency)")
-    List<ExchangeRate> findActiveRatesByCurrency(@Param("currency") String currency);
+    List<ExchangeRate> findActiveRatesByCurrency(@Param("currency") Currency currency);
     
     @Query("SELECT COUNT(e) FROM ExchangeRate e WHERE e.isActive = true AND e.fromCurrency = :fromCurrency AND e.toCurrency = :toCurrency")
-    Long countActiveRates(@Param("fromCurrency") String fromCurrency, @Param("toCurrency") String toCurrency);
+    Long countActiveRates(@Param("fromCurrency") Currency fromCurrency, @Param("toCurrency") Currency toCurrency);
 }

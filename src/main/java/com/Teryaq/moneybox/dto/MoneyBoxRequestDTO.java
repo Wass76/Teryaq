@@ -1,5 +1,6 @@
 package com.Teryaq.moneybox.dto;
 
+import com.Teryaq.user.Enum.Currency;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Size;
@@ -20,5 +21,5 @@ public class MoneyBoxRequestDTO {
     
     @NotNull(message = "Currency is required")
     @Size(min = 3, max = 3, message = "Currency must be exactly 3 characters (e.g., SYP)")
-    private String currency;
+    private Currency currency;
 }

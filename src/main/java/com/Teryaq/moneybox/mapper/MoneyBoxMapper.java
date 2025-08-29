@@ -2,90 +2,89 @@ package com.Teryaq.moneybox.mapper;
 
 import com.Teryaq.moneybox.dto.MoneyBoxRequestDTO;
 import com.Teryaq.moneybox.dto.MoneyBoxResponseDTO;
+import com.Teryaq.moneybox.dto.MoneyBoxTransactionResponseDTO;
 import com.Teryaq.moneybox.entity.MoneyBox;
+import com.Teryaq.moneybox.entity.MoneyBoxTransaction;
 import com.Teryaq.moneybox.enums.MoneyBoxStatus;
+import com.Teryaq.user.Enum.Currency;
+import org.springframework.stereotype.Component;
 
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
+@Component
 public class MoneyBoxMapper {
     
-    /**
-     * Convert MoneyBoxRequestDTO to MoneyBox entity
-     * Note: pharmacyId should be set separately in service from current user context
-     */
-    public static MoneyBox toEntity(MoneyBoxRequestDTO dto) {
-        if (dto == null) {
-            return null;
-        }
-        
-        MoneyBox entity = new MoneyBox();
-        entity.setInitialBalance(dto.getInitialBalance());
-        entity.setCurrentBalance(dto.getInitialBalance()); // Set current balance to initial balance
-        entity.setCurrency(dto.getCurrency());
-        entity.setStatus(MoneyBoxStatus.PENDING); // Default status
-        // pharmacyId will be set from current user context in service
-        // createdAt and updatedAt will be automatically set by JPA annotations
-        
-        return entity;
+    public static MoneyBox toEntity(MoneyBoxRequestDTO request) {
+        MoneyBox moneyBox = new MoneyBox();
+        moneyBox.setInitialBalance(request.getInitialBalance());
+        moneyBox.setCurrentBalance(request.getInitialBalance());
+        moneyBox.setStatus(MoneyBoxStatus.OPEN); // Set default status to OPEN
+        moneyBox.setCurrency("SYP"); // Always set to SYP for consistency
+        return moneyBox;
     }
     
-    /**
-     * Convert MoneyBox entity to MoneyBoxResponseDTO
-     */
-    public static MoneyBoxResponseDTO toResponseDTO(MoneyBox entity) {
-        if (entity == null) {
-            return null;
-        }
-        
-        MoneyBoxResponseDTO dto = new MoneyBoxResponseDTO();
-        dto.setId(entity.getId());
-        dto.setPharmacyId(entity.getPharmacyId());
-        dto.setCurrentBalance(entity.getCurrentBalance());
-        dto.setInitialBalance(entity.getInitialBalance());
-        dto.setLastReconciled(entity.getLastReconciled());
-        dto.setReconciledBalance(entity.getReconciledBalance());
-        dto.setStatus(entity.getStatus());
-        dto.setCurrency(entity.getCurrency());
-        dto.setCreatedAt(entity.getCreatedAt());
-        dto.setUpdatedAt(entity.getUpdatedAt());
-        
-        return dto;
+    public static MoneyBoxResponseDTO toResponseDTO(MoneyBox moneyBox) {
+        return MoneyBoxResponseDTO.builder()
+                .id(moneyBox.getId())
+                .pharmacyId(moneyBox.getPharmacyId())
+                .currentBalance(moneyBox.getCurrentBalance())
+                .initialBalance(moneyBox.getInitialBalance())
+                .lastReconciled(moneyBox.getLastReconciled())
+                .reconciledBalance(moneyBox.getReconciledBalance())
+                .status(moneyBox.getStatus())
+                .currency(moneyBox.getCurrency())
+                .baseCurrency(Currency.SYP)
+                .totalBalanceInSYP(moneyBox.getCurrentBalance())
+                .createdAt(moneyBox.getCreatedAt())
+                .updatedAt(moneyBox.getUpdatedAt())
+                .build();
     }
     
-    /**
-     * Convert List of MoneyBox entities to List of MoneyBoxResponseDTO
-     */
-    public static List<MoneyBoxResponseDTO> toResponseDTOList(List<MoneyBox> entities) {
-        if (entities == null) {
-            return null;
+    public static MoneyBoxResponseDTO toResponseDTOWithTransactions(MoneyBox moneyBox, 
+                                                                  List<MoneyBoxTransaction> transactions) {
+        MoneyBoxResponseDTO response = toResponseDTO(moneyBox);
+        
+        if (transactions != null && !transactions.isEmpty()) {
+            response.setRecentTransactions(transactions.stream()
+                    .map(MoneyBoxMapper::toTransactionResponseDTO)
+                    .collect(Collectors.toList()));
+            response.setTotalTransactionCount(transactions.size());
         }
         
-        return entities.stream()
-                .map(MoneyBoxMapper::toResponseDTO)
+        return response;
+    }
+    
+    public static MoneyBoxTransactionResponseDTO toTransactionResponseDTO(MoneyBoxTransaction transaction) {
+        return MoneyBoxTransactionResponseDTO.builder()
+                .id(transaction.getId())
+                .moneyBoxId(transaction.getMoneyBox().getId())
+                .transactionType(transaction.getTransactionType())
+                .amount(transaction.getAmount())
+                .balanceBefore(transaction.getBalanceBefore())
+                .balanceAfter(transaction.getBalanceAfter())
+                .description(transaction.getDescription())
+                .referenceId(transaction.getReferenceId())
+                .referenceType(transaction.getReferenceType())
+                .originalCurrency(transaction.getOriginalCurrency())
+                .originalAmount(transaction.getOriginalAmount())
+                .convertedCurrency(transaction.getConvertedCurrency())
+                .convertedAmount(transaction.getConvertedAmount())
+                .exchangeRate(transaction.getExchangeRate())
+                .conversionTimestamp(transaction.getConversionTimestamp())
+                .conversionSource(transaction.getConversionSource())
+                .createdAt(transaction.getCreatedAt())
+                .createdBy(transaction.getCreatedBy())
+                .build();
+    }
+    
+    public static List<MoneyBoxTransactionResponseDTO> toTransactionResponseDTOList(List<MoneyBoxTransaction> transactions) {
+        if (transactions == null) {
+            return List.of();
+        }
+        
+        return transactions.stream()
+                .map(MoneyBoxMapper::toTransactionResponseDTO)
                 .collect(Collectors.toList());
-    }
-    
-    /**
-     * Update MoneyBox entity with values from MoneyBoxRequestDTO
-     * Note: pharmacyId is not updated as it should not be changed
-     */
-    public static void updateEntity(MoneyBox entity, MoneyBoxRequestDTO dto) {
-        if (entity == null || dto == null) {
-            return;
-        }
-        
-        // Only update fields that should be updatable
-        if (dto.getInitialBalance() != null) {
-            entity.setInitialBalance(dto.getInitialBalance());
-        }
-        
-        if (dto.getCurrency() != null) {
-            entity.setCurrency(dto.getCurrency());
-        }
-        
-        // Note: pharmacyId should not be updated from DTO
-        // Note: updatedAt will be automatically updated by JPA @UpdateTimestamp annotation
     }
 }

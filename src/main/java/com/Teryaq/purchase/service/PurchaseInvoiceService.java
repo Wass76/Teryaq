@@ -163,7 +163,7 @@ public class PurchaseInvoiceService extends BaseSecurityService {
                     currentPharmacyId,
                     saved.getId(),
                     java.math.BigDecimal.valueOf(saved.getTotal()),
-                    request.getCurrency().toString()
+                    request.getCurrency()
                 );
                 logger.info("Cash purchase recorded in Money Box for edited invoice: {}", saved.getId());
             } catch (Exception e) {
@@ -338,7 +338,7 @@ public class PurchaseInvoiceService extends BaseSecurityService {
                     currentPharmacyId,
                     saved.getId(),
                     BigDecimal.valueOf(saved.getTotal()),
-                    request.getCurrency().toString()
+                    request.getCurrency()
                 );
                 logger.info("Cash purchase recorded in Money Box for invoice: {}", saved.getId());
             } catch (Exception e) {

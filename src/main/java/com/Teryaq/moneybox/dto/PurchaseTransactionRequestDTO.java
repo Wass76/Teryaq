@@ -1,5 +1,6 @@
 package com.Teryaq.moneybox.dto;
 
+import com.Teryaq.user.Enum.Currency;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -13,6 +14,6 @@ public class PurchaseTransactionRequestDTO {
     private Long pharmacyId;
     private Long purchaseId;
     private BigDecimal amount;
-    private String currency;
+    private Currency currency;
     private String paymentMethod; // CASH, CARD, etc.
 }

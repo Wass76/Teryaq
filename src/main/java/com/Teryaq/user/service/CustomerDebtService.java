@@ -30,6 +30,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import static com.Teryaq.user.Enum.Currency.SYP;
+
 @Service
 public class CustomerDebtService extends BaseSecurityService {
 
@@ -176,7 +178,7 @@ public class CustomerDebtService extends BaseSecurityService {
                     pharmacyId,
                     debt.getId(),
                     BigDecimal.valueOf(paymentAmount),
-                    "SYP"
+                    SYP
                 );
                 logger.info("Debt payment recorded in MoneyBox for debt: {}", debt.getId());
             } catch (Exception e) {
@@ -417,7 +419,7 @@ public class CustomerDebtService extends BaseSecurityService {
                     pharmacyId,
                     customerId, // Using customerId as reference ID for multiple debts
                     BigDecimal.valueOf(actualPaidAmount),
-                    "SYP"
+                    SYP
                 );
                 logger.info("Multiple debt payments recorded in MoneyBox for customer: {}", customerId);
             } catch (Exception e) {

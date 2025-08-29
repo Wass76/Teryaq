@@ -5,6 +5,7 @@ import com.Teryaq.moneybox.entity.MoneyBoxTransaction;
 import com.Teryaq.moneybox.enums.TransactionType;
 import com.Teryaq.moneybox.repository.MoneyBoxRepository;
 import com.Teryaq.moneybox.repository.MoneyBoxTransactionRepository;
+import com.Teryaq.user.Enum.Currency;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -20,39 +21,70 @@ public class SalesIntegrationService {
     
     private final MoneyBoxRepository moneyBoxRepository;
     private final MoneyBoxTransactionRepository transactionRepository;
+    private final ExchangeRateService exchangeRateService;
     
     /**
-     * Records a sale payment in the money box
+     * Records a sale payment in the money box with automatic currency conversion to SYP
      * This method is designed to be called within a transaction from the sales service
      */
     @Transactional(propagation = org.springframework.transaction.annotation.Propagation.REQUIRED)
-    public void recordSalePayment(Long pharmacyId, Long saleId, BigDecimal amount, String currency) {
-        log.info("Recording sale payment: pharmacy={}, sale={}, amount={}", pharmacyId, saleId, amount);
+    public void recordSalePayment(Long pharmacyId, Long saleId, BigDecimal amount, Currency currency) {
+        log.info("Recording sale payment: pharmacy={}, sale={}, amount={}, currency={}", 
+                pharmacyId, saleId, amount, currency);
         
         try {
             MoneyBox moneyBox = findMoneyBoxByPharmacyId(pharmacyId);
             
-            // Create transaction record
+            // Convert amount to SYP if it's not already in SYP
+            BigDecimal amountInSYP = amount;
+            BigDecimal exchangeRate = BigDecimal.ONE;
+            Currency originalCurrency = currency;
+            BigDecimal originalAmount = amount;
+            
+            if (!Currency.SYP.equals(currency)) {
+                try {
+                    amountInSYP = exchangeRateService.convertToSYP(amount, currency);
+                    exchangeRate = exchangeRateService.getExchangeRate(currency, Currency.SYP);
+                    log.info("Converted {} {} to {} SYP using rate: {}", 
+                            amount, currency, amountInSYP, exchangeRate);
+                } catch (Exception e) {
+                    log.warn("Failed to convert currency for sale {}: {}. Using original amount.", 
+                            saleId, e.getMessage());
+                    // Fallback: use original amount but mark as unconverted
+                    amountInSYP = amount;
+                    exchangeRate = BigDecimal.ZERO;
+                }
+            }
+            
+            // Create transaction record with enhanced currency information
             MoneyBoxTransaction transaction = new MoneyBoxTransaction();
             transaction.setMoneyBox(moneyBox);
             transaction.setTransactionType(TransactionType.SALE_PAYMENT);
-            transaction.setAmount(amount);
-            transaction.setCurrency(currency);
+            transaction.setAmount(amountInSYP);
+            transaction.setOriginalCurrency(originalCurrency);
+            transaction.setOriginalAmount(originalAmount);
+            transaction.setConvertedCurrency(Currency.SYP);
+            transaction.setConvertedAmount(amountInSYP);
+            transaction.setExchangeRate(exchangeRate);
+            transaction.setConversionTimestamp(LocalDateTime.now());
+            transaction.setConversionSource("EXCHANGE_RATE_SERVICE");
             transaction.setBalanceBefore(moneyBox.getCurrentBalance());
-            transaction.setBalanceAfter(moneyBox.getCurrentBalance().add(amount));
-            transaction.setDescription("Sale payment for sale ID: " + saleId);
+            transaction.setBalanceAfter(moneyBox.getCurrentBalance().add(amountInSYP));
+            transaction.setDescription("Sale payment for sale ID: " + saleId + 
+                                   (originalCurrency != Currency.SYP ? " (Converted from " + originalCurrency + ")" : ""));
             transaction.setReferenceId(String.valueOf(saleId));
             transaction.setReferenceType("SALE");
             transaction.setCreatedAt(LocalDateTime.now());
             
-            // Update money box balance
-            moneyBox.setCurrentBalance(moneyBox.getCurrentBalance().add(amount));
+            // Update money box balance (always in SYP)
+            moneyBox.setCurrentBalance(moneyBox.getCurrentBalance().add(amountInSYP));
             
             // Save both transaction and updated money box
             transactionRepository.save(transaction);
             moneyBoxRepository.save(moneyBox);
             
-            log.info("Sale payment recorded successfully. New balance: {}", moneyBox.getCurrentBalance());
+            log.info("Sale payment recorded successfully. Amount: {} {} -> {} SYP. New balance: {}", 
+                    originalAmount, originalCurrency, amountInSYP, moneyBox.getCurrentBalance());
         } catch (Exception e) {
             log.error("Failed to record sale payment for sale {}: {}", saleId, e.getMessage(), e);
             throw new RuntimeException("Failed to record sale payment in MoneyBox", e);
@@ -60,37 +92,67 @@ public class SalesIntegrationService {
     }
     
     /**
-     * Records a sale refund in the money box
+     * Records a sale refund in the money box with automatic currency conversion to SYP
      * This method is designed to be called within a transaction from the sales service
      */
     @Transactional(propagation = org.springframework.transaction.annotation.Propagation.REQUIRED)
-    public void recordSaleRefund(Long pharmacyId, Long saleId, BigDecimal amount, String currency) {
-        log.info("Recording sale refund: pharmacy={}, sale={}, amount={}", pharmacyId, saleId, amount);
+    public void recordSaleRefund(Long pharmacyId, Long saleId, BigDecimal amount, Currency currency) {
+        log.info("Recording sale refund: pharmacy={}, sale={}, amount={}, currency={}", 
+                pharmacyId, saleId, amount, currency);
         
         try {
             MoneyBox moneyBox = findMoneyBoxByPharmacyId(pharmacyId);
             
-            // Create transaction record
+            // Convert amount to SYP if it's not already in SYP
+            BigDecimal amountInSYP = amount;
+            BigDecimal exchangeRate = BigDecimal.ONE;
+            Currency originalCurrency = currency;
+            BigDecimal originalAmount = amount;
+            
+            if (!Currency.SYP.equals(currency)) {
+                try {
+                    amountInSYP = exchangeRateService.convertToSYP(amount, currency);
+                    exchangeRate = exchangeRateService.getExchangeRate(currency, Currency.SYP);
+                    log.info("Converted {} {} to {} SYP using rate: {}", 
+                            amount, currency, amountInSYP, exchangeRate);
+                } catch (Exception e) {
+                    log.warn("Failed to convert currency for sale refund {}: {}. Using original amount.", 
+                            saleId, e.getMessage());
+                    // Fallback: use original amount but mark as unconverted
+                    amountInSYP = amount;
+                    exchangeRate = BigDecimal.ZERO;
+                }
+            }
+            
+            // Create transaction record with enhanced currency information
             MoneyBoxTransaction transaction = new MoneyBoxTransaction();
             transaction.setMoneyBox(moneyBox);
             transaction.setTransactionType(TransactionType.CASH_WITHDRAWAL); // Treat refund as withdrawal
-            transaction.setAmount(amount.negate()); // Negative amount for refund
-            transaction.setCurrency(currency);
+            transaction.setAmount(amountInSYP.negate()); // Negative amount for refund
+            transaction.setOriginalCurrency(originalCurrency);
+            transaction.setOriginalAmount(originalAmount);
+            transaction.setConvertedCurrency(Currency.SYP);
+            transaction.setConvertedAmount(amountInSYP);
+            transaction.setExchangeRate(exchangeRate);
+            transaction.setConversionTimestamp(LocalDateTime.now());
+            transaction.setConversionSource("EXCHANGE_RATE_SERVICE");
             transaction.setBalanceBefore(moneyBox.getCurrentBalance());
-            transaction.setBalanceAfter(moneyBox.getCurrentBalance().subtract(amount));
-            transaction.setDescription("Refund for sale ID: " + saleId);
+            transaction.setBalanceAfter(moneyBox.getCurrentBalance().subtract(amountInSYP));
+            transaction.setDescription("Refund for sale ID: " + saleId + 
+                                   (originalCurrency != Currency.SYP ? " (Converted from " + originalCurrency + ")" : ""));
             transaction.setReferenceId(String.valueOf(saleId));
             transaction.setReferenceType("SALE_REFUND");
             transaction.setCreatedAt(LocalDateTime.now());
             
-            // Update money box balance
-            moneyBox.setCurrentBalance(moneyBox.getCurrentBalance().subtract(amount));
+            // Update money box balance (always in SYP)
+            moneyBox.setCurrentBalance(moneyBox.getCurrentBalance().subtract(amountInSYP));
             
             // Save both transaction and updated money box
             transactionRepository.save(transaction);
             moneyBoxRepository.save(moneyBox);
             
-            log.info("Sale refund recorded successfully. New balance: {}", moneyBox.getCurrentBalance());
+            log.info("Sale refund recorded successfully. Amount: {} {} -> {} SYP. New balance: {}", 
+                    originalAmount, originalCurrency, amountInSYP, moneyBox.getCurrentBalance());
         } catch (Exception e) {
             log.error("Failed to record sale refund for sale {}: {}", saleId, e.getMessage(), e);
             throw new RuntimeException("Failed to record sale refund in MoneyBox", e);
@@ -98,7 +160,7 @@ public class SalesIntegrationService {
     }
     
     /**
-     * Gets total sales amount for a period
+     * Gets total sales amount for a period in SYP (converted from all currencies)
      */
     public BigDecimal getSalesAmountForPeriod(Long pharmacyId, LocalDateTime startDate, LocalDateTime endDate) {
         try {
