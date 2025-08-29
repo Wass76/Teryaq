@@ -1,6 +1,7 @@
 package com.Teryaq.moneybox.entity;
 
 import com.Teryaq.moneybox.enums.TransactionType;
+import com.Teryaq.user.Enum.Currency;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -47,8 +48,28 @@ public class MoneyBoxTransaction {
     @Column(name = "reference_type")
     private String referenceType;
     
-    @Column(name = "currency", length = 3)
-    private String currency;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "original_currency", length = 3)
+    private Currency originalCurrency;
+    
+    @Column(name = "original_amount", precision = 15, scale = 2)
+    private BigDecimal originalAmount;
+    
+    @Enumerated(EnumType.STRING)
+    @Column(name = "converted_currency", length = 3)
+    private Currency convertedCurrency;
+    
+    @Column(name = "converted_amount", precision = 15, scale = 2)
+    private BigDecimal convertedAmount;
+    
+    @Column(name = "exchange_rate", precision = 15, scale = 6)
+    private BigDecimal exchangeRate;
+    
+    @Column(name = "conversion_timestamp")
+    private LocalDateTime conversionTimestamp;
+    
+    @Column(name = "conversion_source")
+    private String conversionSource;
     
     @CreationTimestamp
     @Column(name = "created_at")

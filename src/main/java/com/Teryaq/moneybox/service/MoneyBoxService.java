@@ -9,6 +9,7 @@ import com.Teryaq.moneybox.enums.TransactionType;
 import com.Teryaq.moneybox.mapper.MoneyBoxMapper;
 import com.Teryaq.moneybox.repository.MoneyBoxRepository;
 import com.Teryaq.moneybox.repository.MoneyBoxTransactionRepository;
+import com.Teryaq.user.Enum.Currency;
 import com.Teryaq.user.service.BaseSecurityService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -26,13 +27,16 @@ public class MoneyBoxService extends BaseSecurityService {
     
     private final MoneyBoxRepository moneyBoxRepository;
     private final MoneyBoxTransactionRepository transactionRepository;
+    private final ExchangeRateService exchangeRateService;
     
     public MoneyBoxService(MoneyBoxRepository moneyBoxRepository,
                           MoneyBoxTransactionRepository transactionRepository,
+                          ExchangeRateService exchangeRateService,
                           com.Teryaq.user.repository.UserRepository userRepository) {
         super(userRepository);
         this.moneyBoxRepository = moneyBoxRepository;
         this.transactionRepository = transactionRepository;
+        this.exchangeRateService = exchangeRateService;
     }
     
     @Transactional
@@ -49,14 +53,40 @@ public class MoneyBoxService extends BaseSecurityService {
         moneyBox.setPharmacyId(currentPharmacyId); // Set pharmacyId from current user context
         moneyBox.setStatus(MoneyBoxStatus.OPEN); // Set to OPEN status
         
+        // Always set currency to SYP for consistency
+        moneyBox.setCurrency("SYP");
+        
         MoneyBox savedMoneyBox = moneyBoxRepository.save(moneyBox);
+        
+        // Convert initial balance to SYP if it's not already in SYP
+        BigDecimal initialBalanceInSYP = request.getInitialBalance();
+        Currency requestCurrency = request.getCurrency();
+        
+        if (requestCurrency != null && !Currency.SYP.equals(requestCurrency)) {
+            try {
+                initialBalanceInSYP = exchangeRateService.convertToSYP(request.getInitialBalance(), requestCurrency);
+                log.info("Converted initial balance from {} {} to {} SYP", 
+                        request.getInitialBalance(), requestCurrency, initialBalanceInSYP);
+            } catch (Exception e) {
+                log.warn("Failed to convert initial balance currency: {}. Using original amount.", e.getMessage());
+                // Fallback: use original amount
+                initialBalanceInSYP = request.getInitialBalance();
+            }
+        }
+        
+        // Update the saved money box with converted balance
+        savedMoneyBox.setCurrentBalance(initialBalanceInSYP);
+        savedMoneyBox.setInitialBalance(initialBalanceInSYP);
+        savedMoneyBox = moneyBoxRepository.save(savedMoneyBox);
         
         // Create opening balance transaction record
         createTransactionRecord(savedMoneyBox, TransactionType.OPENING_BALANCE, 
-                              request.getInitialBalance(), request.getInitialBalance(), 
-                              "Initial money box balance", null, null, request.getCurrency());
+                              initialBalanceInSYP, initialBalanceInSYP, 
+                              "Initial money box balance", null, null, 
+                              requestCurrency != null ? requestCurrency : Currency.SYP);
         
-        log.info("Money box created for pharmacy: {}", savedMoneyBox.getPharmacyId());
+        log.info("Money box created for pharmacy: {} with initial balance: {} SYP", 
+                savedMoneyBox.getPharmacyId(), initialBalanceInSYP);
         
         return MoneyBoxMapper.toResponseDTO(savedMoneyBox);
     }
@@ -68,10 +98,10 @@ public class MoneyBoxService extends BaseSecurityService {
     }
     
     @Transactional
-    public MoneyBoxResponseDTO addTransaction(BigDecimal amount, String description) {
+    public MoneyBoxResponseDTO addTransaction(BigDecimal amount, String description, Currency currency) {
         Long currentPharmacyId = getCurrentUserPharmacyId();
-        log.info("Adding manual transaction for pharmacy: {}, amount: {}, description: {}", 
-                currentPharmacyId, amount, description);
+        log.info("Adding manual transaction for pharmacy: {}, amount: {}, currency: {}, description: {}", 
+                currentPharmacyId, amount, currency, description);
         
         MoneyBox moneyBox = findMoneyBoxByPharmacyId(currentPharmacyId);
         
@@ -79,15 +109,30 @@ public class MoneyBoxService extends BaseSecurityService {
             throw new IllegalStateException("Money box is not open");
         }
         
-        if (amount.compareTo(BigDecimal.ZERO) == 0) {
-            throw new IllegalArgumentException("Transaction amount cannot be zero");
+        if (amount == null || amount.compareTo(BigDecimal.ZERO) == 0) {
+            throw new IllegalArgumentException("Transaction amount cannot be zero or null");
+        }
+        
+        // Convert amount to SYP if it's not already in SYP
+        BigDecimal amountInSYP = amount;
+        Currency originalCurrency = currency != null ? currency : Currency.SYP;
+        
+        if (!Currency.SYP.equals(originalCurrency)) {
+            try {
+                amountInSYP = exchangeRateService.convertToSYP(amount, originalCurrency);
+                log.info("Converted {} {} to {} SYP", amount, originalCurrency, amountInSYP);
+            } catch (Exception e) {
+                log.warn("Failed to convert currency: {}. Using original amount.", e.getMessage());
+                // Fallback: use original amount
+                amountInSYP = amount;
+            }
         }
         
         BigDecimal balanceBefore = moneyBox.getCurrentBalance();
-        BigDecimal newBalance = balanceBefore.add(amount);
+        BigDecimal newBalance = balanceBefore.add(amountInSYP);
         
         // Use more descriptive transaction types for manual transactions
-        TransactionType transactionType = (amount.compareTo(BigDecimal.ZERO) > 0) 
+        TransactionType transactionType = (amountInSYP.compareTo(BigDecimal.ZERO) > 0) 
             ? TransactionType.CASH_DEPOSIT 
             : TransactionType.CASH_WITHDRAWAL;
         
@@ -96,17 +141,22 @@ public class MoneyBoxService extends BaseSecurityService {
         MoneyBox savedMoneyBox = moneyBoxRepository.save(moneyBox);
         
         // Create transaction record with descriptive description
-        String transactionDescription = (amount.compareTo(BigDecimal.ZERO) > 0) 
+        String transactionDescription = (amountInSYP.compareTo(BigDecimal.ZERO) > 0) 
             ? "Manual cash deposit: " + (description != null ? description : "Cash added to money box")
             : "Manual cash withdrawal: " + (description != null ? description : "Cash removed from money box");
         
-        createTransactionRecord(savedMoneyBox, transactionType, amount, balanceBefore, 
-                              transactionDescription, null, null, moneyBox.getCurrency());
+        createTransactionRecord(savedMoneyBox, transactionType, amountInSYP, balanceBefore, 
+                              transactionDescription, null, null, originalCurrency);
         
         log.info("Manual {} transaction added. New balance for pharmacy {}: {}", 
                 transactionType, currentPharmacyId, newBalance);
         
         return MoneyBoxMapper.toResponseDTO(savedMoneyBox);
+    }
+    
+    @Transactional
+    public MoneyBoxResponseDTO addTransaction(BigDecimal amount, String description) {
+        return addTransaction(amount, description, Currency.SYP);
     }
     
     @Transactional
@@ -130,7 +180,7 @@ public class MoneyBoxService extends BaseSecurityService {
             // Create adjustment transaction record
             createTransactionRecord(moneyBox, TransactionType.ADJUSTMENT, difference, balanceBefore, 
                                   notes != null ? notes : "Cash reconciliation adjustment", 
-                                  null, null, moneyBox.getCurrency());
+                                  null, null, Currency.SYP);
         }
         
         MoneyBox savedMoneyBox = moneyBoxRepository.save(moneyBox);
@@ -157,26 +207,53 @@ public class MoneyBoxService extends BaseSecurityService {
     }
     
     /**
-     * Helper method to create transaction records
+     * Helper method to create transaction records with enhanced currency support
      */
     private void createTransactionRecord(MoneyBox moneyBox, TransactionType type, BigDecimal amount, 
                                        BigDecimal balanceBefore, String description, 
-                                       String referenceId, String referenceType, String currency) {
+                                       String referenceId, String referenceType, Currency currency) {
+        // Convert amount to SYP if it's not already in SYP
+        BigDecimal amountInSYP = amount;
+        BigDecimal exchangeRate = BigDecimal.ONE;
+        Currency originalCurrency = currency != null ? currency : Currency.SYP;
+        BigDecimal originalAmount = amount;
+        
+        if (!Currency.SYP.equals(originalCurrency)) {
+            try {
+                amountInSYP = exchangeRateService.convertToSYP(amount, originalCurrency);
+                exchangeRate = exchangeRateService.getExchangeRate(originalCurrency, Currency.SYP);
+                log.debug("Converted {} {} to {} SYP using rate: {}", 
+                        amount, originalCurrency, amountInSYP, exchangeRate);
+            } catch (Exception e) {
+                log.warn("Failed to convert currency for transaction: {}. Using original amount.", e.getMessage());
+                // Fallback: use original amount but mark as unconverted
+                amountInSYP = amount;
+                exchangeRate = BigDecimal.ZERO;
+            }
+        }
+        
         MoneyBoxTransaction transaction = new MoneyBoxTransaction();
         transaction.setMoneyBox(moneyBox);
         transaction.setTransactionType(type);
-        transaction.setAmount(amount);
+        transaction.setAmount(amountInSYP);
+        transaction.setOriginalCurrency(originalCurrency);
+        transaction.setOriginalAmount(originalAmount);
+        transaction.setConvertedCurrency(Currency.SYP);
+        transaction.setConvertedAmount(amountInSYP);
+        transaction.setExchangeRate(exchangeRate);
+        transaction.setConversionTimestamp(LocalDateTime.now());
+        transaction.setConversionSource("EXCHANGE_RATE_SERVICE");
         transaction.setBalanceBefore(balanceBefore);
-        transaction.setBalanceAfter(balanceBefore.add(amount));
-        transaction.setDescription(description);
+        transaction.setBalanceAfter(balanceBefore.add(amountInSYP));
+        transaction.setDescription(description + 
+                               (originalCurrency != Currency.SYP ? " (Converted from " + originalCurrency + ")" : ""));
         transaction.setReferenceId(referenceId);
         transaction.setReferenceType(referenceType);
-        transaction.setCurrency(currency != null ? currency : "SYP");
         transaction.setCreatedBy(getCurrentUser().getUsername());
         
         transactionRepository.save(transaction);
-        log.debug("Created transaction record: type={}, amount={}, description={}", 
-                type, amount, description);
+        log.debug("Created transaction record: type={}, amount={} {} -> {} SYP, description={}", 
+                type, originalAmount, originalCurrency, amountInSYP, description);
     }
     
     private MoneyBox findMoneyBoxByPharmacyId(Long pharmacyId) {

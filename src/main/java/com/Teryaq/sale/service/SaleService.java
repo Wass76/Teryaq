@@ -225,7 +225,7 @@ public class SaleService extends BaseSecurityService {
                     currentPharmacyId,
                     savedInvoice.getId(),
                     java.math.BigDecimal.valueOf(savedInvoice.getTotalAmount()),
-                    requestDTO.getCurrency().toString()
+                    requestDTO.getCurrency()
                 );
                 logger.info("Cash sale recorded in Money Box for invoice: {}", savedInvoice.getId());
             } catch (Exception e) {
