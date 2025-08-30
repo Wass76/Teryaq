@@ -84,15 +84,21 @@ public class CustomerDebtService extends BaseSecurityService {
  
     public List<CustomerDebtDTOResponse> getCustomerDebts(Long customerId) {
         Long currentPharmacyId = getCurrentUserPharmacyId();
-        validateCustomerExists(customerId);
+        
+        // First check if customer exists and belongs to current pharmacy
+        Customer customer = customerRepo.findById(customerId)
+                .orElseThrow(() -> new ResourceNotFoundException("Customer not found with ID: " + customerId));
+        
+        if (!customer.getPharmacy().getId().equals(currentPharmacyId)) {
+            throw new UnAuthorizedException("You are not authorized to access debts for this customer");
+        }
+        
+        // Now search for debts
         List<CustomerDebt> debts = customerDebtRepository.findByCustomerIdOrderByCreatedAtDesc(customerId);
         if (debts.isEmpty()) {
             throw new ResourceNotFoundException("No debts found for customer with ID: " + customerId);
         }
 
-        if (!debts.stream().allMatch(debt -> debt.getCustomer().getPharmacy().getId() == currentPharmacyId)) {
-            throw new UnAuthorizedException("You are not authorized to access debts for this customer");
-        }
         return debts.stream()
                 .map(customerDebtMapper::toResponse)
                 .collect(Collectors.toList());
@@ -100,16 +106,22 @@ public class CustomerDebtService extends BaseSecurityService {
 
     public List<CustomerDebtDTOResponse> getCustomerDebtsByStatus(Long customerId, String status) {
         Long currentPharmacyId = getCurrentUserPharmacyId();
-        validateCustomerExists(customerId);
         validateStatus(status);
         
+        // First check if customer exists and belongs to current pharmacy
+        Customer customer = customerRepo.findById(customerId)
+                .orElseThrow(() -> new ResourceNotFoundException("Customer not found with ID: " + customerId));
+        
+        if (!customer.getPharmacy().getId().equals(currentPharmacyId)) {
+            throw new UnAuthorizedException("You are not authorized to access debts for this customer");
+        }
+        
+        // Now search for debts
         List<CustomerDebt> debts = customerDebtRepository.findByCustomerIdAndStatusOrderByCreatedAtDesc(customerId, status);
         if(debts.isEmpty()){
             throw new ResourceNotFoundException("No debts found for customer with ID: " + customerId);
         }
-        if(!debts.stream().allMatch(debt -> debt.getCustomer().getPharmacy().getId() == currentPharmacyId)){
-            throw new UnAuthorizedException("You are not authorized to access debts for this customer");
-        }
+        
         return debts.stream()
                 .map(customerDebtMapper::toResponse)
                 .collect(Collectors.toList());
