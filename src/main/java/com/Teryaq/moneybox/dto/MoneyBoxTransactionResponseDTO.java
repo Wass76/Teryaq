@@ -36,5 +36,6 @@ public class MoneyBoxTransactionResponseDTO {
     private String conversionSource;
     
     private LocalDateTime createdAt;
-    private String createdBy;
+    private Long createdBy; // New field for user ID
+    private String createdByUserEmail; // New field for user email
 }

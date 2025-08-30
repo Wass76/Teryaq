@@ -3,6 +3,8 @@ package com.Teryaq.moneybox.controller;
 import com.Teryaq.moneybox.dto.MoneyBoxRequestDTO;
 import com.Teryaq.moneybox.dto.MoneyBoxResponseDTO;
 import com.Teryaq.moneybox.dto.MoneyBoxTransactionResponseDTO;
+import com.Teryaq.moneybox.dto.CurrencyConversionResponseDTO;
+import com.Teryaq.moneybox.dto.ExchangeRateResponseDTO;
 import com.Teryaq.moneybox.service.MoneyBoxService;
 import com.Teryaq.moneybox.service.ExchangeRateService;
 import com.Teryaq.user.Enum.Currency;
@@ -26,7 +28,6 @@ import java.util.List;
 @RequestMapping("/api/v1/moneybox")
 @RequiredArgsConstructor
 @Tag(name = "Money Box Management", description = "APIs for managing pharmacy money box with multi-currency support")
-@SecurityRequirement(name = "bearerAuth")
 @CrossOrigin(origins = "*")
 public class MoneyBoxController {
     
@@ -68,11 +69,9 @@ public class MoneyBoxController {
     })
     public ResponseEntity<MoneyBoxResponseDTO> addTransaction(
             @Parameter(description = "Transaction amount") @RequestParam BigDecimal amount,
-            @Parameter(description = "Transaction description") @RequestParam String description,
-            @Parameter(description = "Transaction currency (defaults to SYP if not specified)") 
-            @RequestParam(required = false) Currency currency) {
+            @Parameter(description = "Transaction description") @RequestParam String description) {
         
-        MoneyBoxResponseDTO response = moneyBoxService.addTransaction(amount, description, currency);
+        MoneyBoxResponseDTO response = moneyBoxService.addTransaction(amount, description);
         return ResponseEntity.ok(response);
     }
     
@@ -118,7 +117,6 @@ public class MoneyBoxController {
             @Parameter(description = "Start date (ISO format)") @RequestParam String startDate,
             @Parameter(description = "End date (ISO format)") @RequestParam String endDate) {
         
-        // Parse dates and get summary
         // Implementation would parse the date strings and call the service
         // For now, return a placeholder response
         return ResponseEntity.ok().build();
@@ -131,22 +129,12 @@ public class MoneyBoxController {
         @ApiResponse(responseCode = "400", description = "Invalid conversion request"),
         @ApiResponse(responseCode = "401", description = "Unauthorized")
     })
-    public ResponseEntity<CurrencyConversionResponse> convertToSYP(
+    public ResponseEntity<CurrencyConversionResponseDTO> convertToSYP(
             @Parameter(description = "Amount to convert") @RequestParam BigDecimal amount,
             @Parameter(description = "Source currency") @RequestParam Currency fromCurrency) {
         
-        try {
-            BigDecimal convertedAmount = exchangeRateService.convertToSYP(amount, fromCurrency);
-            BigDecimal exchangeRate = exchangeRateService.getExchangeRate(fromCurrency, Currency.SYP);
-            
-            CurrencyConversionResponse response = new CurrencyConversionResponse(
-                amount, fromCurrency, convertedAmount, Currency.SYP, exchangeRate
-            );
-            
-            return ResponseEntity.ok(response);
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().build();
-        }
+        CurrencyConversionResponseDTO response = moneyBoxService.convertCurrencyToSYP(amount, fromCurrency);
+        return ResponseEntity.ok(response);
     }
     
     @GetMapping("/currency/rates")
@@ -155,70 +143,36 @@ public class MoneyBoxController {
         @ApiResponse(responseCode = "200", description = "Exchange rates retrieved successfully"),
         @ApiResponse(responseCode = "401", description = "Unauthorized")
     })
-    public ResponseEntity<List<ExchangeRateResponse>> getCurrentRates() {
-        try {
-            List<ExchangeRateResponse> rates = exchangeRateService.getAllActiveRates().stream()
-                .map(dto -> new ExchangeRateResponse(
-                    dto.getFromCurrency(),
-                    dto.getToCurrency(),
-                    dto.getRate(),
-                    dto.getSource(),
-                    dto.getNotes()
-                ))
-                .collect(java.util.stream.Collectors.toList());
-            
-            return ResponseEntity.ok(rates);
-        } catch (Exception e) {
-            return ResponseEntity.internalServerError().build();
-        }
+    public ResponseEntity<List<ExchangeRateResponseDTO>> getCurrentRates() {
+        List<ExchangeRateResponseDTO> rates = moneyBoxService.getCurrentExchangeRates();
+        return ResponseEntity.ok(rates);
     }
-    
-    // Response classes for currency conversion
-    public static class CurrencyConversionResponse {
-        private BigDecimal originalAmount;
-        private Currency fromCurrency;
-        private BigDecimal convertedAmount;
-        private Currency toCurrency;
-        private BigDecimal exchangeRate;
+
+    @GetMapping("/transactions")
+    @Operation(summary = "Get all money box transactions", description = "Retrieves all transactions for the current pharmacy money box with dual currency amounts")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Transactions retrieved successfully"),
+        @ApiResponse(responseCode = "404", description = "Money box not found"),
+        @ApiResponse(responseCode = "401", description = "Unauthorized")
+    })
+    public ResponseEntity<List<MoneyBoxTransactionResponseDTO>> getAllTransactions(
+            @Parameter(description = "Start date (ISO format, optional)") @RequestParam(required = false) String startDate,
+            @Parameter(description = "End date (ISO format, optional)") @RequestParam(required = false) String endDate,
+            @Parameter(description = "Transaction type (optional)") @RequestParam(required = false) String transactionType) {
         
-        public CurrencyConversionResponse(BigDecimal originalAmount, Currency fromCurrency, 
-                                       BigDecimal convertedAmount, Currency toCurrency, BigDecimal exchangeRate) {
-            this.originalAmount = originalAmount;
-            this.fromCurrency = fromCurrency;
-            this.convertedAmount = convertedAmount;
-            this.toCurrency = toCurrency;
-            this.exchangeRate = exchangeRate;
-        }
-        
-        // Getters
-        public BigDecimal getOriginalAmount() { return originalAmount; }
-        public Currency getFromCurrency() { return fromCurrency; }
-        public BigDecimal getConvertedAmount() { return convertedAmount; }
-        public Currency getToCurrency() { return toCurrency; }
-        public BigDecimal getExchangeRate() { return exchangeRate; }
+        List<MoneyBoxTransactionResponseDTO> transactions = moneyBoxService.getAllTransactions(startDate, endDate, transactionType);
+        return ResponseEntity.ok(transactions);
     }
-    
-    public static class ExchangeRateResponse {
-        private Currency fromCurrency;
-        private Currency toCurrency;
-        private BigDecimal rate;
-        private String source;
-        private String notes;
-        
-        public ExchangeRateResponse(Currency fromCurrency, Currency toCurrency, 
-                                 BigDecimal rate, String source, String notes) {
-            this.fromCurrency = fromCurrency;
-            this.toCurrency = toCurrency;
-            this.rate = rate;
-            this.source = source;
-            this.notes = notes;
-        }
-        
-        // Getters
-        public Currency getFromCurrency() { return fromCurrency; }
-        public Currency getToCurrency() { return toCurrency; }
-        public BigDecimal getRate() { return rate; }
-        public String getSource() { return source; }
-        public String getNotes() { return notes; }
-    }
+
+    // TODO: Implement currency conversion report endpoint
+    // @GetMapping("/reports/currency-conversion")
+    // @Operation(summary = "Get currency conversion report", description = "Shows all invoices with their dual currency amounts and conversion details")
+    // public ResponseEntity<CurrencyConversionReportResponse> getCurrencyConversionReport(
+    //     @Parameter(description = "Start date (ISO format)") @RequestParam String startDate,
+    //     @Parameter(description = "End date (ISO format)") @RequestParam String endDate,
+    //     @Parameter(description = "Currency filter (optional)") @RequestParam(required = false) Currency currency) {
+    //     // Implementation will show all invoices with dual currency amounts
+    //     // Including purchase invoices, sale invoices with their original and SYP equivalent amounts
+    //     // Plus exchange rates used and conversion timestamps
+    // }
 }

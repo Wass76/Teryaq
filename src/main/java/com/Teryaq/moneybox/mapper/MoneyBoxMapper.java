@@ -7,6 +7,7 @@ import com.Teryaq.moneybox.entity.MoneyBox;
 import com.Teryaq.moneybox.entity.MoneyBoxTransaction;
 import com.Teryaq.moneybox.enums.MoneyBoxStatus;
 import com.Teryaq.user.Enum.Currency;
+import com.Teryaq.user.mapper.UserMapper;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -56,6 +57,10 @@ public class MoneyBoxMapper {
     }
     
     public static MoneyBoxTransactionResponseDTO toTransactionResponseDTO(MoneyBoxTransaction transaction) {
+        return toTransactionResponseDTO(transaction, null);
+    }
+    
+    public static MoneyBoxTransactionResponseDTO toTransactionResponseDTO(MoneyBoxTransaction transaction, String userEmail) {
         return MoneyBoxTransactionResponseDTO.builder()
                 .id(transaction.getId())
                 .moneyBoxId(transaction.getMoneyBox().getId())
@@ -75,6 +80,7 @@ public class MoneyBoxMapper {
                 .conversionSource(transaction.getConversionSource())
                 .createdAt(transaction.getCreatedAt())
                 .createdBy(transaction.getCreatedBy())
+                .createdByUserEmail(userEmail)
                 .build();
     }
     

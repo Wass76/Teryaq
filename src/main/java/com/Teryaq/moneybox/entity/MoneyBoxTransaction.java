@@ -76,5 +76,5 @@ public class MoneyBoxTransaction {
     private LocalDateTime createdAt;
     
     @Column(name = "created_by")
-    private String createdBy;
+    private Long createdBy; // Store user ID reference
 }

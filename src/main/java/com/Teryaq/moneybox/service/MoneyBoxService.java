@@ -1,7 +1,10 @@
 package com.Teryaq.moneybox.service;
 
+import com.Teryaq.moneybox.dto.CurrencyConversionResponseDTO;
+import com.Teryaq.moneybox.dto.ExchangeRateResponseDTO;
 import com.Teryaq.moneybox.dto.MoneyBoxRequestDTO;
 import com.Teryaq.moneybox.dto.MoneyBoxResponseDTO;
+import com.Teryaq.moneybox.dto.MoneyBoxTransactionResponseDTO;
 import com.Teryaq.moneybox.entity.MoneyBox;
 import com.Teryaq.moneybox.entity.MoneyBoxTransaction;
 import com.Teryaq.moneybox.enums.MoneyBoxStatus;
@@ -20,6 +23,8 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
+import com.Teryaq.moneybox.mapper.ExchangeRateMapper;
+import com.Teryaq.user.repository.UserRepository;
 
 @Service
 @Slf4j
@@ -28,6 +33,7 @@ public class MoneyBoxService extends BaseSecurityService {
     private final MoneyBoxRepository moneyBoxRepository;
     private final MoneyBoxTransactionRepository transactionRepository;
     private final ExchangeRateService exchangeRateService;
+    private final UserRepository userRepository;
     
     public MoneyBoxService(MoneyBoxRepository moneyBoxRepository,
                           MoneyBoxTransactionRepository transactionRepository,
@@ -37,6 +43,7 @@ public class MoneyBoxService extends BaseSecurityService {
         this.moneyBoxRepository = moneyBoxRepository;
         this.transactionRepository = transactionRepository;
         this.exchangeRateService = exchangeRateService;
+        this.userRepository = userRepository;
     }
     
     @Transactional
@@ -206,6 +213,86 @@ public class MoneyBoxService extends BaseSecurityService {
         return new MoneyBoxSummary(totalIncome, totalExpense.abs(), netAmount, startDate, endDate);
     }
     
+    public List<MoneyBoxTransactionResponseDTO> getAllTransactions(String startDate, String endDate, String transactionType) {
+        Long currentPharmacyId = getCurrentUserPharmacyId();
+        MoneyBox moneyBox = findMoneyBoxByPharmacyId(currentPharmacyId);
+        
+        List<MoneyBoxTransaction> transactions;
+        
+        if (startDate != null && endDate != null) {
+            // Parse dates and filter by date range
+            LocalDateTime start = LocalDateTime.parse(startDate);
+            LocalDateTime end = LocalDateTime.parse(endDate);
+            
+            if (transactionType != null) {
+                TransactionType type = TransactionType.valueOf(transactionType.toUpperCase());
+                transactions = transactionRepository.findByMoneyBoxIdAndCreatedAtBetweenOrderByCreatedAtDesc(
+                    moneyBox.getId(), start, end);
+                // Filter by transaction type
+                transactions = transactions.stream()
+                    .filter(t -> t.getTransactionType() == type)
+                    .collect(java.util.stream.Collectors.toList());
+            } else {
+                transactions = transactionRepository.findByMoneyBoxIdAndCreatedAtBetweenOrderByCreatedAtDesc(
+                    moneyBox.getId(), start, end);
+            }
+        } else if (transactionType != null) {
+            // Filter only by transaction type
+            TransactionType type = TransactionType.valueOf(transactionType.toUpperCase());
+            transactions = transactionRepository.findByMoneyBoxIdAndTransactionTypeOrderByCreatedAtDesc(
+                moneyBox.getId(), type);
+        } else {
+            // Get all transactions
+            transactions = transactionRepository.findByMoneyBoxIdOrderByCreatedAtDesc(moneyBox.getId());
+        }
+        
+        return transactions.stream()
+            .map(transaction -> {
+                // Get user email for each transaction
+                String userEmail = getUserEmailById(transaction.getCreatedBy());
+                return MoneyBoxMapper.toTransactionResponseDTO(transaction, userEmail);
+            })
+            .collect(java.util.stream.Collectors.toList());
+    }
+
+    /**
+     * Helper method to get user email by user ID
+     */
+    private String getUserEmailById(Long userId) {
+        if (userId == null) {
+            return null;
+        }
+        
+        try {
+            return userRepository.findById(userId)
+                .map(user -> user.getEmail())
+                .orElse(null);
+        } catch (Exception e) {
+            log.warn("Failed to fetch user email for ID {}: {}", userId, e.getMessage());
+            return null;
+        }
+    }
+
+    public CurrencyConversionResponseDTO convertCurrencyToSYP(BigDecimal amount, Currency fromCurrency) {
+        try {
+            BigDecimal convertedAmount = exchangeRateService.convertToSYP(amount, fromCurrency);
+            BigDecimal exchangeRate = exchangeRateService.getExchangeRate(fromCurrency, Currency.SYP);
+            
+            return ExchangeRateMapper.toConversionResponse(
+                amount, fromCurrency, convertedAmount, Currency.SYP, exchangeRate
+            );
+        } catch (Exception e) {
+            log.warn("Failed to convert currency: {}. Using 1:1 rate.", e.getMessage());
+            return ExchangeRateMapper.toConversionResponse(
+                amount, fromCurrency, amount, Currency.SYP, BigDecimal.ONE, "FALLBACK"
+            );
+        }
+    }
+
+    public List<ExchangeRateResponseDTO> getCurrentExchangeRates() {
+        return exchangeRateService.getAllActiveRates();
+    }
+    
     /**
      * Helper method to create transaction records with enhanced currency support
      */
@@ -249,7 +336,7 @@ public class MoneyBoxService extends BaseSecurityService {
                                (originalCurrency != Currency.SYP ? " (Converted from " + originalCurrency + ")" : ""));
         transaction.setReferenceId(referenceId);
         transaction.setReferenceType(referenceType);
-        transaction.setCreatedBy(getCurrentUser().getUsername());
+        transaction.setCreatedBy(getCurrentUser().getId()); // Set user ID reference
         
         transactionRepository.save(transaction);
         log.debug("Created transaction record: type={}, amount={} {} -> {} SYP, description={}", 

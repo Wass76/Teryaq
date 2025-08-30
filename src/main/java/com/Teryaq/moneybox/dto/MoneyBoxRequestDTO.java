@@ -20,6 +20,6 @@ public class MoneyBoxRequestDTO {
     private BigDecimal initialBalance;
     
     @NotNull(message = "Currency is required")
-    @Size(min = 3, max = 3, message = "Currency must be exactly 3 characters (e.g., SYP)")
+//    @Size(min = 3, max = 3, message = "Currency must be exactly 3 characters (e.g., SYP)")
     private Currency currency;
 }
