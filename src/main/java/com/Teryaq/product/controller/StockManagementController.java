@@ -5,8 +5,12 @@ import com.Teryaq.product.service.StockService;
 import com.Teryaq.product.Enum.ProductType;
 import com.Teryaq.product.dto.StockItemDTOResponse;
 import com.Teryaq.product.dto.StockProductOverallDTOResponse;
+import com.Teryaq.user.Enum.Currency;
+import com.Teryaq.product.service.CurrencyConversionService;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -26,6 +30,7 @@ import java.util.Map;
 public class StockManagementController {
 
     private final StockService stockService;
+    private final CurrencyConversionService currencyConversionService;
     
     @Transactional
     @PutMapping("/{stockItemId}/edit")
@@ -47,11 +52,63 @@ public class StockManagementController {
     }
     
     @GetMapping("/search")
-    @Operation(summary = "Search for Stock Products", description = "Search for unique products in stock by product name, barcode, or trade name. Returns each product once with aggregated stock information.")
+    @Operation(
+        summary = "Search for Stock Products", 
+        description = "Search for unique products in stock by product name, barcode, or trade name. Returns each product once with aggregated stock information. Supports currency conversion via 'currency' parameter."
+    )
     public ResponseEntity<List<StockProductOverallDTOResponse>> advancedStockSearch(
-            @RequestParam(required = false) String keyword) {
+            @Parameter(description = "Search keyword for product name, barcode, or trade name", example = "paracetamol")
+            @RequestParam(required = false) String keyword,
+            @Parameter(description = "Currency for price conversion (defaults to SYP)", example = "USD", 
+                      schema = @Schema(allowableValues = {"SYP", "USD", "EUR"}))
+            @RequestParam(required = false) Currency currency) {
+        
         List<StockProductOverallDTOResponse> stockProducts = stockService.stockItemSearch(keyword);
+        
+        // Apply currency conversion if requested
+        if (currency != null && !Currency.SYP.equals(currency)) {
+            stockProducts.forEach(product -> applyCurrencyConversion(product, currency));
+        }
+        
         return ResponseEntity.ok(stockProducts);
+    }
+    
+    /**
+     * Apply currency conversion to a stock product response
+     * Adds new fields without modifying existing ones
+     */
+    private void applyCurrencyConversion(StockProductOverallDTOResponse product, Currency currency) {
+        // Set currency information
+        product.setRequestedCurrency(currency.name());
+        product.setPricesConverted(true);
+        
+        // Convert prices using the currency conversion service and store in new fields
+        if (product.getSellingPrice() != null) {
+            var convertedPrice = currencyConversionService.convertPriceFromSYP(
+                product.getSellingPrice(), currency);
+            if (convertedPrice != null) {
+                product.setSellingPriceConverted(convertedPrice.getDisplayPrice().floatValue());
+                product.setExchangeRate(convertedPrice.getExchangeRate().doubleValue());
+                product.setConversionTimestamp(convertedPrice.getConversionTimestamp());
+                product.setRateSource(convertedPrice.getRateSource());
+            }
+        }
+        
+        if (product.getAveragePurchasePrice() != null) {
+            var convertedPrice = currencyConversionService.convertPriceFromSYP(
+                product.getAveragePurchasePrice(), currency);
+            if (convertedPrice != null) {
+                product.setAveragePurchasePriceConverted(convertedPrice.getDisplayPrice().doubleValue());
+            }
+        }
+        
+        if (product.getTotalValue() != null) {
+            var convertedPrice = currencyConversionService.convertPriceFromSYP(
+                product.getTotalValue(), currency);
+            if (convertedPrice != null) {
+                product.setTotalValueConverted(convertedPrice.getDisplayPrice().doubleValue());
+            }
+        }
     }
 
     @DeleteMapping("/{stockItemId}")
@@ -104,9 +161,22 @@ public class StockManagementController {
     // }
     
     @GetMapping("/products/Overall")
-    @Operation(summary = "Get stock products Overall", description = "Get Overall of all products in stock (each product once with aggregated data)")
-    public ResponseEntity<List<StockProductOverallDTOResponse>> getStockProductsOverall() {
+    @Operation(
+        summary = "Get stock products Overall", 
+        description = "Get Overall of all products in stock (each product once with aggregated data). Supports currency conversion via 'currency' parameter."
+    )
+    public ResponseEntity<List<StockProductOverallDTOResponse>> getStockProductsOverall(
+            @Parameter(description = "Currency for price conversion (defaults to SYP)", example = "USD", 
+                      schema = @Schema(allowableValues = {"SYP", "USD", "EUR"}))
+            @RequestParam(required = false) Currency currency) {
+        
         List<StockProductOverallDTOResponse> productsOverall = stockService.getAllStockProductsOverall();
+        
+        // Apply currency conversion if requested
+        if (currency != null && !Currency.SYP.equals(currency)) {
+            productsOverall.forEach(product -> applyCurrencyConversion(product, currency));
+        }
+        
         return ResponseEntity.ok(productsOverall);
     }
     

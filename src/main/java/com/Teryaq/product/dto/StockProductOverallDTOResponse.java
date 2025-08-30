@@ -47,4 +47,49 @@ public class StockProductOverallDTOResponse {
     // Additional Info
     private Integer numberOfBatches;
     private Long pharmacyId;
+    
+    // NEW: Currency Support Fields (Optional - only populated when currency conversion is requested)
+    private String requestedCurrency;
+    private Boolean pricesConverted;
+    
+    // NEW: Converted Price Fields (Optional - only populated when currency conversion is requested)
+    private Double averagePurchasePriceConverted;
+    private Double totalValueConverted;
+    private Float sellingPriceConverted;
+    
+    // NEW: Exchange Rate Information (Optional - only populated when currency conversion is requested)
+    private Double exchangeRate;
+    private String conversionTimestamp;
+    private String rateSource;
+    
+    /**
+     * Get the display selling price based on whether conversion was requested
+     */
+    public Float getDisplaySellingPrice() {
+        return pricesConverted != null && pricesConverted && sellingPriceConverted != null 
+               ? sellingPriceConverted : sellingPrice;
+    }
+    
+    /**
+     * Get the display average purchase price based on whether conversion was requested
+     */
+    public Double getDisplayAveragePurchasePrice() {
+        return pricesConverted != null && pricesConverted && averagePurchasePriceConverted != null 
+               ? averagePurchasePriceConverted : averagePurchasePrice;
+    }
+    
+    /**
+     * Get the display total value based on whether conversion was requested
+     */
+    public Double getDisplayTotalValue() {
+        return pricesConverted != null && pricesConverted && totalValueConverted != null 
+               ? totalValueConverted : totalValue;
+    }
+    
+    /**
+     * Check if prices have been converted to a different currency
+     */
+    public boolean isPricesConverted() {
+        return pricesConverted != null && pricesConverted;
+    }
 }

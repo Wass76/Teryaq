@@ -3,6 +3,8 @@ package com.Teryaq.product.controller;
 import com.Teryaq.product.dto.PharmacyProductDTORequest;
 import com.Teryaq.product.dto.ProductMultiLangDTOResponse;
 import com.Teryaq.product.service.PharmacyProductService;
+import com.Teryaq.user.Enum.Currency;
+import com.Teryaq.product.service.CurrencyConversionService;
 
 import jakarta.validation.Valid;
 
@@ -19,6 +21,8 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("api/v1/pharmacy_products")
 @Tag(name = "Pharmacy Product Management", description = "APIs for managing pharmacy-specific products")
@@ -27,9 +31,12 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 public class PharmacyProductController {
 
     private final PharmacyProductService pharmacyProductService;
+    private final CurrencyConversionService currencyConversionService;
 
-    public PharmacyProductController(PharmacyProductService pharmacyProductService) {
+    public PharmacyProductController(PharmacyProductService pharmacyProductService, 
+                                   CurrencyConversionService currencyConversionService) {
         this.pharmacyProductService = pharmacyProductService;
+        this.currencyConversionService = currencyConversionService;
     }
     
 
