@@ -19,6 +19,7 @@ import com.Teryaq.purchase.repository.PurchaseOrderRepo;
 import com.Teryaq.product.repo.PharmacyProductRepo;
 import com.Teryaq.product.repo.StockItemRepo;
 import com.Teryaq.product.repo.MasterProductRepo;
+import com.Teryaq.user.Enum.Currency;
 import com.Teryaq.user.entity.Pharmacy;
 import com.Teryaq.user.entity.Supplier;
 import com.Teryaq.user.repository.SupplierRepository;
@@ -40,6 +41,8 @@ import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.time.LocalDateTime;
+import com.Teryaq.utils.exception.RequestNotValidException;
+import java.util.Arrays;
 
 @Service
 public class PurchaseInvoiceService extends BaseSecurityService {
@@ -123,6 +126,18 @@ public class PurchaseInvoiceService extends BaseSecurityService {
     @Transactional
     public PurchaseInvoiceDTOResponse edit(Long id, PurchaseInvoiceDTORequest request, String language) {
         logger.info("Editing purchase invoice with ID: {} for pharmacy: {}", id, getCurrentUserPharmacyId());
+        
+        // ✅ ADD CURRENCY VALIDATION
+        if (request.getCurrency() == null) {
+            request.setCurrency(Currency.SYP);
+            logger.info("Currency not specified, defaulting to SYP for edited purchase invoice");
+        }
+        
+        // Validate currency is supported
+        if (!Arrays.asList(Currency.SYP, Currency.USD, Currency.EUR).contains(request.getCurrency())) {
+            throw new RequestNotValidException("Unsupported currency: " + request.getCurrency() + 
+                ". Supported currencies are: SYP, USD, EUR");
+        }
         
         // Validate and get required entities
         Pharmacy currentPharmacy = getCurrentUserPharmacy();
