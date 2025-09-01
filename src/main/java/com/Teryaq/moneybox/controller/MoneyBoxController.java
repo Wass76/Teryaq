@@ -22,6 +22,7 @@ import org.springframework.web.bind.annotation.*;
 
 import jakarta.validation.Valid;
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @RestController
@@ -156,8 +157,8 @@ public class MoneyBoxController {
         @ApiResponse(responseCode = "401", description = "Unauthorized")
     })
     public ResponseEntity<List<MoneyBoxTransactionResponseDTO>> getAllTransactions(
-            @Parameter(description = "Start date (ISO format, optional)") @RequestParam(required = false) String startDate,
-            @Parameter(description = "End date (ISO format, optional)") @RequestParam(required = false) String endDate,
+            @Parameter(description = "Start date (ISO format, optional)",example = "2024-01-01T00:00:00") @RequestParam(required = false) LocalDateTime startDate,
+            @Parameter(description = "End date (ISO format, optional)",example = "2024-01-01T00:00:00") @RequestParam(required = false) LocalDateTime endDate,
             @Parameter(description = "Transaction type (optional)") @RequestParam(required = false) String transactionType) {
         
         List<MoneyBoxTransactionResponseDTO> transactions = moneyBoxService.getAllTransactions(startDate, endDate, transactionType);

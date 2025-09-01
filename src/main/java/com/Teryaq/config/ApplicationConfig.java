@@ -5,10 +5,11 @@ import com.Teryaq.user.repository.EmployeeRepository;
 import com.Teryaq.utils.auditing.ApplicationAuditingAware;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.data.domain.AuditorAware;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationProvider;
@@ -22,12 +23,17 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import java.util.logging.Logger;
 
 @Configuration
-@RequiredArgsConstructor
 @EnableCaching
 public class ApplicationConfig {
 
     private final UserRepository userRepository;
     private final EmployeeRepository employeeRepository;
+
+    @Autowired
+    public ApplicationConfig(@Lazy UserRepository userRepository, @Lazy EmployeeRepository employeeRepository) {
+        this.userRepository = userRepository;
+        this.employeeRepository = employeeRepository;
+    }
 
     @Bean
     public UserDetailsService userDetailsService(){

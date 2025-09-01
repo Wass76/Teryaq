@@ -213,28 +213,25 @@ public class MoneyBoxService extends BaseSecurityService {
         return new MoneyBoxSummary(totalIncome, totalExpense.abs(), netAmount, startDate, endDate);
     }
     
-    public List<MoneyBoxTransactionResponseDTO> getAllTransactions(String startDate, String endDate, String transactionType) {
+    public List<MoneyBoxTransactionResponseDTO> getAllTransactions(LocalDateTime startDate, LocalDateTime endDate, String transactionType) {
         Long currentPharmacyId = getCurrentUserPharmacyId();
         MoneyBox moneyBox = findMoneyBoxByPharmacyId(currentPharmacyId);
         
         List<MoneyBoxTransaction> transactions;
         
         if (startDate != null && endDate != null) {
-            // Parse dates and filter by date range
-            LocalDateTime start = LocalDateTime.parse(startDate);
-            LocalDateTime end = LocalDateTime.parse(endDate);
-            
+
             if (transactionType != null) {
                 TransactionType type = TransactionType.valueOf(transactionType.toUpperCase());
                 transactions = transactionRepository.findByMoneyBoxIdAndCreatedAtBetweenOrderByCreatedAtDesc(
-                    moneyBox.getId(), start, end);
+                    moneyBox.getId(), startDate, endDate);
                 // Filter by transaction type
                 transactions = transactions.stream()
                     .filter(t -> t.getTransactionType() == type)
                     .collect(java.util.stream.Collectors.toList());
             } else {
                 transactions = transactionRepository.findByMoneyBoxIdAndCreatedAtBetweenOrderByCreatedAtDesc(
-                    moneyBox.getId(), start, end);
+                    moneyBox.getId(), startDate, endDate);
             }
         } else if (transactionType != null) {
             // Filter only by transaction type

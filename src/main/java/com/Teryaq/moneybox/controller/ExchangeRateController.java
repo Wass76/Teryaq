@@ -64,21 +64,6 @@ public class ExchangeRateController {
         return ResponseEntity.ok(response);
     }
     
-    @GetMapping("/test")
-    @Operation(summary = "Test ExchangeRate service", description = "Simple test endpoint to verify the service is working")
-    @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "Service test successful"),
-        @ApiResponse(responseCode = "500", description = "Service test failed")
-    })
-    public ResponseEntity<String> testService() {
-        try {
-            String result = exchangeRateService.testService();
-            return ResponseEntity.ok(result);
-        } catch (Exception e) {
-            return ResponseEntity.internalServerError().body("Service test failed: " + e.getMessage());
-        }
-    }
-    
     @GetMapping("/convert")
     @Operation(summary = "Convert amount between currencies", description = "Convert an amount from one currency to another using current rates")
     @ApiResponses(value = {
