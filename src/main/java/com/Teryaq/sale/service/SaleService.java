@@ -5,6 +5,9 @@ import com.Teryaq.sale.dto.SaleInvoiceDTORequest;
 import com.Teryaq.sale.dto.SaleInvoiceDTOResponse;
 import com.Teryaq.sale.entity.SaleInvoice;
 import com.Teryaq.sale.entity.SaleInvoiceItem;
+import com.Teryaq.sale.enums.InvoiceStatus;
+import com.Teryaq.sale.enums.PaymentStatus;
+import com.Teryaq.sale.enums.RefundStatus;
 import com.Teryaq.sale.mapper.SaleMapper;
 import com.Teryaq.sale.repo.SaleInvoiceRepository;
 import com.Teryaq.sale.repo.SaleInvoiceItemRepository;
@@ -38,6 +41,16 @@ import com.Teryaq.user.repository.CustomerDebtRepository;
 import com.Teryaq.product.mapper.StockItemMapper;
 import com.Teryaq.user.mapper.CustomerDebtMapper;
 import com.Teryaq.user.repository.UserRepository;
+import com.Teryaq.sale.dto.SaleRefundDTORequest;
+import com.Teryaq.sale.dto.SaleRefundDTOResponse;
+import com.Teryaq.sale.dto.SaleRefundItemDTORequest;
+import com.Teryaq.sale.entity.SaleRefund;
+import com.Teryaq.sale.entity.SaleRefundItem;
+import com.Teryaq.sale.mapper.SaleRefundMapper;
+import com.Teryaq.sale.repo.SaleRefundRepo;
+import com.Teryaq.sale.repo.SaleRefundItemRepo;
+import com.Teryaq.product.Enum.PaymentMethod;
+import java.util.ArrayList;
 
 @Service
 public class SaleService extends BaseSecurityService {
@@ -69,6 +82,13 @@ public class SaleService extends BaseSecurityService {
     
     @Autowired
     private CustomerDebtMapper customerDebtMapper;
+
+    @Autowired
+    private SaleRefundRepo saleRefundRepo;
+    @Autowired
+    private SaleRefundItemRepo saleRefundItemRepo;
+    @Autowired
+    private SaleRefundMapper saleRefundMapper;
 
         public SaleService(SaleInvoiceRepository saleInvoiceRepository,
                        SaleInvoiceItemRepository saleInvoiceItemRepository,
@@ -211,6 +231,9 @@ public class SaleService extends BaseSecurityService {
         invoice.setPaidAmount(paidAmount);
         invoice.setRemainingAmount(remainingAmount);
         
+        // حساب الحالات الجديدة
+        calculateInvoiceStatuses(invoice);
+        
         invoice.setItems(items);
         
         SaleInvoice savedInvoice = saleInvoiceRepository.save(invoice);
@@ -244,6 +267,12 @@ public class SaleService extends BaseSecurityService {
     
     private void createCustomerDebt(Customer customer, float remainingAmount, SaleInvoice invoice, SaleInvoiceDTORequest request) {
         try {
+            // التحقق من أن الفاتورة في حالة SOLD قبل إنشاء الدين
+            if (invoice.getStatus() != InvoiceStatus.SOLD) {
+                logger.warn("Cannot create debt for invoice {} with status: {}", invoice.getId(), invoice.getStatus());
+                return;
+            }
+            
             LocalDate dueDate = request.getDebtDueDate() != null ? request.getDebtDueDate() : LocalDate.now().plusMonths(1);
             
             CustomerDebt debt = customerDebtMapper.toEntityFromSaleInvoice(request, remainingAmount, dueDate);
@@ -299,6 +328,12 @@ public class SaleService extends BaseSecurityService {
         
         SaleInvoice saleInvoice = saleInvoiceRepository.findByIdAndPharmacyId(saleId, currentPharmacyId)
                 .orElseThrow(() -> new EntityNotFoundException("Sale invoice not found with ID: " + saleId));
+
+        // التحقق من أن الفاتورة في حالة SOLD قبل الإلغاء
+        if (saleInvoice.getStatus() != InvoiceStatus.SOLD) {
+            throw new RequestNotValidException("Cannot cancel invoice with status: " + saleInvoice.getStatus() + 
+                ". Only SOLD invoices can be cancelled.");
+        }
 
         if (saleInvoice.getRemainingAmount() <= 0) {
             throw new RequestNotValidException("Cannot cancel a fully paid sale invoice");
@@ -362,6 +397,283 @@ public class SaleService extends BaseSecurityService {
         }
         
         return saleInvoices.stream()
+                .map(saleMapper::toResponse)
+                .collect(Collectors.toList());
+    }
+
+    @Transactional
+    public SaleRefundDTOResponse processRefund(Long saleId, SaleRefundDTORequest request) {
+        Long currentPharmacyId = getCurrentUserPharmacyId();
+        
+        SaleInvoice saleInvoice = saleInvoiceRepository.findByIdAndPharmacyId(saleId, currentPharmacyId)
+                .orElseThrow(() -> new EntityNotFoundException("Sale invoice not found with ID: " + saleId));
+
+        // التحقق من أن الفاتورة لم يتم إرجاعها كلياً
+        if (saleInvoice.getRefundStatus() == RefundStatus.FULLY_REFUNDED) {
+            throw new RequestNotValidException("Sale invoice has already been fully refunded");
+        }
+
+        // التحقق من أن الفاتورة مدفوعة بالكامل
+        if (saleInvoice.getRemainingAmount() > 0) {
+            throw new RequestNotValidException("Cannot refund a partially paid sale invoice. Remaining amount: " + saleInvoice.getRemainingAmount());
+        }
+
+        SaleRefund refund = saleRefundMapper.toEntity(request, saleInvoice, getCurrentUserPharmacy());
+        List<SaleRefundItem> refundItems = new ArrayList<>();
+        float totalRefundAmount = 0.0f;
+
+        // معالجة المنتجات المرتجعة
+        totalRefundAmount = processRefundItems(saleInvoice, request, refund, refundItems);
+
+        refund.setTotalRefundAmount(totalRefundAmount);
+        refund.setRefundItems(refundItems);
+        
+        // حفظ المرتجعات
+        SaleRefund savedRefund = saleRefundRepo.save(refund);
+        saleRefundItemRepo.saveAll(refundItems);
+        
+        // تحديث المخزون
+        restoreStock(refundItems);
+        refund.setStockRestored(true);
+        saleRefundRepo.save(refund);
+
+        // تسجيل المرتجعات في MoneyBox
+        if (saleInvoice.getPaymentMethod() == PaymentMethod.CASH) {
+            try {
+                salesIntegrationService.recordSaleRefund(
+                    currentPharmacyId,
+                    saleId,
+                    java.math.BigDecimal.valueOf(totalRefundAmount),
+                    saleInvoice.getCurrency()
+                );
+                logger.info("Sale refund recorded in Money Box for invoice: {}", saleId);
+            } catch (Exception e) {
+                logger.warn("Failed to record sale refund in Money Box for invoice {}: {}", 
+                           saleId, e.getMessage());
+            }
+        }
+
+        // تحديث حالة الفاتورة
+        updateInvoiceStatus(saleInvoice);
+
+        return saleRefundMapper.toResponse(savedRefund);
+    }
+
+    private float processRefundItems(SaleInvoice saleInvoice, SaleRefundDTORequest request, 
+                                   SaleRefund refund, List<SaleRefundItem> refundItems) {
+        float totalRefundAmount = 0.0f;
+        
+        if (request.getRefundItems() == null || request.getRefundItems().isEmpty()) {
+            throw new RequestNotValidException("Refund items list is required");
+        }
+
+        for (SaleRefundItemDTORequest refundRequest : request.getRefundItems()) {
+            SaleInvoiceItem originalItem = saleInvoice.getItems().stream()
+                    .filter(item -> item.getId().equals(refundRequest.getItemId()))
+                    .findFirst()
+                    .orElseThrow(() -> new RequestNotValidException("Item not found with ID: " + refundRequest.getItemId()));
+
+            // حساب الكمية المتاحة للإرجاع (الكمية المباعة - الكمية المرتجعة مسبقاً)
+            int availableForRefund = originalItem.getQuantity() - originalItem.getRefundedQuantity();
+            
+            if (refundRequest.getQuantity() > availableForRefund) {
+                throw new RequestNotValidException("Refund quantity cannot exceed available quantity for item ID: " + 
+                    refundRequest.getItemId() + ". Available: " + availableForRefund + ", Requested: " + refundRequest.getQuantity());
+            }
+
+            SaleRefundItem refundItem = new SaleRefundItem();
+            refundItem.setSaleRefund(refund);
+            refundItem.setSaleInvoiceItem(originalItem);
+            refundItem.setRefundQuantity(refundRequest.getQuantity());
+            refundItem.setUnitPrice(originalItem.getUnitPrice());
+            refundItem.setSubtotal(originalItem.getUnitPrice() * refundRequest.getQuantity());
+            refundItem.setItemRefundReason(refundRequest.getItemRefundReason());
+            refundItem.setStockRestored(false);
+            
+            refundItems.add(refundItem);
+            totalRefundAmount += refundItem.getSubtotal();
+            
+            // تحديث الكمية المرتجعة في العنصر الأصلي
+            originalItem.setRefundedQuantity(originalItem.getRefundedQuantity() + refundRequest.getQuantity());
+        }
+        
+        return totalRefundAmount;
+    }
+
+    private void restoreStock(List<SaleRefundItem> refundItems) {
+        for (SaleRefundItem refundItem : refundItems) {
+            SaleInvoiceItem originalItem = refundItem.getSaleInvoiceItem();
+            StockItem stockItem = originalItem.getStockItem();
+            
+            if (stockItem != null) {
+                stockItem.setQuantity(stockItem.getQuantity() + refundItem.getRefundQuantity());
+                stockItemRepo.save(stockItem);
+                refundItem.setStockRestored(true);
+            }
+        }
+    }
+
+    /**
+     * تحديث حالة الفاتورة بناءً على الكميات المرتجعة
+     */
+    private void updateInvoiceStatus(SaleInvoice saleInvoice) {
+        boolean allItemsFullyRefunded = true;
+        boolean hasAnyRefund = false;
+        
+        for (SaleInvoiceItem item : saleInvoice.getItems()) {
+            if (item.getRefundedQuantity() > 0) {
+                hasAnyRefund = true;
+            }
+            if (item.getRefundedQuantity() < item.getQuantity()) {
+                allItemsFullyRefunded = false;
+            }
+        }
+        
+        // تحديث حالة المرتجعات
+        if (allItemsFullyRefunded && hasAnyRefund) {
+            saleInvoice.setRefundStatus(RefundStatus.FULLY_REFUNDED);
+        } else if (hasAnyRefund) {
+            saleInvoice.setRefundStatus(RefundStatus.PARTIALLY_REFUNDED);
+        } else {
+            saleInvoice.setRefundStatus(RefundStatus.NO_REFUND);
+        }
+        
+        // تحديث حالة الدفع (إذا كان هناك مرتجعات، قد تحتاج لتحديث المبالغ)
+        if (saleInvoice.getRemainingAmount() == 0) {
+            saleInvoice.setPaymentStatus(PaymentStatus.FULLY_PAID);
+        } else if (saleInvoice.getPaidAmount() > 0) {
+            saleInvoice.setPaymentStatus(PaymentStatus.PARTIALLY_PAID);
+        } else {
+            saleInvoice.setPaymentStatus(PaymentStatus.UNPAID);
+        }
+        
+        // حالة الفاتورة الأساسية تبقى SOLD
+        saleInvoice.setStatus(InvoiceStatus.SOLD);
+        
+        saleInvoiceRepository.save(saleInvoice);
+    }
+
+    /**
+     * حساب الحالات الجديدة للفاتورة
+     */
+    private void calculateInvoiceStatuses(SaleInvoice invoice) {
+        // حساب حالة الدفع
+        if (invoice.getRemainingAmount() == 0) {
+            invoice.setPaymentStatus(PaymentStatus.FULLY_PAID);
+        } else if (invoice.getPaidAmount() > 0) {
+            invoice.setPaymentStatus(PaymentStatus.PARTIALLY_PAID);
+        } else {
+            invoice.setPaymentStatus(PaymentStatus.UNPAID);
+        }
+        
+        // حساب حالة المرتجعات (افتراضياً لا توجد مرتجعات عند الإنشاء)
+        invoice.setRefundStatus(RefundStatus.NO_REFUND);
+        
+        // حالة الفاتورة الأساسية
+        invoice.setStatus(InvoiceStatus.SOLD);
+    }
+
+    public List<SaleRefundDTOResponse> getRefundsBySaleId(Long saleId) {
+        Long currentPharmacyId = getCurrentUserPharmacyId();
+        
+        List<SaleRefund> refunds = saleRefundRepo.findBySaleInvoiceIdAndPharmacyId(saleId, currentPharmacyId);
+        
+        return refunds.stream()
+                .map(saleRefundMapper::toResponse)
+                .collect(Collectors.toList());
+    }
+
+    public List<SaleRefundDTOResponse> getAllRefunds() {
+        Long currentPharmacyId = getCurrentUserPharmacyId();
+        
+        List<SaleRefund> refunds = saleRefundRepo.findByPharmacyIdOrderByRefundDateDesc(currentPharmacyId);
+        
+        return refunds.stream()
+                .map(saleRefundMapper::toResponse)
+                .collect(Collectors.toList());
+    }
+
+    public List<SaleRefundDTOResponse> getRefundsByDateRange(LocalDate startDate, LocalDate endDate) {
+        Long currentPharmacyId = getCurrentUserPharmacyId();
+        
+        List<SaleRefund> refunds = saleRefundRepo.findByPharmacyIdAndRefundDateBetween(
+            currentPharmacyId, 
+            startDate.atStartOfDay(), 
+            endDate.atTime(23, 59, 59)
+        );
+        
+        return refunds.stream()
+                .map(saleRefundMapper::toResponse)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * جلب الفواتير المدفوعة بالكامل
+     */
+    public List<SaleInvoiceDTOResponse> getFullyPaidSales() {
+        Long currentPharmacyId = getCurrentUserPharmacyId();
+        
+        List<SaleInvoice> saleInvoices = saleInvoiceRepository.findByPharmacyIdOrderByInvoiceDateDesc(currentPharmacyId);
+        
+        return saleInvoices.stream()
+                .filter(invoice -> invoice.getPaymentStatus() == PaymentStatus.FULLY_PAID)
+                .map(saleMapper::toResponse)
+                .collect(Collectors.toList());
+    }
+    
+    /**
+     * جلب الفواتير التي فيها دين
+     */
+    public List<SaleInvoiceDTOResponse> getInvoicesWithDebt() {
+        Long currentPharmacyId = getCurrentUserPharmacyId();
+        
+        List<SaleInvoice> saleInvoices = saleInvoiceRepository.findByPharmacyIdOrderByInvoiceDateDesc(currentPharmacyId);
+        
+        return saleInvoices.stream()
+                .filter(invoice -> invoice.getPaymentStatus() == PaymentStatus.PARTIALLY_PAID || 
+                                 invoice.getPaymentStatus() == PaymentStatus.UNPAID)
+                .map(saleMapper::toResponse)
+                .collect(Collectors.toList());
+    }
+    
+    /**
+     * جلب الفواتير حسب حالة الدفع
+     */
+    public List<SaleInvoiceDTOResponse> getSalesByPaymentStatus(PaymentStatus paymentStatus) {
+        Long currentPharmacyId = getCurrentUserPharmacyId();
+        
+        List<SaleInvoice> saleInvoices = saleInvoiceRepository.findByPharmacyIdOrderByInvoiceDateDesc(currentPharmacyId);
+        
+        return saleInvoices.stream()
+                .filter(invoice -> invoice.getPaymentStatus() == paymentStatus)
+                .map(saleMapper::toResponse)
+                .collect(Collectors.toList());
+    }
+    
+    /**
+     * جلب الفواتير حسب حالة المرتجعات
+     */
+    public List<SaleInvoiceDTOResponse> getSalesByRefundStatus(RefundStatus refundStatus) {
+        Long currentPharmacyId = getCurrentUserPharmacyId();
+        
+        List<SaleInvoice> saleInvoices = saleInvoiceRepository.findByPharmacyIdOrderByInvoiceDateDesc(currentPharmacyId);
+        
+        return saleInvoices.stream()
+                .filter(invoice -> invoice.getRefundStatus() == refundStatus)
+                .map(saleMapper::toResponse)
+                .collect(Collectors.toList());
+    }
+    
+    /**
+     * جلب الفواتير حسب الحالة الأساسية
+     */
+    public List<SaleInvoiceDTOResponse> getSalesByInvoiceStatus(InvoiceStatus invoiceStatus) {
+        Long currentPharmacyId = getCurrentUserPharmacyId();
+        
+        List<SaleInvoice> saleInvoices = saleInvoiceRepository.findByPharmacyIdOrderByInvoiceDateDesc(currentPharmacyId);
+        
+        return saleInvoices.stream()
+                .filter(invoice -> invoice.getStatus() == invoiceStatus)
                 .map(saleMapper::toResponse)
                 .collect(Collectors.toList());
     }

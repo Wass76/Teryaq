@@ -26,9 +26,6 @@ public class PayCustomerDebtsResponse {
     @Schema(description = "Total remaining debt after payment", example = "200.00")
     private Float totalRemainingDebt;
     
-    @Schema(description = "Payment strategy used", example = "OVERDUE_FIRST")
-    private String paymentStrategy;
-    
     @Schema(description = "List of debts that received payments")
     private List<DebtPaymentDetail> debtPayments;
     

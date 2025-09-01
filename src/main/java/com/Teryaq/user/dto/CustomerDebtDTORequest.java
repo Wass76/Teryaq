@@ -28,6 +28,9 @@ public class CustomerDebtDTORequest {
     
     @Schema(description = "Customer ID", example = "1")
     private Long customerId;
+
+    @Schema(description = "Sale invoice ID", example = "1")
+    private Long saleInvoiceId;
     
     @Schema(description = "Debt amount", example = "150.50")
     private Float amount;

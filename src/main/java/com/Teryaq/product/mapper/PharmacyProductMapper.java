@@ -97,6 +97,15 @@ public class PharmacyProductMapper {
         //         .collect(Collectors.toSet())
         //     : new HashSet<>();
 
+
+        
+
+        
+        System.out.println("🔍 DEBUG: Building response - Original tradeName: " + product.getTradeName() + ", scientificName: " + product.getScientificName());
+        if (translation != null) {
+            System.out.println("🔍 DEBUG: Translation found - tradeName: " + translation.getTradeName() + ", scientificName: " + translation.getScientificName());
+        }
+        
         return PharmacyProductDTOResponse.builder()
                 .id(product.getId())
                 .tradeName(translation != null ? translation.getTradeName() : product.getTradeName())
@@ -167,11 +176,15 @@ public class PharmacyProductMapper {
     }
 
     public void updateEntityFromRequest(PharmacyProduct existing, PharmacyProductDTORequest dto, Long pharmacyId) {
+        System.out.println("🔍 DEBUG: updateEntityFromRequest - Request tradeName: " + dto.getTradeName() + ", scientificName: " + dto.getScientificName());
+        
         if (dto.getTradeName() != null) {
             existing.setTradeName(dto.getTradeName());
+            System.out.println("✅ DEBUG: Updated tradeName to: " + existing.getTradeName());
         }
         if (dto.getScientificName() != null) {
             existing.setScientificName(dto.getScientificName());
+            System.out.println("✅ DEBUG: Updated scientificName to: " + existing.getScientificName());
         }
         if (dto.getConcentration() != null) {
             existing.setConcentration(dto.getConcentration());

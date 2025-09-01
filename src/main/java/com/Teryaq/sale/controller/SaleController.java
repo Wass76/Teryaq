@@ -20,6 +20,8 @@ import jakarta.validation.constraints.Min;
 
 import java.time.LocalDate;
 import java.util.List;
+import com.Teryaq.sale.dto.SaleRefundDTORequest;
+import com.Teryaq.sale.dto.SaleRefundDTOResponse;
 
 @RestController
 @RequestMapping("/api/v1/sales")
@@ -111,6 +113,87 @@ public class SaleController {
             @Min(1) @PathVariable Long id) {
         saleService.cancelSale(id);
         return ResponseEntity.ok().build();
+    }
+
+    @Operation(
+        summary = "Process sale refund", 
+        description = "Process a refund for a sale invoice. Can be full invoice or partial items refund."
+    )
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Successfully processed refund",
+            content = @Content(mediaType = "application/json",
+            schema = @Schema(implementation = SaleRefundDTOResponse.class))),
+        @ApiResponse(responseCode = "400", description = "Invalid refund request"),
+        @ApiResponse(responseCode = "403", description = "Access denied - insufficient permissions"),
+        @ApiResponse(responseCode = "404", description = "Sale invoice not found"),
+        @ApiResponse(responseCode = "409", description = "Sale invoice already refunded or cannot be refunded"),
+        @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
+    @PostMapping("/{id}/refund")
+    public ResponseEntity<SaleRefundDTOResponse> processRefund(
+            @Parameter(description = "Sale invoice ID", example = "1") 
+            @Min(1) @PathVariable Long id,
+            @Parameter(description = "Refund request data", required = true)
+            @Valid @RequestBody SaleRefundDTORequest request) {
+        SaleRefundDTOResponse response = saleService.processRefund(id, request);
+        return ResponseEntity.ok(response);
+    }
+
+    @Operation(
+        summary = "Get refunds by sale invoice ID", 
+        description = "Retrieves all refunds for a specific sale invoice."
+    )
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Successfully retrieved refunds",
+            content = @Content(mediaType = "application/json",
+            schema = @Schema(implementation = SaleRefundDTOResponse.class))),
+        @ApiResponse(responseCode = "403", description = "Access denied - insufficient permissions"),
+        @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
+    @GetMapping("/{id}/refunds")
+    public ResponseEntity<List<SaleRefundDTOResponse>> getRefundsBySaleId(
+            @Parameter(description = "Sale invoice ID", example = "1") 
+            @Min(1) @PathVariable Long id) {
+        List<SaleRefundDTOResponse> response = saleService.getRefundsBySaleId(id);
+        return ResponseEntity.ok(response);
+    }
+
+    @Operation(
+        summary = "Get all refunds", 
+        description = "Retrieves all refunds for the current pharmacy."
+    )
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Successfully retrieved refunds",
+            content = @Content(mediaType = "application/json",
+            schema = @Schema(implementation = SaleRefundDTOResponse.class))),
+        @ApiResponse(responseCode = "403", description = "Access denied - insufficient permissions"),
+        @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
+    @GetMapping("/refunds")
+    public ResponseEntity<List<SaleRefundDTOResponse>> getAllRefunds() {
+        List<SaleRefundDTOResponse> response = saleService.getAllRefunds();
+        return ResponseEntity.ok(response);
+    }
+
+    @Operation(
+        summary = "Get refunds by date range", 
+        description = "Retrieves refunds between two dates for the current pharmacy."
+    )
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Successfully retrieved refunds",
+            content = @Content(mediaType = "application/json",
+            schema = @Schema(implementation = SaleRefundDTOResponse.class))),
+        @ApiResponse(responseCode = "403", description = "Access denied - insufficient permissions"),
+        @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
+    @GetMapping("/refunds/date-range")
+    public ResponseEntity<List<SaleRefundDTOResponse>> getRefundsByDateRange(
+        @Parameter(description = "Start date", example = "2024-01-01")
+        @RequestParam("startDate") LocalDate startDate,
+        @Parameter(description = "End date", example = "2024-01-31")
+        @RequestParam("endDate") LocalDate endDate) {
+        List<SaleRefundDTOResponse> response = saleService.getRefundsByDateRange(startDate, endDate);
+        return ResponseEntity.ok(response);
     }
 
     // @GetMapping("/search-by-date")

@@ -86,6 +86,8 @@ public class SaleMapper {
         dto.setProductName(productName);
         
         dto.setQuantity(item.getQuantity());
+        dto.setRefundedQuantity(item.getRefundedQuantity());
+        dto.setAvailableForRefund(item.getQuantity() - item.getRefundedQuantity());
         dto.setUnitPrice(item.getUnitPrice());
         dto.setSubTotal(item.getSubTotal());
         return dto;
@@ -105,9 +107,9 @@ public class SaleMapper {
         dto.setDiscountType(invoice.getDiscountType());
         dto.setPaidAmount(invoice.getPaidAmount());
         dto.setRemainingAmount(invoice.getRemainingAmount());
-        
-        String status = invoice.getRemainingAmount() > 0 ? "PENDING" : "COMPLETED";
-        dto.setStatus(status);
+        dto.setStatus(invoice.getStatus());
+        dto.setPaymentStatus(invoice.getPaymentStatus());
+        dto.setRefundStatus(invoice.getRefundStatus());
         if (invoice.getItems() != null) {
             List<SaleInvoiceItemDTOResponse> items = invoice.getItems().stream()
                 .map(this::toResponse)

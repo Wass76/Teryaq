@@ -14,6 +14,8 @@ import com.Teryaq.user.repository.UserRepository;
 import com.Teryaq.utils.exception.ResourceNotFoundException;
 import com.Teryaq.utils.exception.ConflictException;
 import com.Teryaq.product.Enum.PaymentMethod;
+import com.Teryaq.sale.entity.SaleInvoice;
+import com.Teryaq.sale.repo.SaleInvoiceRepository;
 import com.Teryaq.moneybox.service.SalesIntegrationService;
 import com.Teryaq.utils.exception.UnAuthorizedException;
     
@@ -41,17 +43,19 @@ public class CustomerDebtService extends BaseSecurityService {
     private final CustomerRepo customerRepo;
     private final CustomerDebtMapper customerDebtMapper;
     private final SalesIntegrationService salesIntegrationService;
-
+    private final SaleInvoiceRepository saleInvoiceRepository;
     public CustomerDebtService(CustomerDebtRepository customerDebtRepository,
                        CustomerRepo customerRepo,
                        CustomerDebtMapper customerDebtMapper,
                        SalesIntegrationService salesIntegrationService,
+                       SaleInvoiceRepository saleInvoiceRepository,
                        UserRepository userRepository) {
         super(userRepository);
         this.customerDebtRepository = customerDebtRepository;
         this.customerRepo = customerRepo;
         this.customerDebtMapper = customerDebtMapper;
         this.salesIntegrationService = salesIntegrationService;
+        this.saleInvoiceRepository = saleInvoiceRepository;
     }
 
     @Transactional
@@ -334,6 +338,18 @@ public class CustomerDebtService extends BaseSecurityService {
         if (request.getDueDate() == null) {
             throw new IllegalArgumentException("Due date is required");
         }
+        
+        // التحقق من أن الفاتورة المرتبطة بالدين ليست مرتجعة
+        if (request.getSaleInvoiceId() != null) {
+            SaleInvoice saleInvoice = saleInvoiceRepository.findById(request.getSaleInvoiceId())
+                .orElseThrow(() -> new ResourceNotFoundException("Sale invoice not found with ID: " + request.getSaleInvoiceId()));
+            if (saleInvoice.getStatus() != com.Teryaq.sale.enums.InvoiceStatus.SOLD) {
+                throw new IllegalArgumentException("Sale invoice is not in SOLD status");
+            }
+        }
+            // يمكن إضافة validation هنا للتأكد من أن الفاتورة في حالة SOLD
+            // وليس PARTIALLY_REFUNDED أو FULLY_REFUNDED
+        
     }
 
     private void validatePaymentRequest(PayDebtDTORequest request) {
@@ -351,12 +367,7 @@ public class CustomerDebtService extends BaseSecurityService {
         }
     }
 
-    private void validateCustomerExists(Long customerId) {
-        if (!customerRepo.existsById(customerId)) {
-            throw new ResourceNotFoundException("Customer not found with ID: " + customerId);
-        }
-    }
-
+  
     private void validateStatus(String status) {
         if (!StringUtils.hasText(status)) {
             throw new IllegalArgumentException("Status cannot be empty");
@@ -382,7 +393,10 @@ public class CustomerDebtService extends BaseSecurityService {
             throw new ConflictException("No active debts found for this customer");
         }
         
-        List<CustomerDebt> sortedDebts = sortDebtsByStrategy(activeDebts, request.getPaymentStrategy());
+        // ترتيب الديون حسب FIFO (أولاً يدخل أولاً يخرج) - حسب تاريخ الإنشاء
+        List<CustomerDebt> sortedDebts = activeDebts.stream()
+                .sorted((d1, d2) -> d1.getCreatedAt().compareTo(d2.getCreatedAt()))
+                .collect(Collectors.toList());
         
         float remainingPaymentAmount = request.getTotalPaymentAmount().floatValue();
         List<PayCustomerDebtsResponse.DebtPaymentDetail> paymentDetails = new ArrayList<>();
@@ -433,9 +447,10 @@ public class CustomerDebtService extends BaseSecurityService {
                     BigDecimal.valueOf(actualPaidAmount),
                     SYP
                 );
-                logger.info("Multiple debt payments recorded in MoneyBox for customer: {}", customerId);
+                logger.info("Multiple debt payments recorded in Money Box for customer: {}", customerId);
             } catch (Exception e) {
-                logger.warn("Failed to record debt payment in MoneyBox for customer {}: {}", customerId, e.getMessage());
+                logger.warn("Failed to record debt payment in Money Box for customer {}: {}", 
+                           customerId, e.getMessage());
             }
         }
         
@@ -448,45 +463,12 @@ public class CustomerDebtService extends BaseSecurityService {
                 .customerName(customer.getName())
                 .totalPaymentAmount(request.getTotalPaymentAmount().floatValue())
                 .totalRemainingDebt(totalRemainingDebt)
-                .paymentStrategy(request.getPaymentStrategy().toString())
                 .debtPayments(paymentDetails)
                 .notes(request.getNotes())
                 .build();
     }
     
-    private List<CustomerDebt> sortDebtsByStrategy(List<CustomerDebt> debts, PayCustomerDebtsRequest.PaymentStrategy strategy) {
-        List<CustomerDebt> sortedDebts = new ArrayList<CustomerDebt>(debts);
-        
-        switch (strategy) {
-            case OVERDUE_FIRST:
-                sortedDebts.sort((d1, d2) -> {
-                    boolean d1Overdue = d1.getDueDate().isBefore(LocalDate.now());
-                    boolean d2Overdue = d2.getDueDate().isBefore(LocalDate.now());
-                    
-                    if (d1Overdue && !d2Overdue) return -1;
-                    if (!d1Overdue && d2Overdue) return 1;
-                    
-                    return d1.getDueDate().compareTo(d2.getDueDate());
-                });
-                break;
-                
-            case FIFO:
-                sortedDebts.sort((d1, d2) -> d1.getCreatedAt().compareTo(d2.getCreatedAt()));
-                break;
-                
-            case LIFO:
-                sortedDebts.sort((d1, d2) -> d2.getCreatedAt().compareTo(d1.getCreatedAt()));
-                break;
-                
-            case HIGHEST_AMOUNT_FIRST:
-                sortedDebts.sort((d1, d2) -> Float.compare(d2.getRemainingAmount(), d1.getRemainingAmount()));
-                break;
-        }
-        
-        return sortedDebts;
-    }
-
- 
+    
     @lombok.Data
     @lombok.Builder
     public static class DebtStatistics {

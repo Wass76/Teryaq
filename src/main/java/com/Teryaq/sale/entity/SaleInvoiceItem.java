@@ -37,6 +37,10 @@ public class SaleInvoiceItem extends AuditedEntity{
 
     private Float subTotal;
 
+    // تتبع الكمية المرتجعة من هذا العنصر
+    @Column(nullable = false)
+    private Integer refundedQuantity = 0;
+
     @Override
     protected String getSequenceName() {
         return "sale_invoice_item_id_seq";

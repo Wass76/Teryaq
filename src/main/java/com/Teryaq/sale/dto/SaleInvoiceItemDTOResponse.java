@@ -14,6 +14,8 @@ public class SaleInvoiceItemDTOResponse {
     private Long stockItemId;
     private String productName;
     private Integer quantity;
+    private Integer refundedQuantity;
+    private Integer availableForRefund;
     private Float unitPrice;
     private Float subTotal;
 } 

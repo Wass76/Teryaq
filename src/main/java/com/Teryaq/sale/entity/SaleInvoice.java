@@ -11,6 +11,9 @@ import java.util.List;
 import com.Teryaq.product.Enum.DiscountType;
 import com.Teryaq.product.Enum.PaymentMethod;
 import com.Teryaq.product.Enum.PaymentType;
+import com.Teryaq.sale.enums.InvoiceStatus;
+import com.Teryaq.sale.enums.PaymentStatus;
+import com.Teryaq.sale.enums.RefundStatus;
 import com.Teryaq.user.Enum.Currency;
 import com.Teryaq.user.entity.Customer;
 import com.Teryaq.user.entity.Pharmacy;
@@ -62,6 +65,21 @@ public class SaleInvoice extends AuditedEntity{
 
     @OneToMany(mappedBy = "saleInvoice", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<SaleInvoiceItem> items;
+
+    // حالة الفاتورة الأساسية: SOLD, CANCELLED, VOID
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private InvoiceStatus status = InvoiceStatus.SOLD;
+    
+    // حالة الدفع: FULLY_PAID, PARTIALLY_PAID, UNPAID
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private PaymentStatus paymentStatus = PaymentStatus.FULLY_PAID;
+    
+    // حالة المرتجعات: NO_REFUND, PARTIALLY_REFUNDED, FULLY_REFUNDED
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private RefundStatus refundStatus = RefundStatus.NO_REFUND;
 
     @Override
     protected String getSequenceName() {

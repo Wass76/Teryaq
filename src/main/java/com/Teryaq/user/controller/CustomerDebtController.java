@@ -112,7 +112,7 @@ public class CustomerDebtController {
     }
 
     @PostMapping("/{customerId}/autoPay")
-    @Operation(summary = "Auto pay debt", description = "Makes a payment towards a debt")
+    @Operation(summary = "Auto pay debt", description = "Automatically distributes payment across customer debts using FIFO strategy")
     @ApiResponses(value = {
         @ApiResponse(responseCode = "200", description = "Successfully processed payment"),
         @ApiResponse(responseCode = "400", description = "Invalid payment data"),
