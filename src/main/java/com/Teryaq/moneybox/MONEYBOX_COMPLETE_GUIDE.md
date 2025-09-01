@@ -23,6 +23,240 @@ The MoneyBox package provides comprehensive financial management for the Teryaq 
 
 ---
 
+## 🌍 **Multi-Currency Support & Frontend Integration**
+
+### **🎯 What Has NOT Changed (Zero Breaking Changes)**
+- **All existing API endpoints** work exactly the same
+- **All existing response fields** remain unchanged
+- **All existing frontend code** continues to work without modification
+- **All existing business logic** remains intact
+- **All existing price displays** continue to show SYP values by default
+
+### **🆕 What Has Been Added (New Optional Features)**
+
+#### **1. New Optional Query Parameter:**
+```
+currency=USD|EUR|SYP (defaults to SYP if not provided)
+```
+
+#### **2. New Response Fields (only populated when currency conversion is requested):**
+```json
+{
+  "requestedCurrency": "USD",
+  "pricesConverted": true,
+  "sellingPriceConverted": 0.076,
+  "averagePurchasePriceConverted": 0.057,
+  "totalValueConverted": 4.57,
+  "exchangeRate": 10500.0,
+  "conversionTimestamp": "2024-01-15 10:30:00",
+  "rateSource": "EXCHANGE_RATE_SERVICE"
+}
+```
+
+### **🎨 Frontend Integration Concepts (Optional Enhancement)**
+
+#### **1. Currency Selection UI:**
+- **Currency Dropdown**: Add a currency selector component (SYP, USD, EUR)
+- **Default Selection**: SYP should be the default selected currency
+- **User Experience**: Allow users to switch between currencies as needed
+
+#### **2. API Call Updates:**
+- **Optional Parameter**: Add `currency` parameter to API calls when needed
+- **Default Behavior**: API calls without currency parameter return SYP values
+- **Error Handling**: Implement fallback to SYP display if conversion fails
+
+#### **3. Response Handling:**
+- **Dual Price Display**: Show both converted price and original SYP price
+- **Conditional Rendering**: Display converted prices only when available
+- **Exchange Rate Info**: Show conversion rate and timestamp when applicable
+
+#### **4. Currency State Management:**
+- **Global Currency State**: Maintain selected currency across the application
+- **Context/Store**: Use application state management for currency selection
+- **Persistence**: Optionally save user's currency preference
+
+### **🔧 Technical Implementation Details**
+
+#### **Currency Conversion Service:**
+```java
+@Service
+public class CurrencyConversionService {
+    
+    public CurrencyAwarePriceDTO convertPriceFromSYP(BigDecimal priceInSYP, Currency targetCurrency) {
+        // Converts SYP price to target currency
+        // Returns DTO with both original and converted prices
+    }
+    
+    public List<CurrencyAwarePriceDTO> convertMultiplePricesFromSYP(
+        List<BigDecimal> pricesInSYP, Currency targetCurrency) {
+        // Batch conversion for multiple prices
+    }
+}
+```
+
+#### **Additive DTO Approach:**
+```java
+// Existing fields remain unchanged
+public class StockProductOverallDTOResponse {
+    // Original fields (unchanged)
+    private Float sellingPrice;           // Always in SYP
+    private Double averagePurchasePrice;  // Always in SYP
+    private Double totalValue;            // Always in SYP
+    
+    // New fields (only populated when currency conversion requested)
+    private String requestedCurrency;     // USD, EUR, etc.
+    private Boolean pricesConverted;      // true when conversion applied
+    private Float sellingPriceConverted;  // Converted price
+    private Double averagePurchasePriceConverted;
+    private Double totalValueConverted;
+    private Double exchangeRate;          // Rate used for conversion
+    private String conversionTimestamp;   // When conversion happened
+    private String rateSource;            // Source of exchange rate
+}
+```
+
+### **📱 Updated API Endpoints with Currency Support**
+
+#### **1. Stock Management:**
+```
+GET /api/v1/stock/search?currency=USD
+GET /api/v1/stock/products/Overall?currency=USD
+```
+
+#### **2. Pharmacy Products:**
+```
+GET /api/v1/pharmacy_products?currency=USD
+GET /api/v1/pharmacy_products/pharmacy/{id}?currency=USD
+GET /api/v1/pharmacy_products/{id}?currency=USD
+```
+
+#### **3. Master Products:**
+```
+GET /api/v1/master_products?currency=USD
+GET /api/v1/master_products/{id}?currency=USD
+```
+
+#### **4. MoneyBox Transactions:**
+```
+GET /api/v1/moneybox/transactions?currency=USD
+GET /api/v1/moneybox/currency/convert?amount=1000&from=SYP&to=USD
+GET /api/v1/moneybox/currency/rates
+```
+
+### **🔄 Response Format Examples**
+
+#### **Default Response (SYP):**
+```json
+{
+  "id": 1,
+  "productName": "Paracetamol",
+  "sellingPrice": 800.0,
+  "averagePurchasePrice": 600.0,
+  "totalValue": 48000.0,
+  "requestedCurrency": null,
+  "pricesConverted": null
+}
+```
+
+#### **With Currency Conversion (USD):**
+```json
+{
+  "id": 1,
+  "productName": "Paracetamol",
+  "sellingPrice": 800.0,
+  "averagePurchasePrice": 600.0,
+  "totalValue": 48000.0,
+  "requestedCurrency": "USD",
+  "pricesConverted": true,
+  "sellingPriceConverted": 0.076,
+  "averagePurchasePriceConverted": 0.057,
+  "totalValueConverted": 4.57,
+  "exchangeRate": 10500.0,
+  "conversionTimestamp": "2024-01-15 10:30:00",
+  "rateSource": "EXCHANGE_RATE_SERVICE"
+}
+```
+
+### **🎯 Frontend Integration Strategy**
+
+#### **1. Progressive Enhancement:**
+- **Phase 1**: Add currency selector UI (optional)
+- **Phase 2**: Implement currency-aware API calls
+- **Phase 3**: Add currency conversion display
+- **Phase 4**: Implement currency switching across all components
+
+#### **2. Component Architecture:**
+- **Currency-Aware Components**: Components should handle both SYP and converted currency displays
+- **Dynamic Price Display**: Show appropriate price based on selected currency
+- **Fallback Handling**: Gracefully handle cases where conversion data is unavailable
+- **State Synchronization**: Keep currency selection synchronized across all components
+
+#### **3. Error Handling & Fallbacks:**
+- **Network Error Handling**: Gracefully handle API failures and network issues
+- **Conversion Fallbacks**: Fall back to SYP display if currency conversion fails
+- **User Feedback**: Provide clear error messages when currency operations fail
+- **Graceful Degradation**: Ensure the application continues to work even with currency issues
+
+### **🧪 Testing & Validation**
+
+#### **Frontend Testing Checklist:**
+- [ ] **Currency selector works** - All currencies selectable
+- [ ] **API calls include currency** - Parameter properly sent
+- [ ] **Response handling works** - Both converted and original prices displayed
+- [ ] **Fallback handling** - Invalid currency falls back to SYP
+- [ ] **Error handling** - Network errors handled gracefully
+- [ ] **Performance** - No significant delay with currency conversion
+- [ ] **Responsiveness** - UI updates immediately on currency change
+
+#### **API Testing Examples:**
+```bash
+# Test default behavior (SYP)
+curl -X GET "http://localhost:8080/api/v1/stock/search" \
+  -H "Authorization: Bearer YOUR_TOKEN"
+
+# Test USD conversion
+curl -X GET "http://localhost:8080/api/v1/stock/search?currency=USD" \
+  -H "Authorization: Bearer YOUR_TOKEN"
+
+# Test EUR conversion
+curl -X GET "http://localhost:8080/api/v1/stock/search?currency=EUR" \
+  -H "Authorization: Bearer YOUR_TOKEN"
+```
+
+### **📊 Benefits of This Unified Approach**
+
+✅ **Consistent API behavior** - Same currency parameter across all endpoints  
+✅ **Reusable conversion logic** - Single conversion method pattern  
+✅ **Unified response format** - Same currency fields in all responses  
+✅ **Easy maintenance** - One pattern to update across all controllers  
+✅ **Frontend consistency** - Same response structure for all product endpoints  
+✅ **Zero breaking changes** - Existing functionality completely preserved  
+✅ **Progressive enhancement** - Can be implemented gradually  
+
+### **🚀 Implementation Roadmap**
+
+#### **Week 1: Foundation**
+- [ ] Implement CurrencyConversionService
+- [ ] Add currency support to Stock endpoints
+- [ ] Test basic conversion functionality
+
+#### **Week 2: Extension**
+- [ ] Add currency support to Pharmacy Product endpoints
+- [ ] Add currency support to Master Product endpoints
+- [ ] Test all product endpoints
+
+#### **Week 3: Frontend Integration**
+- [ ] Create currency selector component
+- [ ] Update product list components
+- [ ] Implement currency-aware display
+
+#### **Week 4: Testing & Polish**
+- [ ] End-to-end testing
+- [ ] Performance optimization
+- [ ] Documentation updates
+
+---
+
 ## 💰 **MoneyBox Business Operations**
 
 ### **1. Initial Setup**

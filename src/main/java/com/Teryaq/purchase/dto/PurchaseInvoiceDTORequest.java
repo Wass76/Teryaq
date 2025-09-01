@@ -32,7 +32,7 @@ public class PurchaseInvoiceDTORequest {
     private Long supplierId;
     
     @Schema(description = "Currency for the invoice", example = "USD", 
-            allowableValues = {"USD", "EUR", "GBP", "SAR", "AED"})
+            allowableValues = {"USD", "EUR", "SYP"})
     private Currency currency;
     
     @Schema(description = "Total invoice amount", example = "550.00")

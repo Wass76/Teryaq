@@ -51,6 +51,8 @@ import com.Teryaq.sale.repo.SaleRefundRepo;
 import com.Teryaq.sale.repo.SaleRefundItemRepo;
 import com.Teryaq.product.Enum.PaymentMethod;
 import java.util.ArrayList;
+import com.Teryaq.user.Enum.Currency;
+import java.util.Arrays;
 
 @Service
 public class SaleService extends BaseSecurityService {
@@ -123,6 +125,18 @@ public class SaleService extends BaseSecurityService {
         Pharmacy currentPharmacy = getCurrentUserPharmacy();
         if (currentPharmacy == null) {
             throw new UnAuthorizedException("You are not authorized to create a sale invoice");
+        }
+        
+        // ✅ ADD CURRENCY VALIDATION
+        if (requestDTO.getCurrency() == null) {
+            requestDTO.setCurrency(Currency.SYP);
+            logger.info("Currency not specified, defaulting to SYP for sale invoice");
+        }
+        
+        // Validate currency is supported
+        if (!Arrays.asList(Currency.SYP, Currency.USD, Currency.EUR).contains(requestDTO.getCurrency())) {
+            throw new RequestNotValidException("Unsupported currency: " + requestDTO.getCurrency() + 
+                ". Supported currencies are: SYP, USD, EUR");
         }
         
         Customer customer = null;
