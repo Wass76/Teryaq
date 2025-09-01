@@ -13,6 +13,7 @@ import com.Teryaq.user.service.BaseSecurityService;
 import com.Teryaq.utils.exception.ResourceNotFoundException;
 import com.Teryaq.utils.exception.ConflictException;
 import com.Teryaq.utils.exception.UnAuthorizedException;
+import com.Teryaq.purchase.repository.PurchaseInvoiceRepo;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
@@ -23,13 +24,16 @@ import java.util.stream.Collectors;
 public class SupplierService extends BaseSecurityService {
     private final SupplierRepository supplierRepository;
     private final SupplierMapper supplierMapper;
+    private final PurchaseInvoiceRepo purchaseInvoiceRepo;
 
     public SupplierService(SupplierRepository supplierRepository,
                          SupplierMapper supplierMapper,
-                         UserRepository userRepository) {
+                         UserRepository userRepository,
+                         PurchaseInvoiceRepo purchaseInvoiceRepo) {
         super(userRepository);
         this.supplierRepository = supplierRepository;
         this.supplierMapper = supplierMapper;
+        this.purchaseInvoiceRepo = purchaseInvoiceRepo;
     }
 
     @Transactional
@@ -108,6 +112,11 @@ public class SupplierService extends BaseSecurityService {
         // Validate that the supplier belongs to the current user's pharmacy
         if (!supplier.getPharmacy().getId().equals(pharmacyId)) {
             throw new UnAuthorizedException("You can only delete suppliers from your own pharmacy");
+        }
+        
+        // Check if supplier has any purchase invoices
+        if (purchaseInvoiceRepo.countByPharmacyIdAndSupplierId(pharmacyId, id) > 0) {
+            throw new ConflictException("Cannot delete supplier. Supplier has associated purchase invoices. Please delete all purchase invoices first.");
         }
         
         supplierRepository.delete(supplier);

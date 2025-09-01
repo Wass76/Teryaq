@@ -6,6 +6,7 @@ import com.Teryaq.moneybox.enums.TransactionType;
 import com.Teryaq.moneybox.repository.MoneyBoxRepository;
 import com.Teryaq.moneybox.repository.MoneyBoxTransactionRepository;
 import com.Teryaq.user.Enum.Currency;
+import com.Teryaq.utils.exception.ConflictException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -313,6 +314,6 @@ public class PurchaseIntegrationService {
     
     private MoneyBox findMoneyBoxByPharmacyId(Long pharmacyId) {
         return moneyBoxRepository.findByPharmacyId(pharmacyId)
-                .orElseThrow(() -> new IllegalArgumentException("Money box not found for pharmacy: " + pharmacyId));
+                .orElseThrow(() -> new ConflictException("Money box not found for pharmacy: " + pharmacyId));
     }
 }
