@@ -77,9 +77,11 @@ public class PharmacyProductDTORequest {
     private Long typeId;
     
     @Schema(description = "Product form ID", example = "1")
+    @NotNull
     private Long formId;
     
     @Schema(description = "Manufacturer ID", example = "1")
+    @NotNull
     private Long manufacturerId;
 
     @Schema(description = "Category IDs", example = "[1, 2]")

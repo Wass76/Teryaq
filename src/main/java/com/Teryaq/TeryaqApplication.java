@@ -12,6 +12,7 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 @EnableAspectJAutoProxy
 @EnableCaching
 @EnableAsync
+@EnableJpaAuditing(auditorAwareRef = "auditorAware")
 @EnableWebSecurity
 public class TeryaqApplication {
 

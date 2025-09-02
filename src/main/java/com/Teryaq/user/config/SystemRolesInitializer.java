@@ -27,13 +27,19 @@ public class SystemRolesInitializer implements CommandLineRunner {
     @Transactional
     public void run(String... args) {
         log.info("Initializing system roles and permissions...");
-        
+
+        if (permissionRepository.count() == 0) {
+            Map<String, Permission> permissions = createPermissions();
+
+            if(roleRepository.count() == 0) {
+                // Create system roles with their permissions
+                createSystemRoles(permissions);
+            }
+        }
+        else {
+            log.info("System roles and permissions already exist.");
+        }
         // Create permissions
-        Map<String, Permission> permissions = createPermissions();
-        
-        // Create system roles with their permissions
-        createSystemRoles(permissions);
-        
         log.info("System roles and permissions initialized successfully");
     }
 
