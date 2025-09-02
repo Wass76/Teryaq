@@ -29,7 +29,7 @@ import io.swagger.v3.oas.annotations.servers.Server;
                 {
                         @Server(
                                 description = "Prod ENV",
-                                url = "https://b2175de248ef.ngrok-free.app"
+                                url = "https://03c490049e2f.ngrok-free.app"
                         ),
                         @Server(
                                 description = "Local ENV",

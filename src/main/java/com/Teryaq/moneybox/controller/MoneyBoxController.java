@@ -8,6 +8,7 @@ import com.Teryaq.moneybox.dto.ExchangeRateResponseDTO;
 import com.Teryaq.moneybox.service.MoneyBoxService;
 import com.Teryaq.moneybox.service.ExchangeRateService;
 import com.Teryaq.user.Enum.Currency;
+import com.Teryaq.product.dto.PaginationDTO;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -21,6 +22,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -150,18 +153,39 @@ public class MoneyBoxController {
     }
 
     @GetMapping("/transactions")
-    @Operation(summary = "Get all money box transactions", description = "Retrieves all transactions for the current pharmacy money box with dual currency amounts")
+    @Operation(summary = "Get all money box transactions", description = "Retrieves paginated transactions for the current pharmacy money box with dual currency amounts")
     @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "Transactions retrieved successfully"),
+        @ApiResponse(responseCode = "200", description = "Transactions retrieved successfully",
+            content = @Content(mediaType = "application/json",
+            schema = @Schema(implementation = PaginationDTO.class))),
+        @ApiResponse(responseCode = "400", description = "Invalid pagination parameters"),
         @ApiResponse(responseCode = "404", description = "Money box not found"),
         @ApiResponse(responseCode = "401", description = "Unauthorized")
     })
-    public ResponseEntity<List<MoneyBoxTransactionResponseDTO>> getAllTransactions(
-            @Parameter(description = "Start date (ISO format, optional)",example = "2024-01-01T00:00:00") @RequestParam(required = false) LocalDateTime startDate,
-            @Parameter(description = "End date (ISO format, optional)",example = "2024-01-01T00:00:00") @RequestParam(required = false) LocalDateTime endDate,
-            @Parameter(description = "Transaction type (optional)") @RequestParam(required = false) String transactionType) {
+    public ResponseEntity<PaginationDTO<MoneyBoxTransactionResponseDTO>> getAllTransactions(
+            @Parameter(description = "Page number (0-based)", example = "0") 
+            @Min(0) @RequestParam(defaultValue = "0") int page,
+            @Parameter(description = "Number of items per page (1-100)", example = "10") 
+            @Min(1) @Max(100) @RequestParam(defaultValue = "10") int size,
+            @Parameter(description = "Start date (ISO format, optional)",example = "2024-01-01T00:00:00") 
+            @RequestParam(required = false) LocalDateTime startDate,
+            @Parameter(description = "End date (ISO format, optional)",example = "2024-01-01T00:00:00") 
+            @RequestParam(required = false) LocalDateTime endDate,
+            @Parameter(description = "Transaction type (optional)") 
+            @RequestParam(required = false) String transactionType) {
         
-        List<MoneyBoxTransactionResponseDTO> transactions = moneyBoxService.getAllTransactions(startDate, endDate, transactionType);
+        PaginationDTO<MoneyBoxTransactionResponseDTO> transactions;
+        
+        if (startDate != null && endDate != null && transactionType != null) {
+            transactions = moneyBoxService.getAllTransactionsPaginated(startDate, endDate, transactionType, page, size);
+        } else if (startDate != null && endDate != null) {
+            transactions = moneyBoxService.getAllTransactionsPaginated(startDate, endDate, page, size);
+        } else if (transactionType != null) {
+            transactions = moneyBoxService.getAllTransactionsPaginated(transactionType, page, size);
+        } else {
+            transactions = moneyBoxService.getAllTransactionsPaginated(page, size);
+        }
+        
         return ResponseEntity.ok(transactions);
     }
 

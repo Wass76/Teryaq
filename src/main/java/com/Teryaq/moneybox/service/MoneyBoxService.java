@@ -25,6 +25,10 @@ import java.util.List;
 import java.util.Optional;
 import com.Teryaq.moneybox.mapper.ExchangeRateMapper;
 import com.Teryaq.user.repository.UserRepository;
+import com.Teryaq.product.dto.PaginationDTO;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 
 @Service
 @Slf4j
@@ -250,6 +254,83 @@ public class MoneyBoxService extends BaseSecurityService {
                 return MoneyBoxMapper.toTransactionResponseDTO(transaction, userEmail);
             })
             .collect(java.util.stream.Collectors.toList());
+    }
+
+    // Paginated methods
+    public PaginationDTO<MoneyBoxTransactionResponseDTO> getAllTransactionsPaginated(int page, int size) {
+        Long currentPharmacyId = getCurrentUserPharmacyId();
+        MoneyBox moneyBox = findMoneyBoxByPharmacyId(currentPharmacyId);
+        
+        Pageable pageable = PageRequest.of(page, size);
+        Page<MoneyBoxTransaction> transactionPage = transactionRepository.findByMoneyBoxIdOrderByCreatedAtDesc(moneyBox.getId(), pageable);
+        
+        List<MoneyBoxTransactionResponseDTO> responses = transactionPage.getContent().stream()
+            .map(transaction -> {
+                String userEmail = getUserEmailById(transaction.getCreatedBy());
+                return MoneyBoxMapper.toTransactionResponseDTO(transaction, userEmail);
+            })
+            .collect(java.util.stream.Collectors.toList());
+            
+        return new PaginationDTO<>(responses, page, size, transactionPage.getTotalElements());
+    }
+
+    public PaginationDTO<MoneyBoxTransactionResponseDTO> getAllTransactionsPaginated(
+            LocalDateTime startDate, LocalDateTime endDate, int page, int size) {
+        Long currentPharmacyId = getCurrentUserPharmacyId();
+        MoneyBox moneyBox = findMoneyBoxByPharmacyId(currentPharmacyId);
+        
+        Pageable pageable = PageRequest.of(page, size);
+        Page<MoneyBoxTransaction> transactionPage = transactionRepository.findByMoneyBoxIdAndCreatedAtBetweenOrderByCreatedAtDesc(
+            moneyBox.getId(), startDate, endDate, pageable);
+        
+        List<MoneyBoxTransactionResponseDTO> responses = transactionPage.getContent().stream()
+            .map(transaction -> {
+                String userEmail = getUserEmailById(transaction.getCreatedBy());
+                return MoneyBoxMapper.toTransactionResponseDTO(transaction, userEmail);
+            })
+            .collect(java.util.stream.Collectors.toList());
+            
+        return new PaginationDTO<>(responses, page, size, transactionPage.getTotalElements());
+    }
+
+    public PaginationDTO<MoneyBoxTransactionResponseDTO> getAllTransactionsPaginated(
+            String transactionType, int page, int size) {
+        Long currentPharmacyId = getCurrentUserPharmacyId();
+        MoneyBox moneyBox = findMoneyBoxByPharmacyId(currentPharmacyId);
+        
+        TransactionType type = TransactionType.valueOf(transactionType.toUpperCase());
+        Pageable pageable = PageRequest.of(page, size);
+        Page<MoneyBoxTransaction> transactionPage = transactionRepository.findByMoneyBoxIdAndTransactionTypeOrderByCreatedAtDesc(
+            moneyBox.getId(), type, pageable);
+        
+        List<MoneyBoxTransactionResponseDTO> responses = transactionPage.getContent().stream()
+            .map(transaction -> {
+                String userEmail = getUserEmailById(transaction.getCreatedBy());
+                return MoneyBoxMapper.toTransactionResponseDTO(transaction, userEmail);
+            })
+            .collect(java.util.stream.Collectors.toList());
+            
+        return new PaginationDTO<>(responses, page, size, transactionPage.getTotalElements());
+    }
+
+    public PaginationDTO<MoneyBoxTransactionResponseDTO> getAllTransactionsPaginated(
+            LocalDateTime startDate, LocalDateTime endDate, String transactionType, int page, int size) {
+        Long currentPharmacyId = getCurrentUserPharmacyId();
+        MoneyBox moneyBox = findMoneyBoxByPharmacyId(currentPharmacyId);
+        
+        TransactionType type = TransactionType.valueOf(transactionType.toUpperCase());
+        Pageable pageable = PageRequest.of(page, size);
+        Page<MoneyBoxTransaction> transactionPage = transactionRepository.findByMoneyBoxIdAndTransactionTypeAndCreatedAtBetweenOrderByCreatedAtDesc(
+            moneyBox.getId(), type, startDate, endDate, pageable);
+        
+        List<MoneyBoxTransactionResponseDTO> responses = transactionPage.getContent().stream()
+            .map(transaction -> {
+                String userEmail = getUserEmailById(transaction.getCreatedBy());
+                return MoneyBoxMapper.toTransactionResponseDTO(transaction, userEmail);
+            })
+            .collect(java.util.stream.Collectors.toList());
+            
+        return new PaginationDTO<>(responses, page, size, transactionPage.getTotalElements());
     }
 
     /**
