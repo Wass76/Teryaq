@@ -7,12 +7,19 @@ import com.Teryaq.user.dto.CustomerDTOResponse;
 import com.Teryaq.user.dto.CustomerDebtDTOResponse;
 import com.Teryaq.user.entity.Customer;
 import com.Teryaq.user.entity.CustomerDebt;
+import com.Teryaq.user.repository.CustomerDebtRepository;
 
 import java.util.List;
 import java.util.stream.Collectors;
 
 @Component
 public class CustomerMapper {
+
+    private final CustomerDebtRepository customerDebtRepository;
+
+    public CustomerMapper(CustomerDebtRepository customerDebtRepository) {
+        this.customerDebtRepository = customerDebtRepository;
+    }
 
     public CustomerDTOResponse toResponse(Customer customer) {
         if (customer == null) return null;
@@ -26,17 +33,19 @@ public class CustomerMapper {
                 .notes(customer.getNotes())
                 .build();
 
-        // حساب إجمالي الديون والمبالغ المدفوعة
-        if (customer.getDebts() != null && !customer.getDebts().isEmpty()) {
-            Float totalDebt = customer.getDebts().stream()
+        // تحميل الديون من قاعدة البيانات بدلاً من الاعتماد على العلاقة LAZY
+        List<CustomerDebt> debts = customerDebtRepository.findByCustomerIdOrderByCreatedAtDesc(customer.getId());
+        
+        if (debts != null && !debts.isEmpty()) {
+            Float totalDebt = debts.stream()
                     .map(CustomerDebt::getAmount)
                     .reduce(0f, Float::sum);
             
-            Float totalPaid = customer.getDebts().stream()
+            Float totalPaid = debts.stream()
                     .map(CustomerDebt::getPaidAmount)
                     .reduce(0f, Float::sum);
             
-            int activeDebtsCount = (int) customer.getDebts().stream()
+            int activeDebtsCount = (int) debts.stream()
                     .filter(debt -> "ACTIVE".equals(debt.getStatus()))
                     .count();
 
@@ -46,7 +55,7 @@ public class CustomerMapper {
             response.setActiveDebtsCount(activeDebtsCount);
             
             // تحويل الديون إلى DTOs
-            List<CustomerDebtDTOResponse> debtDtos = customer.getDebts().stream()
+            List<CustomerDebtDTOResponse> debtDtos = debts.stream()
                     .map(this::toDebtResponse)
                     .collect(Collectors.toList());
             response.setDebts(debtDtos);
@@ -55,6 +64,7 @@ public class CustomerMapper {
             response.setTotalPaid(0.0f);
             response.setRemainingDebt(0.0f);
             response.setActiveDebtsCount(0);
+            response.setDebts(List.of());
         }
 
         return response;
@@ -67,6 +77,7 @@ public class CustomerMapper {
                 .id(debt.getId())
                 .customerId(debt.getCustomer().getId())
                 .customerName(debt.getCustomer().getName())
+                .pharmacyId(debt.getCustomer().getPharmacy() != null ? debt.getCustomer().getPharmacy().getId() : null)
                 .amount(debt.getAmount())
                 .paidAmount(debt.getPaidAmount())
                 .remainingAmount(debt.getRemainingAmount())
@@ -75,6 +86,7 @@ public class CustomerMapper {
                 .status(debt.getStatus())
                 .createdAt(debt.getCreatedAt())
                 .paidAt(debt.getPaidAt())
+                .paymentMethod(debt.getPaymentMethod())
                 .build();
     }
 

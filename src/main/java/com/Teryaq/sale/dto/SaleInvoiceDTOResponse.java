@@ -3,7 +3,6 @@ package com.Teryaq.sale.dto;
 import com.Teryaq.product.Enum.DiscountType;
 import com.Teryaq.product.Enum.PaymentType;
 import com.Teryaq.product.Enum.PaymentMethod;
-import com.Teryaq.sale.enums.InvoiceStatus;
 import com.Teryaq.sale.enums.PaymentStatus;
 import com.Teryaq.sale.enums.RefundStatus;
 import com.Teryaq.user.Enum.Currency;
@@ -35,7 +34,7 @@ public class SaleInvoiceDTOResponse {
     private DiscountType discountType;
     private float paidAmount;
     private float remainingAmount;
-    private InvoiceStatus status;
+    //private InvoiceStatus status;
     private PaymentStatus paymentStatus;
     private RefundStatus refundStatus;
     private List<SaleInvoiceItemDTOResponse> items;

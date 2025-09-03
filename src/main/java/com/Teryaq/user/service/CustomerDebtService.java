@@ -164,7 +164,9 @@ public class CustomerDebtService extends BaseSecurityService {
         Float newRemainingAmount = debt.getAmount() - newPaidAmount;
 
         if (newPaidAmount > debt.getAmount()) {
-            throw new ConflictException("Payment amount cannot exceed debt amount");
+            throw new ConflictException("Payment amount (" + paymentAmount + 
+                ") cannot exceed remaining debt amount (" + debt.getRemainingAmount() + 
+                "). This would create a negative balance for the customer.");
         }
 
         debt.setPaidAmount(newPaidAmount);
@@ -393,12 +395,26 @@ public class CustomerDebtService extends BaseSecurityService {
             throw new ConflictException("No active debts found for this customer");
         }
         
+        // حساب إجمالي الديون المتبقية
+        float totalRemainingDebt = activeDebts.stream()
+                .map(CustomerDebt::getRemainingAmount)
+                .reduce(0f, Float::sum);
+        
+        float requestedPaymentAmount = request.getTotalPaymentAmount().floatValue();
+        
+        // التحقق من أن المبلغ المدفوع لا يتجاوز إجمالي الديون المتبقية
+        if (requestedPaymentAmount > totalRemainingDebt) {
+            throw new ConflictException("Payment amount (" + requestedPaymentAmount + 
+                ") cannot exceed total remaining debt (" + totalRemainingDebt + 
+                "). This would create a negative balance for the customer.");
+        }
+        
         // ترتيب الديون حسب FIFO (أولاً يدخل أولاً يخرج) - حسب تاريخ الإنشاء
         List<CustomerDebt> sortedDebts = activeDebts.stream()
                 .sorted((d1, d2) -> d1.getCreatedAt().compareTo(d2.getCreatedAt()))
                 .collect(Collectors.toList());
         
-        float remainingPaymentAmount = request.getTotalPaymentAmount().floatValue();
+        float remainingPaymentAmount = requestedPaymentAmount;
         List<PayCustomerDebtsResponse.DebtPaymentDetail> paymentDetails = new ArrayList<>();
         
         for (CustomerDebt debt : sortedDebts) {
@@ -454,7 +470,8 @@ public class CustomerDebtService extends BaseSecurityService {
             }
         }
         
-        float totalRemainingDebt = activeDebts.stream()
+        // حساب إجمالي الديون المتبقية بعد الدفع
+        float finalTotalRemainingDebt = activeDebts.stream()
                 .map(CustomerDebt::getRemainingAmount)
                 .reduce(0f, Float::sum);
         
@@ -462,7 +479,7 @@ public class CustomerDebtService extends BaseSecurityService {
                 .customerId(customerId)
                 .customerName(customer.getName())
                 .totalPaymentAmount(request.getTotalPaymentAmount().floatValue())
-                .totalRemainingDebt(totalRemainingDebt)
+                .totalRemainingDebt(finalTotalRemainingDebt)
                 .debtPayments(paymentDetails)
                 .notes(request.getNotes())
                 .build();

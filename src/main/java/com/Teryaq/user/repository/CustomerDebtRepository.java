@@ -61,4 +61,21 @@ public interface CustomerDebtRepository extends JpaRepository<CustomerDebt, Long
            "COALESCE(SUM(d.remainingAmount), 0) " +
            "FROM CustomerDebt d WHERE d.customer.pharmacy.id = :pharmacyId")
     Object[] getDebtStatisticsByPharmacyId(@Param("pharmacyId") Long pharmacyId);
+    
+    // توابع جديدة للحصول على الزبائن الذين لديهم ديون
+    @Query("SELECT DISTINCT d.customer FROM CustomerDebt d WHERE d.customer.pharmacy.id = :pharmacyId AND d.status = 'ACTIVE' AND d.remainingAmount > 0")
+    List<com.Teryaq.user.entity.Customer> findCustomersWithActiveDebtsByPharmacyId(@Param("pharmacyId") Long pharmacyId);
+    
+    @Query("SELECT DISTINCT d.customer FROM CustomerDebt d WHERE d.customer.pharmacy.id = :pharmacyId AND d.status = 'ACTIVE' AND d.dueDate < CURRENT_DATE")
+    List<com.Teryaq.user.entity.Customer> findCustomersWithOverdueDebtsByPharmacyId(@Param("pharmacyId") Long pharmacyId);
+    
+    // تابع جديد للحصول على جميع الزبائن الذين لديهم ديون (بما في ذلك الصفرية)
+    @Query("SELECT DISTINCT d.customer FROM CustomerDebt d WHERE d.customer.pharmacy.id = :pharmacyId")
+    List<com.Teryaq.user.entity.Customer> findAllCustomersWithDebtsByPharmacyId(@Param("pharmacyId") Long pharmacyId);
+    
+    // تابع للحصول على الزبائن الذين لديهم ديون صفرية
+    @Query("SELECT DISTINCT d.customer FROM CustomerDebt d WHERE d.customer.pharmacy.id = :pharmacyId AND d.remainingAmount = 0")
+    List<com.Teryaq.user.entity.Customer> findCustomersWithZeroDebtsByPharmacyId(@Param("pharmacyId") Long pharmacyId);
+    
+
 } 

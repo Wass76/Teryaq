@@ -23,4 +23,8 @@ public interface SaleRefundRepo extends JpaRepository<SaleRefund, Long> {
     );
     
     boolean existsBySaleInvoiceIdAndPharmacyId(Long saleInvoiceId, Long pharmacyId);
+    
+    // تابع للبحث عن مرتجع حسب ID والصيدلية
+    @Query("SELECT sr FROM SaleRefund sr WHERE sr.id = :refundId AND sr.pharmacy.id = :pharmacyId")
+    java.util.Optional<SaleRefund> findByIdAndPharmacyId(@Param("refundId") Long refundId, @Param("pharmacyId") Long pharmacyId);
 }

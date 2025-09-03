@@ -107,7 +107,7 @@ public class SaleMapper {
         dto.setDiscountType(invoice.getDiscountType());
         dto.setPaidAmount(invoice.getPaidAmount());
         dto.setRemainingAmount(invoice.getRemainingAmount());
-        dto.setStatus(invoice.getStatus());
+       // dto.setStatus(invoice.getStatus());
         dto.setPaymentStatus(invoice.getPaymentStatus());
         dto.setRefundStatus(invoice.getRefundStatus());
         if (invoice.getItems() != null) {

@@ -127,8 +127,8 @@ public class SalesIntegrationService {
             // Create transaction record with enhanced currency information
             MoneyBoxTransaction transaction = new MoneyBoxTransaction();
             transaction.setMoneyBox(moneyBox);
-            transaction.setTransactionType(TransactionType.CASH_WITHDRAWAL); // Treat refund as withdrawal
-            transaction.setAmount(amountInSYP.negate()); // Negative amount for refund
+            transaction.setTransactionType(TransactionType.SALE_REFUND); // Use specific refund type
+            transaction.setAmount(amountInSYP.negate()); // Negative amount for refund (money going out)
             transaction.setOriginalCurrency(originalCurrency);
             transaction.setOriginalAmount(originalAmount);
             transaction.setConvertedCurrency(Currency.SYP);
@@ -138,13 +138,13 @@ public class SalesIntegrationService {
             transaction.setConversionSource("EXCHANGE_RATE_SERVICE");
             transaction.setBalanceBefore(moneyBox.getCurrentBalance());
             transaction.setBalanceAfter(moneyBox.getCurrentBalance().subtract(amountInSYP));
-            transaction.setDescription("Refund for sale ID: " + saleId + 
+            transaction.setDescription("Sale refund for sale ID: " + saleId + 
                                    (originalCurrency != Currency.SYP ? " (Converted from " + originalCurrency + ")" : ""));
             transaction.setReferenceId(String.valueOf(saleId));
             transaction.setReferenceType("SALE_REFUND");
             transaction.setCreatedAt(LocalDateTime.now());
             
-            // Update money box balance (always in SYP)
+            // Update money box balance (always in SYP) - subtract because we're giving money back to customer
             moneyBox.setCurrentBalance(moneyBox.getCurrentBalance().subtract(amountInSYP));
             
             // Save both transaction and updated money box

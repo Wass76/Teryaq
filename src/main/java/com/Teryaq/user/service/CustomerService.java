@@ -3,10 +3,12 @@ package com.Teryaq.user.service;
 import com.Teryaq.user.dto.CustomerDTORequest;
 import com.Teryaq.user.dto.CustomerDTOResponse;
 import com.Teryaq.user.entity.Customer;
+import com.Teryaq.user.entity.CustomerDebt;
 import com.Teryaq.user.entity.Employee;
 import com.Teryaq.user.entity.User;
 import com.Teryaq.user.mapper.CustomerMapper;
 import com.Teryaq.user.repository.CustomerRepo;
+import com.Teryaq.user.repository.CustomerDebtRepository;
 import com.Teryaq.user.repository.UserRepository;
 import com.Teryaq.utils.exception.UnAuthorizedException;
 
@@ -24,11 +26,14 @@ public class CustomerService extends BaseSecurityService {
 
     private final CustomerRepo customerRepo;
     private final CustomerMapper customerMapper;
+    private final CustomerDebtRepository customerDebtRepository;
 
-    public CustomerService(CustomerRepo customerRepo, CustomerMapper customerMapper, UserRepository userRepository) {
+    public CustomerService(CustomerRepo customerRepo, CustomerMapper customerMapper, 
+                         CustomerDebtRepository customerDebtRepository, UserRepository userRepository) {
         super(userRepository);
         this.customerRepo = customerRepo;
         this.customerMapper = customerMapper;
+        this.customerDebtRepository = customerDebtRepository;
     }
 
     public List<CustomerDTOResponse> getAllCustomers() {
@@ -113,25 +118,7 @@ public class CustomerService extends BaseSecurityService {
                 .collect(Collectors.toList());
     }
 
-    public List<CustomerDTOResponse> getCustomersWithDebts() {
-        User currentUser = getCurrentUser();
-        if (!(currentUser instanceof Employee)) {
-            throw new UnAuthorizedException("Only pharmacy employees can access customers");
-        }
-        
-        Employee employee = (Employee) currentUser;
-        if (employee.getPharmacy() == null) {
-            throw new UnAuthorizedException("Employee is not associated with any pharmacy");
-        }
-        
-        Long currentPharmacyId = employee.getPharmacy().getId();
-        return customerRepo.findByPharmacyId(currentPharmacyId)
-                .stream()
-                .filter(customer -> customer.getDebts() != null && !customer.getDebts().isEmpty())
-                .map(customerMapper::toResponse)
-                .filter(response -> response.getRemainingDebt() > 0)
-                .collect(Collectors.toList());
-    }
+
 
     public List<CustomerDTOResponse> getCustomersWithActiveDebts() {
         User currentUser = getCurrentUser();
@@ -145,11 +132,33 @@ public class CustomerService extends BaseSecurityService {
         }
         
         Long currentPharmacyId = employee.getPharmacy().getId();
-        return customerRepo.findByPharmacyId(currentPharmacyId)
-                .stream()
-                .filter(customer -> customer.getDebts() != null && !customer.getDebts().isEmpty())
+        
+        // استخدام CustomerDebtRepository للحصول على الزبائن الذين لديهم ديون نشطة
+        List<Customer> customersWithActiveDebts = customerDebtRepository.findCustomersWithActiveDebtsByPharmacyId(currentPharmacyId);
+        
+        return customersWithActiveDebts.stream()
                 .map(customerMapper::toResponse)
-                .filter(response -> response.getActiveDebtsCount() > 0)
+                .collect(Collectors.toList());
+    }
+
+    public List<CustomerDTOResponse> getCustomersWithOverdueDebts() {
+        User currentUser = getCurrentUser();
+        if (!(currentUser instanceof Employee)) {
+            throw new UnAuthorizedException("Only pharmacy employees can access customers");
+        }
+        
+        Employee employee = (Employee) currentUser;
+        if (employee.getPharmacy() == null) {
+            throw new UnAuthorizedException("Employee is not associated with any pharmacy");
+        }
+        
+        Long currentPharmacyId = employee.getPharmacy().getId();
+        
+        // استخدام CustomerDebtRepository للحصول على الزبائن الذين لديهم ديون متأخرة
+        List<Customer> customersWithOverdueDebts = customerDebtRepository.findCustomersWithOverdueDebtsByPharmacyId(currentPharmacyId);
+        
+        return customersWithOverdueDebts.stream()
+                .map(customerMapper::toResponse)
                 .collect(Collectors.toList());
     }
 
@@ -177,6 +186,11 @@ public class CustomerService extends BaseSecurityService {
         
         Customer customer = customerMapper.toEntity(dto);
         customer.setPharmacy(employee.getPharmacy());
+        
+        // تعيين createdBy يدوياً
+        customer.setCreatedBy(currentUser.getId());
+        customer.setCreatedByUserType(currentUser.getClass().getSimpleName());
+        
         customer = customerRepo.save(customer);
         return customerMapper.toResponse(customer);
     }
@@ -224,16 +238,17 @@ public class CustomerService extends BaseSecurityService {
         }
         
         Long currentPharmacyId = employee.getPharmacy().getId();
-        Customer customer = customerRepo.findByIdAndPharmacyId(id, currentPharmacyId)
+        // التحقق من وجود العميل
+        customerRepo.findByIdAndPharmacyId(id, currentPharmacyId)
                 .orElseThrow(() -> new EntityNotFoundException("Customer with ID " + id + " not found in this pharmacy"));
         
-        if (customer.getDebts() != null && !customer.getDebts().isEmpty()) {
-            boolean hasActiveDebts = customer.getDebts().stream()
-                    .anyMatch(debt -> "ACTIVE".equals(debt.getStatus()) && debt.getRemainingAmount() > 0);
+        // التحقق من الديون النشطة باستخدام CustomerDebtRepository
+        List<CustomerDebt> activeDebts = customerDebtRepository.findByCustomerIdAndStatusOrderByCreatedAtDesc(id, "ACTIVE");
+        boolean hasActiveDebts = activeDebts.stream()
+                .anyMatch(debt -> debt.getRemainingAmount() > 0);
             
             if (hasActiveDebts) {
                 throw new ConflictException("Cannot delete customer with active debts. Please settle all debts first.");
-            }
         }
         
         customerRepo.deleteById(id);
@@ -263,8 +278,11 @@ public class CustomerService extends BaseSecurityService {
         }
         
         Long currentPharmacyId = employee.getPharmacy().getId();
-        return customerRepo.findByPharmacyId(currentPharmacyId)
-                .stream()
+        
+        // استخدام CustomerDebtRepository للحصول على الزبائن الذين لديهم ديون نشطة
+        List<Customer> customersWithDebts = customerDebtRepository.findCustomersWithActiveDebtsByPharmacyId(currentPharmacyId);
+        
+        return customersWithDebts.stream()
                 .map(customerMapper::toResponse)
                 .filter(response -> {
                     Float remainingDebt = response.getRemainingDebt();
@@ -349,11 +367,11 @@ public class CustomerService extends BaseSecurityService {
         
         validatePharmacyAccess(pharmacyId);
         
-        return customerRepo.findByPharmacyId(pharmacyId)
-                .stream()
-                .filter(customer -> customer.getDebts() != null && !customer.getDebts().isEmpty())
+        // استخدام CustomerDebtRepository للحصول على الزبائن الذين لديهم ديون نشطة
+        List<Customer> customersWithDebts = customerDebtRepository.findCustomersWithActiveDebtsByPharmacyId(pharmacyId);
+        
+        return customersWithDebts.stream()
                 .map(customerMapper::toResponse)
-                .filter(response -> response.getRemainingDebt() > 0)
                 .collect(Collectors.toList());
     }
 
@@ -370,11 +388,11 @@ public class CustomerService extends BaseSecurityService {
         
         validatePharmacyAccess(pharmacyId);
         
-        return customerRepo.findByPharmacyId(pharmacyId)
-                .stream()
-                .filter(customer -> customer.getDebts() != null && !customer.getDebts().isEmpty())
+        // استخدام CustomerDebtRepository للحصول على الزبائن الذين لديهم ديون نشطة
+        List<Customer> customersWithActiveDebts = customerDebtRepository.findCustomersWithActiveDebtsByPharmacyId(pharmacyId);
+        
+        return customersWithActiveDebts.stream()
                 .map(customerMapper::toResponse)
-                .filter(response -> response.getActiveDebtsCount() > 0)
                 .collect(Collectors.toList());
     }
 
@@ -391,13 +409,74 @@ public class CustomerService extends BaseSecurityService {
         
         validatePharmacyAccess(pharmacyId);
         
-        return customerRepo.findByPharmacyId(pharmacyId)
-                .stream()
+        // استخدام CustomerDebtRepository للحصول على الزبائن الذين لديهم ديون نشطة
+        List<Customer> customersWithDebts = customerDebtRepository.findCustomersWithActiveDebtsByPharmacyId(pharmacyId);
+        
+        return customersWithDebts.stream()
                 .map(customerMapper::toResponse)
                 .filter(response -> {
                     Float remainingDebt = response.getRemainingDebt();
                     return remainingDebt >= minDebt && remainingDebt <= maxDebt;
                 })
+                .collect(Collectors.toList());
+    }
+
+    public Object getDebtStatistics() {
+        User currentUser = getCurrentUser();
+        if (!(currentUser instanceof Employee)) {
+            throw new UnAuthorizedException("Only pharmacy employees can access debt statistics");
+        }
+        
+        Employee employee = (Employee) currentUser;
+        if (employee.getPharmacy() == null) {
+            throw new UnAuthorizedException("Employee is not associated with any pharmacy");
+        }
+        
+        Long currentPharmacyId = employee.getPharmacy().getId();
+        
+        // استخدام CustomerDebtRepository للحصول على إحصائيات الديون
+        return customerDebtRepository.getDebtStatisticsByPharmacyId(currentPharmacyId);
+    }
+
+    public List<CustomerDTOResponse> getAllCustomersWithDebts() {
+        User currentUser = getCurrentUser();
+        if (!(currentUser instanceof Employee)) {
+            throw new UnAuthorizedException("Only pharmacy employees can access customers");
+        }
+        
+        Employee employee = (Employee) currentUser;
+        if (employee.getPharmacy() == null) {
+            throw new UnAuthorizedException("Employee is not associated with any pharmacy");
+        }
+        
+        Long currentPharmacyId = employee.getPharmacy().getId();
+        
+        // استخدام CustomerDebtRepository للحصول على جميع الزبائن الذين لديهم ديون (بما في ذلك الصفرية)
+        List<Customer> allCustomersWithDebts = customerDebtRepository.findAllCustomersWithDebtsByPharmacyId(currentPharmacyId);
+        
+        return allCustomersWithDebts.stream()
+                .map(customerMapper::toResponse)
+                .collect(Collectors.toList());
+    }
+
+    public List<CustomerDTOResponse> getCustomersWithZeroDebts() {
+        User currentUser = getCurrentUser();
+        if (!(currentUser instanceof Employee)) {
+            throw new UnAuthorizedException("Only pharmacy employees can access customers");
+        }
+        
+        Employee employee = (Employee) currentUser;
+        if (employee.getPharmacy() == null) {
+            throw new UnAuthorizedException("Employee is not associated with any pharmacy");
+        }
+        
+        Long currentPharmacyId = employee.getPharmacy().getId();
+        
+        // استخدام CustomerDebtRepository للحصول على الزبائن الذين لديهم ديون صفرية
+        List<Customer> customersWithZeroDebts = customerDebtRepository.findCustomersWithZeroDebtsByPharmacyId(currentPharmacyId);
+        
+        return customersWithZeroDebts.stream()
+                .map(customerMapper::toResponse)
                 .collect(Collectors.toList());
     }
 } 

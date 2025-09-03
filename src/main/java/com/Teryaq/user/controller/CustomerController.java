@@ -105,14 +105,7 @@ public class CustomerController {
     //     return ResponseEntity.ok(customer);
     // }
 
-    @GetMapping("with-debts")
-    @Operation(summary = "Get customers with debts", description = "Retrieve customers who have remaining debts")
-    public ResponseEntity<List<CustomerDTOResponse>> getCustomersWithDebts() {
-        logger.info("Fetching customers with debts");
-        List<CustomerDTOResponse> customers = customerService.getCustomersWithDebts();
-        logger.info("Found {} customers with debts", customers.size());
-        return ResponseEntity.ok(customers);
-    }
+
 
     // @GetMapping("pharmacy/{pharmacyId}/with-debts")
     // @Operation(summary = "Get customers with debts by pharmacy", description = "Retrieve customers who have remaining debts for a specific pharmacy")
@@ -134,16 +127,40 @@ public class CustomerController {
         return ResponseEntity.ok(customers);
     }
 
-    // @GetMapping("pharmacy/{pharmacyId}/with-active-debts")
-    // @Operation(summary = "Get customers with active debts by pharmacy", description = "Retrieve customers who have active (unpaid) debts for a specific pharmacy")
-    // public ResponseEntity<List<CustomerDTOResponse>> getCustomersWithActiveDebtsByPharmacy(
-    //         @Parameter(description = "Pharmacy ID", example = "1") 
-    //         @PathVariable Long pharmacyId) {
-    //     logger.info("Fetching customers with active debts for pharmacy ID: {}", pharmacyId);
-    //     List<CustomerDTOResponse> customers = customerService.getCustomersWithActiveDebtsByPharmacyId(pharmacyId);
-    //     logger.info("Found {} customers with active debts", customers.size());
-    //     return ResponseEntity.ok(customers);
+    @GetMapping("with-overdue-debts")
+    @Operation(summary = "Get customers with overdue debts", description = "Retrieve customers who have overdue debts")
+    public ResponseEntity<List<CustomerDTOResponse>> getCustomersWithOverdueDebts() {
+        logger.info("Fetching customers with overdue debts");
+        List<CustomerDTOResponse> customers = customerService.getCustomersWithOverdueDebts();
+        logger.info("Found {} customers with overdue debts", customers.size());
+        return ResponseEntity.ok(customers);
+    }
+
+    // @GetMapping("debt-statistics")
+    // @Operation(summary = "Get debt statistics", description = "Retrieve comprehensive debt statistics for the current pharmacy")
+    // public ResponseEntity<Object> getDebtStatistics() {
+    //     logger.info("Fetching debt statistics");
+    //     Object statistics = customerService.getDebtStatistics();
+    //     return ResponseEntity.ok(statistics);
     // }
+
+    @GetMapping("all-with-debts")
+    @Operation(summary = "Get all customers with debts", description = "Retrieve all customers who have debts (including zero debts)")
+    public ResponseEntity<List<CustomerDTOResponse>> getAllCustomersWithDebts() {
+        logger.info("Fetching all customers with debts");
+        List<CustomerDTOResponse> customers = customerService.getAllCustomersWithDebts();
+        logger.info("Found {} customers with debts", customers.size());
+        return ResponseEntity.ok(customers);
+    }
+
+    @GetMapping("with-zero-debts")
+    @Operation(summary = "Get customers with zero debts", description = "Retrieve customers who have zero remaining debts")
+    public ResponseEntity<List<CustomerDTOResponse>> getCustomersWithZeroDebts() {
+        logger.info("Fetching customers with zero debts");
+        List<CustomerDTOResponse> customers = customerService.getCustomersWithZeroDebts();
+        logger.info("Found {} customers with zero debts", customers.size());
+        return ResponseEntity.ok(customers);
+    }
 
     // @GetMapping("debt-range")
     // @Operation(summary = "Get customers by debt range", description = "Retrieve customers within a specific debt range")

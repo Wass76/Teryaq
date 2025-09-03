@@ -25,7 +25,6 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class Customer extends AuditedEntity{
 
-    
     private String name = "cash customer";
 
     @Column(nullable = true)

@@ -49,10 +49,10 @@ import com.Teryaq.sale.entity.SaleRefundItem;
 import com.Teryaq.sale.mapper.SaleRefundMapper;
 import com.Teryaq.sale.repo.SaleRefundRepo;
 import com.Teryaq.sale.repo.SaleRefundItemRepo;
-import com.Teryaq.product.Enum.PaymentMethod;
 import java.util.ArrayList;
 import com.Teryaq.user.Enum.Currency;
 import java.util.Arrays;
+import java.util.Map;
 
 @Service
 public class SaleService extends BaseSecurityService {
@@ -427,11 +427,6 @@ public class SaleService extends BaseSecurityService {
             throw new RequestNotValidException("Sale invoice has already been fully refunded");
         }
 
-        // التحقق من أن الفاتورة مدفوعة بالكامل
-        if (saleInvoice.getRemainingAmount() > 0) {
-            throw new RequestNotValidException("Cannot refund a partially paid sale invoice. Remaining amount: " + saleInvoice.getRemainingAmount());
-        }
-
         SaleRefund refund = saleRefundMapper.toEntity(request, saleInvoice, getCurrentUserPharmacy());
         List<SaleRefundItem> refundItems = new ArrayList<>();
         float totalRefundAmount = 0.0f;
@@ -451,26 +446,21 @@ public class SaleService extends BaseSecurityService {
         refund.setStockRestored(true);
         saleRefundRepo.save(refund);
 
-        // تسجيل المرتجعات في MoneyBox
-        if (saleInvoice.getPaymentMethod() == PaymentMethod.CASH) {
-            try {
-                salesIntegrationService.recordSaleRefund(
-                    currentPharmacyId,
-                    saleId,
-                    java.math.BigDecimal.valueOf(totalRefundAmount),
-                    saleInvoice.getCurrency()
-                );
-                logger.info("Sale refund recorded in Money Box for invoice: {}", saleId);
-            } catch (Exception e) {
-                logger.warn("Failed to record sale refund in Money Box for invoice {}: {}", 
-                           saleId, e.getMessage());
-            }
-        }
+        // معالجة المرتجع حسب نوع الدفع وحالة الفاتورة
+        handleRefundPayment(saleInvoice, totalRefundAmount, currentPharmacyId, saleId);
 
         // تحديث حالة الفاتورة
         updateInvoiceStatus(saleInvoice);
 
-        return saleRefundMapper.toResponse(savedRefund);
+        // حساب معلومات الدين للعميل
+        Customer customer = savedRefund.getSaleInvoice().getCustomer();
+        List<CustomerDebt> customerDebts = customerDebtRepository.findByCustomerIdAndStatusOrderByCreatedAtDesc(
+            customer.getId(), "ACTIVE");
+        float totalCustomerDebt = customerDebts.stream()
+                .map(CustomerDebt::getRemainingAmount)
+                .reduce(0f, Float::sum);
+
+        return saleRefundMapper.toResponseWithDebtInfo(savedRefund, totalCustomerDebt, customerDebts.size());
     }
 
     private float processRefundItems(SaleInvoice saleInvoice, SaleRefundDTORequest request, 
@@ -527,9 +517,7 @@ public class SaleService extends BaseSecurityService {
         }
     }
 
-    /**
-     * تحديث حالة الفاتورة بناءً على الكميات المرتجعة
-     */
+   
     private void updateInvoiceStatus(SaleInvoice saleInvoice) {
         boolean allItemsFullyRefunded = true;
         boolean hasAnyRefund = false;
@@ -567,9 +555,7 @@ public class SaleService extends BaseSecurityService {
         saleInvoiceRepository.save(saleInvoice);
     }
 
-    /**
-     * حساب الحالات الجديدة للفاتورة
-     */
+  
     private void calculateInvoiceStatuses(SaleInvoice invoice) {
         // حساب حالة الدفع
         if (invoice.getRemainingAmount() == 0) {
@@ -593,7 +579,17 @@ public class SaleService extends BaseSecurityService {
         List<SaleRefund> refunds = saleRefundRepo.findBySaleInvoiceIdAndPharmacyId(saleId, currentPharmacyId);
         
         return refunds.stream()
-                .map(saleRefundMapper::toResponse)
+                .map(refund -> {
+                    // حساب معلومات الدين للعميل
+                    Customer customer = refund.getSaleInvoice().getCustomer();
+                    List<CustomerDebt> customerDebts = customerDebtRepository.findByCustomerIdAndStatusOrderByCreatedAtDesc(
+                        customer.getId(), "ACTIVE");
+                    float totalCustomerDebt = customerDebts.stream()
+                            .map(CustomerDebt::getRemainingAmount)
+                            .reduce(0f, Float::sum);
+                    
+                    return saleRefundMapper.toResponseWithDebtInfo(refund, totalCustomerDebt, customerDebts.size());
+                })
                 .collect(Collectors.toList());
     }
 
@@ -603,7 +599,17 @@ public class SaleService extends BaseSecurityService {
         List<SaleRefund> refunds = saleRefundRepo.findByPharmacyIdOrderByRefundDateDesc(currentPharmacyId);
         
         return refunds.stream()
-                .map(saleRefundMapper::toResponse)
+                .map(refund -> {
+                    // حساب معلومات الدين للعميل
+                    Customer customer = refund.getSaleInvoice().getCustomer();
+                    List<CustomerDebt> customerDebts = customerDebtRepository.findByCustomerIdAndStatusOrderByCreatedAtDesc(
+                        customer.getId(), "ACTIVE");
+                    float totalCustomerDebt = customerDebts.stream()
+                            .map(CustomerDebt::getRemainingAmount)
+                            .reduce(0f, Float::sum);
+                    
+                    return saleRefundMapper.toResponseWithDebtInfo(refund, totalCustomerDebt, customerDebts.size());
+                })
                 .collect(Collectors.toList());
     }
 
@@ -617,13 +623,21 @@ public class SaleService extends BaseSecurityService {
         );
         
         return refunds.stream()
-                .map(saleRefundMapper::toResponse)
+                .map(refund -> {
+                    // حساب معلومات الدين للعميل
+                    Customer customer = refund.getSaleInvoice().getCustomer();
+                    List<CustomerDebt> customerDebts = customerDebtRepository.findByCustomerIdAndStatusOrderByCreatedAtDesc(
+                        customer.getId(), "ACTIVE");
+                    float totalCustomerDebt = customerDebts.stream()
+                            .map(CustomerDebt::getRemainingAmount)
+                            .reduce(0f, Float::sum);
+                    
+                    return saleRefundMapper.toResponseWithDebtInfo(refund, totalCustomerDebt, customerDebts.size());
+                })
                 .collect(Collectors.toList());
     }
 
-    /**
-     * جلب الفواتير المدفوعة بالكامل
-     */
+    
     public List<SaleInvoiceDTOResponse> getFullyPaidSales() {
         Long currentPharmacyId = getCurrentUserPharmacyId();
         
@@ -635,9 +649,7 @@ public class SaleService extends BaseSecurityService {
                 .collect(Collectors.toList());
     }
     
-    /**
-     * جلب الفواتير التي فيها دين
-     */
+   
     public List<SaleInvoiceDTOResponse> getInvoicesWithDebt() {
         Long currentPharmacyId = getCurrentUserPharmacyId();
         
@@ -650,9 +662,7 @@ public class SaleService extends BaseSecurityService {
                 .collect(Collectors.toList());
     }
     
-    /**
-     * جلب الفواتير حسب حالة الدفع
-     */
+    
     public List<SaleInvoiceDTOResponse> getSalesByPaymentStatus(PaymentStatus paymentStatus) {
         Long currentPharmacyId = getCurrentUserPharmacyId();
         
@@ -664,9 +674,7 @@ public class SaleService extends BaseSecurityService {
                 .collect(Collectors.toList());
     }
     
-    /**
-     * جلب الفواتير حسب حالة المرتجعات
-     */
+  
     public List<SaleInvoiceDTOResponse> getSalesByRefundStatus(RefundStatus refundStatus) {
         Long currentPharmacyId = getCurrentUserPharmacyId();
         
@@ -678,9 +686,7 @@ public class SaleService extends BaseSecurityService {
                 .collect(Collectors.toList());
     }
     
-    /**
-     * جلب الفواتير حسب الحالة الأساسية
-     */
+ 
     public List<SaleInvoiceDTOResponse> getSalesByInvoiceStatus(InvoiceStatus invoiceStatus) {
         Long currentPharmacyId = getCurrentUserPharmacyId();
         
@@ -691,4 +697,159 @@ public class SaleService extends BaseSecurityService {
                 .map(saleMapper::toResponse)
                 .collect(Collectors.toList());
     }
+
+ 
+    private void handleRefundPayment(SaleInvoice saleInvoice, float totalRefundAmount, Long currentPharmacyId, Long saleId) {
+        float remainingAmount = saleInvoice.getRemainingAmount();
+        float paidAmount = saleInvoice.getPaidAmount();
+        
+        // الحالة 1: فاتورة نقدية مدفوعة بالكامل
+        if (saleInvoice.getPaymentType() == PaymentType.CASH && remainingAmount == 0) {
+            // إرجاع النقد للصندوق
+            try {
+                salesIntegrationService.recordSaleRefund(
+                    currentPharmacyId,
+                    saleId,
+                    java.math.BigDecimal.valueOf(totalRefundAmount),
+                    saleInvoice.getCurrency()
+                );
+                logger.info("Cash refund recorded in Money Box for invoice: {}", saleId);
+            } catch (Exception e) {
+                logger.warn("Failed to record cash refund in Money Box for invoice {}: {}", 
+                           saleId, e.getMessage());
+            }
+        }
+        
+        // الحالة 2: فاتورة دين مدفوعة جزئياً
+        else if (saleInvoice.getPaymentType() == PaymentType.CREDIT && paidAmount > 0) {
+            // حساب المبلغ المرتجع للعميل
+            float refundToCustomer = Math.min(totalRefundAmount, paidAmount);
+            float remainingRefund = totalRefundAmount - refundToCustomer;
+            
+            // إرجاع النقد المدفوع للصندوق
+            if (refundToCustomer > 0) {
+                try {
+                    salesIntegrationService.recordSaleRefund(
+                        currentPharmacyId,
+                        saleId,
+                        java.math.BigDecimal.valueOf(refundToCustomer),
+                        saleInvoice.getCurrency()
+                    );
+                    logger.info("Partial cash refund recorded in Money Box for credit invoice: {}", saleId);
+                } catch (Exception e) {
+                    logger.warn("Failed to record partial cash refund in Money Box for invoice {}: {}", 
+                               saleId, e.getMessage());
+                }
+            }
+            
+            // خصم من دين العميل
+            if (remainingRefund > 0) {
+                try {
+                    reduceCustomerDebt(saleInvoice.getCustomer(), remainingRefund, saleId);
+                    logger.info("Customer debt reduced by {} for refund invoice: {}", remainingRefund, saleId);
+                } catch (Exception e) {
+                    logger.warn("Failed to reduce customer debt for refund invoice {}: {}", 
+                               saleId, e.getMessage());
+                }
+            }
+        }
+        
+        // الحالة 3: فاتورة دين غير مدفوعة
+        else if (saleInvoice.getPaymentType() == PaymentType.CREDIT && paidAmount == 0) {
+            // خصم من دين العميل فقط
+            try {
+                reduceCustomerDebt(saleInvoice.getCustomer(), totalRefundAmount, saleId);
+                logger.info("Customer debt reduced by {} for unpaid credit invoice refund: {}", totalRefundAmount, saleId);
+            } catch (Exception e) {
+                logger.warn("Failed to reduce customer debt for unpaid credit invoice refund {}: {}", 
+                           saleId, e.getMessage());
+            }
+        }
+        
+        // الحالة 4: فاتورة نقدية مدفوعة جزئياً (نادرة)
+        else if (saleInvoice.getPaymentType() == PaymentType.CASH && remainingAmount > 0) {
+            // إرجاع النقد المدفوع للصندوق
+            float refundToCash = Math.min(totalRefundAmount, paidAmount);
+            if (refundToCash > 0) {
+                try {
+                    salesIntegrationService.recordSaleRefund(
+                        currentPharmacyId,
+                        saleId,
+                        java.math.BigDecimal.valueOf(refundToCash),
+                        saleInvoice.getCurrency()
+                    );
+                    logger.info("Partial cash refund recorded in Money Box for partially paid cash invoice: {}", saleId);
+                } catch (Exception e) {
+                    logger.warn("Failed to record partial cash refund in Money Box for invoice {}: {}", 
+                               saleId, e.getMessage());
+                }
+            }
+        }
+    }
+
+   
+    private void reduceCustomerDebt(Customer customer, float amount, Long saleId) {
+        if (customer == null || amount <= 0) {
+            return;
+        }
+        
+        // البحث عن أحدث دين نشط للعميل
+        List<CustomerDebt> debts = customerDebtRepository.findByCustomerIdAndStatusOrderByCreatedAtDesc(
+            customer.getId(), "ACTIVE");
+        
+        if (debts.isEmpty()) {
+            logger.warn("No active debt found for customer {} to reduce refund amount {}", 
+                       customer.getId(), amount);
+            return;
+        }
+        
+        // خصم من أحدث دين نشط
+        CustomerDebt debt = debts.get(0);
+        float currentRemaining = debt.getRemainingAmount();
+        float newRemaining = Math.max(0, currentRemaining - amount);
+        
+        debt.setRemainingAmount(newRemaining);
+        debt.setPaidAmount(debt.getPaidAmount() + (currentRemaining - newRemaining));
+        
+        // إذا تم سداد الدين بالكامل
+        if (newRemaining == 0) {
+            debt.setStatus("PAID");
+            debt.setPaidAt(LocalDate.now());
+        }
+        
+        customerDebtRepository.save(debt);
+        logger.info("Reduced customer debt: customer={}, debt={}, amount={}, newRemaining={}", 
+                   customer.getId(), debt.getId(), amount, newRemaining);
+    }
+
+    
+    public Object getRefundDetails(Long refundId) {
+        Long currentPharmacyId = getCurrentUserPharmacyId();
+        logger.info("Fetching refund details for refundId: {} and pharmacyId: {}", refundId, currentPharmacyId);
+        
+        SaleRefund refund = saleRefundRepo.findByIdAndPharmacyId(refundId, currentPharmacyId)
+                .orElseThrow(() -> new EntityNotFoundException("Refund not found with ID: " + refundId + " in pharmacy: " + currentPharmacyId));
+        
+        try {
+            SaleInvoice saleInvoice = refund.getSaleInvoice();
+            Customer customer = saleInvoice.getCustomer();
+            
+           
+            List<CustomerDebt> customerDebts = customerDebtRepository.findByCustomerIdAndStatusOrderByCreatedAtDesc(
+                customer.getId(), "ACTIVE");
+            float totalCustomerDebt = customerDebts.stream()
+                    .map(CustomerDebt::getRemainingAmount)
+                    .reduce(0f, Float::sum);
+            
+            Map<String, Object> result = saleRefundMapper.toRefundDetailsMap(refund, totalCustomerDebt, customerDebts.size());
+            
+            logger.info("Successfully retrieved refund details for refundId: {}", refundId);
+            return result;
+        } catch (Exception e) {
+            logger.error("Error retrieving refund details for refundId {}: {}", refundId, e.getMessage(), e);
+            throw new RuntimeException("Failed to retrieve refund details: " + e.getMessage(), e);
+        }
+    }
+    
+
 } 

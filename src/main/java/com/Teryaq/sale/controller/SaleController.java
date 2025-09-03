@@ -176,6 +176,26 @@ public class SaleController {
     }
 
     @Operation(
+        summary = "Get refund details with debt and cash information", 
+        description = "Retrieves detailed refund information including debt reduction and cash refund details."
+    )
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Successfully retrieved refund details",
+            content = @Content(mediaType = "application/json",
+            schema = @Schema(implementation = SaleRefundDTOResponse.class))),
+        @ApiResponse(responseCode = "403", description = "Access denied - insufficient permissions"),
+        @ApiResponse(responseCode = "404", description = "Refund not found"),
+        @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
+    @GetMapping("/refunds/{refundId}/details")
+    public ResponseEntity<Object> getRefundDetails(
+            @Parameter(description = "Refund ID", example = "1") 
+            @Min(1) @PathVariable Long refundId) {
+        Object response = saleService.getRefundDetails(refundId);
+        return ResponseEntity.ok(response);
+    }
+
+    @Operation(
         summary = "Get refunds by date range", 
         description = "Retrieves refunds between two dates for the current pharmacy."
     )
