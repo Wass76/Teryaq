@@ -20,6 +20,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -38,16 +39,23 @@ public class MoneyBoxService extends BaseSecurityService {
     private final MoneyBoxTransactionRepository transactionRepository;
     private final ExchangeRateService exchangeRateService;
     private final UserRepository userRepository;
+    private final MoneyBoxMapper moneyBoxMapper;
+    
+    // Default exchange rates for production fallback
+    private static final BigDecimal DEFAULT_USD_TO_SYP_RATE = new BigDecimal("10000");
+    private static final BigDecimal DEFAULT_EUR_TO_SYP_RATE = new BigDecimal("11000");
     
     public MoneyBoxService(MoneyBoxRepository moneyBoxRepository,
                           MoneyBoxTransactionRepository transactionRepository,
                           ExchangeRateService exchangeRateService,
-                          com.Teryaq.user.repository.UserRepository userRepository) {
+                          com.Teryaq.user.repository.UserRepository userRepository,
+                          MoneyBoxMapper moneyBoxMapper) {
         super(userRepository);
         this.moneyBoxRepository = moneyBoxRepository;
         this.transactionRepository = transactionRepository;
         this.exchangeRateService = exchangeRateService;
         this.userRepository = userRepository;
+        this.moneyBoxMapper = moneyBoxMapper;
     }
     
     @Transactional
@@ -99,13 +107,52 @@ public class MoneyBoxService extends BaseSecurityService {
         log.info("Money box created for pharmacy: {} with initial balance: {} SYP", 
                 savedMoneyBox.getPharmacyId(), initialBalanceInSYP);
         
-        return MoneyBoxMapper.toResponseDTO(savedMoneyBox);
+        MoneyBoxResponseDTO response = MoneyBoxMapper.toResponseDTO(savedMoneyBox);
+        response.setTotalBalanceInUSD(calculateUSDBalance(savedMoneyBox.getCurrentBalance()));
+        response.setTotalBalanceInEUR(calculateEURBalance(savedMoneyBox.getCurrentBalance()));
+        return response;
     }
     
     public MoneyBoxResponseDTO getMoneyBoxByCurrentPharmacy() {
         Long currentPharmacyId = getCurrentUserPharmacyId();
         MoneyBox moneyBox = findMoneyBoxByPharmacyId(currentPharmacyId);
-        return MoneyBoxMapper.toResponseDTO(moneyBox);
+        MoneyBoxResponseDTO response = MoneyBoxMapper.toResponseDTO(moneyBox);
+        
+        // Calculate currency conversions in service layer
+        response.setTotalBalanceInUSD(calculateUSDBalance(moneyBox.getCurrentBalance()));
+        response.setTotalBalanceInEUR(calculateEURBalance(moneyBox.getCurrentBalance()));
+        
+        return response;
+    }
+    
+    /**
+     * Calculate USD balance from SYP balance with fallback to default rate
+     */
+    private BigDecimal calculateUSDBalance(BigDecimal balanceInSYP) {
+        try {
+            // Try to get current exchange rate from service
+            BigDecimal rate = exchangeRateService.getExchangeRate(Currency.SYP, Currency.USD);
+            return balanceInSYP.multiply(rate).setScale(2, RoundingMode.HALF_UP);
+        } catch (Exception e) {
+            // Fallback to default rate if service fails
+            BigDecimal defaultRate = BigDecimal.ONE.divide(DEFAULT_USD_TO_SYP_RATE, 6, RoundingMode.HALF_UP);
+            return balanceInSYP.multiply(defaultRate).setScale(2, RoundingMode.HALF_UP);
+        }
+    }
+    
+    /**
+     * Calculate EUR balance from SYP balance with fallback to default rate
+     */
+    private BigDecimal calculateEURBalance(BigDecimal balanceInSYP) {
+        try {
+            // Try to get current exchange rate from service
+            BigDecimal rate = exchangeRateService.getExchangeRate(Currency.SYP, Currency.EUR);
+            return balanceInSYP.multiply(rate).setScale(2, RoundingMode.HALF_UP);
+        } catch (Exception e) {
+            // Fallback to default rate if service fails
+            BigDecimal defaultRate = BigDecimal.ONE.divide(DEFAULT_EUR_TO_SYP_RATE, 6, RoundingMode.HALF_UP);
+            return balanceInSYP.multiply(defaultRate).setScale(2, RoundingMode.HALF_UP);
+        }
     }
     
     @Transactional
@@ -162,7 +209,10 @@ public class MoneyBoxService extends BaseSecurityService {
         log.info("Manual {} transaction added. New balance for pharmacy {}: {}", 
                 transactionType, currentPharmacyId, newBalance);
         
-        return MoneyBoxMapper.toResponseDTO(savedMoneyBox);
+        MoneyBoxResponseDTO response = MoneyBoxMapper.toResponseDTO(savedMoneyBox);
+        response.setTotalBalanceInUSD(calculateUSDBalance(savedMoneyBox.getCurrentBalance()));
+        response.setTotalBalanceInEUR(calculateEURBalance(savedMoneyBox.getCurrentBalance()));
+        return response;
     }
     
     @Transactional
@@ -197,7 +247,10 @@ public class MoneyBoxService extends BaseSecurityService {
         MoneyBox savedMoneyBox = moneyBoxRepository.save(moneyBox);
         log.info("Cash reconciled for pharmacy: {}", currentPharmacyId);
         
-        return MoneyBoxMapper.toResponseDTO(savedMoneyBox);
+        MoneyBoxResponseDTO response = MoneyBoxMapper.toResponseDTO(savedMoneyBox);
+        response.setTotalBalanceInUSD(calculateUSDBalance(savedMoneyBox.getCurrentBalance()));
+        response.setTotalBalanceInEUR(calculateEURBalance(savedMoneyBox.getCurrentBalance()));
+        return response;
     }
     
     public MoneyBoxSummary getPeriodSummary(LocalDateTime startDate, LocalDateTime endDate) {

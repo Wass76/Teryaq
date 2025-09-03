@@ -6,15 +6,23 @@ import com.Teryaq.moneybox.dto.MoneyBoxTransactionResponseDTO;
 import com.Teryaq.moneybox.entity.MoneyBox;
 import com.Teryaq.moneybox.entity.MoneyBoxTransaction;
 import com.Teryaq.moneybox.enums.MoneyBoxStatus;
+import com.Teryaq.moneybox.service.ExchangeRateService;
 import com.Teryaq.user.Enum.Currency;
 import com.Teryaq.user.mapper.UserMapper;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.List;
 import java.util.stream.Collectors;
 
 @Component
 public class MoneyBoxMapper {
+    
+    // Default exchange rates for production fallback
+    private static final BigDecimal DEFAULT_USD_TO_SYP_RATE = new BigDecimal("10000");
+    private static final BigDecimal DEFAULT_EUR_TO_SYP_RATE = new BigDecimal("11000");
     
     public static MoneyBox toEntity(MoneyBoxRequestDTO request) {
         MoneyBox moneyBox = new MoneyBox();
@@ -37,12 +45,14 @@ public class MoneyBoxMapper {
                 .currency(moneyBox.getCurrency())
                 .baseCurrency(Currency.SYP)
                 .totalBalanceInSYP(moneyBox.getCurrentBalance())
+                .totalBalanceInUSD(null) // Will be set by service layer
+                .totalBalanceInEUR(null) // Will be set by service layer
                 .createdAt(moneyBox.getCreatedAt())
                 .updatedAt(moneyBox.getUpdatedAt())
                 .build();
     }
     
-    public static MoneyBoxResponseDTO toResponseDTOWithTransactions(MoneyBox moneyBox, 
+    public MoneyBoxResponseDTO toResponseDTOWithTransactions(MoneyBox moneyBox, 
                                                                   List<MoneyBoxTransaction> transactions) {
         MoneyBoxResponseDTO response = toResponseDTO(moneyBox);
         

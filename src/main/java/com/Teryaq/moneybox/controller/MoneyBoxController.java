@@ -24,6 +24,10 @@ import org.springframework.web.bind.annotation.*;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
+import jakarta.validation.constraints.DecimalMin;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -72,8 +76,15 @@ public class MoneyBoxController {
         @ApiResponse(responseCode = "401", description = "Unauthorized")
     })
     public ResponseEntity<MoneyBoxResponseDTO> addTransaction(
-            @Parameter(description = "Transaction amount") @RequestParam BigDecimal amount,
-            @Parameter(description = "Transaction description") @RequestParam String description) {
+            @Parameter(description = "Transaction amount", required = true) 
+            @RequestParam @NotNull(message = "Transaction amount is required") 
+            @DecimalMin(value = "0.001", message = "Transaction amount must be greater than 0")
+            BigDecimal amount,
+            @Parameter(description = "Transaction description", required = true) 
+            @RequestParam @NotNull(message = "Transaction description is required") 
+            @NotBlank(message = "Transaction description cannot be empty") 
+            @Size(min = 1, max = 500, message = "Transaction description must be between 1 and 500 characters") 
+            String description) {
         
         MoneyBoxResponseDTO response = moneyBoxService.addTransaction(amount, description);
         return ResponseEntity.ok(response);
@@ -88,8 +99,15 @@ public class MoneyBoxController {
         @ApiResponse(responseCode = "401", description = "Unauthorized")
     })
     public ResponseEntity<MoneyBoxResponseDTO> addTransactionInSYP(
-            @Parameter(description = "Transaction amount") @RequestParam BigDecimal amount,
-            @Parameter(description = "Transaction description") @RequestParam String description) {
+            @Parameter(description = "Transaction amount", required = true) 
+            @RequestParam @NotNull(message = "Transaction amount is required") 
+            @DecimalMin(value = "0.001", message = "Transaction amount must be greater than 0")
+            BigDecimal amount,
+            @Parameter(description = "Transaction description", required = true) 
+            @RequestParam @NotNull(message = "Transaction description is required") 
+            @NotBlank(message = "Transaction description cannot be empty") 
+            @Size(min = 1, max = 500, message = "Transaction description must be between 1 and 500 characters") 
+            String description) {
         
         MoneyBoxResponseDTO response = moneyBoxService.addTransaction(amount, description);
         return ResponseEntity.ok(response);
@@ -103,8 +121,14 @@ public class MoneyBoxController {
         @ApiResponse(responseCode = "401", description = "Unauthorized")
     })
     public ResponseEntity<MoneyBoxResponseDTO> reconcileCash(
-            @Parameter(description = "Actual cash count") @RequestParam BigDecimal actualCashCount,
-            @Parameter(description = "Reconciliation notes") @RequestParam(required = false) String notes) {
+            @Parameter(description = "Actual cash count", required = true) 
+            @RequestParam @NotNull(message = "Actual cash count is required") 
+            @DecimalMin(value = "0.0", message = "Actual cash count must be non-negative") 
+            BigDecimal actualCashCount,
+            @Parameter(description = "Reconciliation notes") 
+            @RequestParam(required = false) 
+            @Size(max = 1000, message = "Reconciliation notes cannot exceed 1000 characters") 
+            String notes) {
         
         MoneyBoxResponseDTO response = moneyBoxService.reconcileCash(actualCashCount, notes);
         return ResponseEntity.ok(response);
@@ -134,8 +158,13 @@ public class MoneyBoxController {
         @ApiResponse(responseCode = "401", description = "Unauthorized")
     })
     public ResponseEntity<CurrencyConversionResponseDTO> convertToSYP(
-            @Parameter(description = "Amount to convert") @RequestParam BigDecimal amount,
-            @Parameter(description = "Source currency") @RequestParam Currency fromCurrency) {
+            @Parameter(description = "Amount to convert", required = true) 
+            @RequestParam @NotNull(message = "Amount to convert is required") 
+            @DecimalMin(value = "0.01", message = "Amount must be greater than 0") 
+            BigDecimal amount,
+            @Parameter(description = "Source currency", required = true) 
+            @RequestParam @NotNull(message = "Source currency is required") 
+            Currency fromCurrency) {
         
         CurrencyConversionResponseDTO response = moneyBoxService.convertCurrencyToSYP(amount, fromCurrency);
         return ResponseEntity.ok(response);
