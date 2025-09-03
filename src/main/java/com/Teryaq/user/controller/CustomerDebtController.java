@@ -177,10 +177,10 @@ public class CustomerDebtController {
         @ApiResponse(responseCode = "500", description = "Internal server error")
     })
     public ResponseEntity<List<CustomerDebtDTOResponse>> getDebtsByDateRange(
-            @Parameter(description = "Start date", example = "2024-01-01") 
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDate startDate,
-            @Parameter(description = "End date", example = "2024-12-31") 
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDate endDate) {
+            @Parameter(description = "Start date (YYYY-MM-DD)", example = "2024-01-01") 
+            @RequestParam LocalDate startDate,
+            @Parameter(description = "End date (YYYY-MM-DD)", example = "2024-12-31") 
+            @RequestParam LocalDate endDate) {
         List<CustomerDebtDTOResponse> debts = customerDebtService.getDebtsByDateRange(startDate, endDate);
         return ResponseEntity.ok(debts);
     }

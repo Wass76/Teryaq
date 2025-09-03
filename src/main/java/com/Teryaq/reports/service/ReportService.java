@@ -4,8 +4,9 @@ import com.Teryaq.reports.dto.request.ReportRequest;
 import com.Teryaq.reports.dto.response.ReportResponse;
 import com.Teryaq.reports.enums.ReportType;
 import com.Teryaq.reports.repository.ReportRepository;
+import com.Teryaq.user.service.BaseSecurityService;
+import com.Teryaq.user.repository.UserRepository;
 import org.springframework.stereotype.Service;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 import java.time.LocalDateTime;
@@ -25,10 +26,14 @@ import java.util.ArrayList;
  */
 @Slf4j
 @Service
-@RequiredArgsConstructor
-public class ReportService {
+public class ReportService extends BaseSecurityService {
     
     private final ReportRepository reportRepository;
+    
+    public ReportService(ReportRepository reportRepository, UserRepository userRepository) {
+        super(userRepository);
+        this.reportRepository = reportRepository;
+    }
     
     /**
      * Generate report based on requirements
@@ -37,6 +42,13 @@ public class ReportService {
         log.info("Generating report: {}", request.getReportType());
         
         try {
+            // Auto-extract pharmacy ID from current user if not provided
+            if (request.getPharmacyId() == null || request.getPharmacyId().isEmpty()) {
+                Long currentPharmacyId = getCurrentUserPharmacyId();
+                request.setPharmacyId(currentPharmacyId.toString());
+                log.info("Auto-extracted pharmacy ID from current user: {}", currentPharmacyId);
+            }
+            
             ReportResponse response = switch (request.getReportType()) {
                 // 3.5.1 Sales Reports
                 case DAILY_SALES_SUMMARY -> generateDailySalesReport(request);
@@ -63,6 +75,29 @@ public class ReportService {
             
         } catch (Exception e) {
             log.error("Error generating report: {}", e.getMessage(), e);
+            ReportResponse errorResponse = new ReportResponse();
+            errorResponse.setSuccess(false);
+            return errorResponse;
+        }
+    }
+    
+    /**
+     * Generate report with auto-extracted pharmacy ID from current user
+     * This method is used by the new endpoints that don't require pharmacyId parameter
+     */
+    public ReportResponse generateReportWithCurrentUser(ReportRequest request) {
+        log.info("Generating report with current user pharmacy: {}", request.getReportType());
+        
+        try {
+            // Always extract pharmacy ID from current user
+            Long currentPharmacyId = getCurrentUserPharmacyId();
+            request.setPharmacyId(currentPharmacyId.toString());
+            log.info("Using current user pharmacy ID: {}", currentPharmacyId);
+            
+            return generateReport(request);
+            
+        } catch (Exception e) {
+            log.error("Error generating report with current user: {}", e.getMessage(), e);
             ReportResponse errorResponse = new ReportResponse();
             errorResponse.setSuccess(false);
             return errorResponse;
