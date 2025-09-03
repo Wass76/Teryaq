@@ -53,7 +53,18 @@ public class SaleMapper {
         if (dto.getUnitPrice() != null) {
             item.setUnitPrice(dto.getUnitPrice());
         } else {
-            item.setUnitPrice(stockItem.getActualPurchasePrice().floatValue());
+            // FIX: Use selling price instead of purchase price
+            Float sellingPrice = stockItemMapper.getProductSellingPrice(
+                stockItem.getProductId(), 
+                stockItem.getProductType()
+            );
+            
+            if (sellingPrice != null && sellingPrice > 0) {
+                item.setUnitPrice(sellingPrice);
+            } else {
+                // Fallback to purchase price if no selling price is set
+                item.setUnitPrice(stockItem.getActualPurchasePrice().floatValue());
+            }
         }
         
         return item;
