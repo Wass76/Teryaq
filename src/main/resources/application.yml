@@ -16,7 +16,7 @@ spring:
     driver-class-name: org.postgresql.Driver
     name: teryaq
   flyway:
-    enabled: true
+    enabled: false
     locations: classpath:/db/migration # This is the default path Flyway looks in
     # If your database already has existing tables not managed by Flyway before,
     # this will create the Flyway history table without running existing scripts.
