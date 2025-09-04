@@ -78,7 +78,7 @@ public class MoneyBoxController {
     public ResponseEntity<MoneyBoxResponseDTO> addTransaction(
             @Parameter(description = "Transaction amount", required = true) 
             @RequestParam @NotNull(message = "Transaction amount is required") 
-            @DecimalMin(value = "0.001", message = "Transaction amount must be greater than 0")
+            @DecimalMin(value = "-999999.99", message = "Transaction amount must be within valid range")
             BigDecimal amount,
             @Parameter(description = "Transaction description", required = true) 
             @RequestParam @NotNull(message = "Transaction description is required") 
@@ -101,7 +101,7 @@ public class MoneyBoxController {
     public ResponseEntity<MoneyBoxResponseDTO> addTransactionInSYP(
             @Parameter(description = "Transaction amount", required = true) 
             @RequestParam @NotNull(message = "Transaction amount is required") 
-            @DecimalMin(value = "0.001", message = "Transaction amount must be greater than 0")
+            @DecimalMin(value = "-999999.99", message = "Transaction amount must be within valid range")
             BigDecimal amount,
             @Parameter(description = "Transaction description", required = true) 
             @RequestParam @NotNull(message = "Transaction description is required") 
@@ -125,9 +125,10 @@ public class MoneyBoxController {
             @RequestParam @NotNull(message = "Actual cash count is required") 
             @DecimalMin(value = "0.0", message = "Actual cash count must be non-negative") 
             BigDecimal actualCashCount,
-            @Parameter(description = "Reconciliation notes") 
-            @RequestParam(required = false) 
-            @Size(max = 1000, message = "Reconciliation notes cannot exceed 1000 characters") 
+            @Parameter(description = "Reconciliation notes", required = true) 
+            @RequestParam @NotNull(message = "Reconciliation notes are required") 
+            @NotBlank(message = "Reconciliation notes cannot be empty") 
+            @Size(min = 1, max = 1000, message = "Reconciliation notes must be between 1 and 1000 characters") 
             String notes) {
         
         MoneyBoxResponseDTO response = moneyBoxService.reconcileCash(actualCashCount, notes);

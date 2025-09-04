@@ -14,6 +14,7 @@ import com.Teryaq.moneybox.repository.MoneyBoxRepository;
 import com.Teryaq.moneybox.repository.MoneyBoxTransactionRepository;
 import com.Teryaq.user.Enum.Currency;
 import com.Teryaq.user.service.BaseSecurityService;
+import com.Teryaq.utils.exception.ConflictException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -164,11 +165,15 @@ public class MoneyBoxService extends BaseSecurityService {
         MoneyBox moneyBox = findMoneyBoxByPharmacyId(currentPharmacyId);
         
         if (moneyBox.getStatus() != MoneyBoxStatus.OPEN) {
-            throw new IllegalStateException("Money box is not open");
+            throw new ConflictException("Money box is not open");
         }
         
-        if (amount == null || amount.compareTo(BigDecimal.ZERO) == 0) {
-            throw new IllegalArgumentException("Transaction amount cannot be zero or null");
+        if (amount == null) {
+            throw new ConflictException("Transaction amount cannot be null");
+        }
+        
+        if (amount.compareTo(BigDecimal.ZERO) == 0) {
+            throw new ConflictException("Transaction amount cannot be zero");
         }
         
         // Convert amount to SYP if it's not already in SYP
@@ -222,6 +227,23 @@ public class MoneyBoxService extends BaseSecurityService {
     
     @Transactional
     public MoneyBoxResponseDTO reconcileCash(BigDecimal actualCashCount, String notes) {
+        // Validate input parameters
+        if (actualCashCount == null) {
+            throw new ConflictException("Actual cash count cannot be null");
+        }
+        
+        if (actualCashCount.compareTo(BigDecimal.ZERO) < 0) {
+            throw new ConflictException("Actual cash count cannot be negative");
+        }
+        
+        if (notes == null) {
+            throw new ConflictException("Reconciliation notes cannot be null");
+        }
+        
+        if (notes.trim().isEmpty()) {
+            throw new ConflictException("Reconciliation notes cannot be empty");
+        }
+        
         Long currentPharmacyId = getCurrentUserPharmacyId();
         log.info("Reconciling cash for pharmacy: {}, actual count: {}", currentPharmacyId, actualCashCount);
         
