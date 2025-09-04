@@ -83,6 +83,15 @@ public class PharmacyProductMapper {
     public PharmacyProductDTOResponse toResponse(PharmacyProduct product, String lang) {
         String sanitizedlang = lang == null ? "en" : lang.trim().toLowerCase();
         
+        System.out.println("🔍 DEBUG: toResponse called with lang: " + sanitizedlang);
+        System.out.println("🔍 DEBUG: Product has " + (product.getTranslations() != null ? product.getTranslations().size() : 0) + " translations");
+        
+        if (product.getTranslations() != null) {
+            product.getTranslations().forEach(t -> 
+                System.out.println("🔍 DEBUG: Available translation - lang: " + t.getLanguage().getCode() + ", tradeName: " + t.getTradeName())
+            );
+        }
+        
         PharmacyProductTranslation translation = product.getTranslations() != null
                 ? product.getTranslations().stream()
                 .filter(t -> t.getLanguage() != null && t.getLanguage().getCode() != null)
@@ -104,12 +113,20 @@ public class PharmacyProductMapper {
         System.out.println("🔍 DEBUG: Building response - Original tradeName: " + product.getTradeName() + ", scientificName: " + product.getScientificName());
         if (translation != null) {
             System.out.println("🔍 DEBUG: Translation found - tradeName: " + translation.getTradeName() + ", scientificName: " + translation.getScientificName());
+            System.out.println("🔍 DEBUG: Translation language: " + translation.getLanguage().getCode());
+        } else {
+            System.out.println("⚠️ DEBUG: No translation found for lang: " + sanitizedlang);
         }
+        
+        String finalTradeName = translation != null ? translation.getTradeName() : product.getTradeName();
+        String finalScientificName = translation != null ? translation.getScientificName() : product.getScientificName();
+        
+        System.out.println("🔍 DEBUG: Final response values - tradeName: " + finalTradeName + ", scientificName: " + finalScientificName);
         
         return PharmacyProductDTOResponse.builder()
                 .id(product.getId())
-                .tradeName(translation != null ? translation.getTradeName() : product.getTradeName())
-                .scientificName(translation != null ? translation.getScientificName() : product.getScientificName())
+                .tradeName(finalTradeName)
+                .scientificName(finalScientificName)
                 .concentration(product.getConcentration())
                 .size(product.getSize())
                 .refPurchasePrice(product.getRefPurchasePrice())

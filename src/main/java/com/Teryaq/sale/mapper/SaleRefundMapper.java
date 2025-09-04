@@ -5,6 +5,7 @@ import com.Teryaq.sale.dto.SaleRefundDTOResponse;
 import com.Teryaq.sale.dto.SaleRefundItemDTOResponse;
 import com.Teryaq.sale.entity.SaleRefund;
 import com.Teryaq.sale.entity.SaleRefundItem;
+import com.Teryaq.sale.enums.RefundStatus;
 import com.Teryaq.user.entity.Pharmacy;
 import com.Teryaq.sale.entity.SaleInvoice;
 import com.Teryaq.sale.entity.SaleInvoiceItem;
@@ -16,6 +17,7 @@ import java.util.Map;
 import java.util.HashMap;
 import java.util.List;
 import com.Teryaq.product.Enum.PaymentType;
+import com.Teryaq.product.Enum.ProductType;
 import com.Teryaq.user.entity.Customer;
 import com.Teryaq.product.mapper.StockItemMapper;
 
@@ -27,13 +29,14 @@ public class SaleRefundMapper {
     public SaleRefundMapper(StockItemMapper stockItemMapper) {
         this.stockItemMapper = stockItemMapper;
     }
-
+    
     public SaleRefund toEntity(SaleRefundDTORequest request, SaleInvoice saleInvoice, Pharmacy pharmacy) {
         SaleRefund refund = new SaleRefund();
         refund.setSaleInvoice(saleInvoice);
         refund.setPharmacy(pharmacy);
         refund.setRefundReason(request.getRefundReason());
         refund.setRefundDate(LocalDateTime.now());
+        refund.setRefundStatus(RefundStatus.NO_REFUND); // تعيين حالة افتراضية
         refund.setStockRestored(false);
         return refund;
     }
@@ -46,6 +49,7 @@ public class SaleRefundMapper {
                 .totalRefundAmount(refund.getTotalRefundAmount())
                 .refundReason(refund.getRefundReason())
                 .refundDate(refund.getRefundDate())
+                .refundStatus(refund.getRefundStatus())
                 .stockRestored(refund.getStockRestored())
                 // معلومات العميل
                 .customerId(saleInvoice.getCustomer().getId())
@@ -72,6 +76,7 @@ public class SaleRefundMapper {
                 .totalRefundAmount(refund.getTotalRefundAmount())
                 .refundReason(refund.getRefundReason())
                 .refundDate(refund.getRefundDate())
+                .refundStatus(refund.getRefundStatus())
                 .stockRestored(refund.getStockRestored())
                 .customerId(saleInvoice.getCustomer().getId())
                 .customerName(saleInvoice.getCustomer().getName())
@@ -102,9 +107,25 @@ public class SaleRefundMapper {
     
     private String getProductName(SaleInvoiceItem item) {
         if (item.getStockItem() != null) {
-            return "Product ID: " + item.getStockItem().getProductName();
+            try {
+                Long productId = item.getStockItem().getProductId();
+                ProductType productType = item.getStockItem().getProductType();
+                
+                if (productId == null) {
+                    return "Product ID: null (StockItem ID: " + item.getStockItem().getId() + ")";
+                }
+                
+                String productName = stockItemMapper.getProductName(productId, productType);
+                if ("Unknown Product".equals(productName)) {
+                    return "Unknown Product (ID: " + productId + ", Type: " + productType + ")";
+                }
+                
+                return productName;
+            } catch (Exception e) {
+                return "Unknown Product (Error: " + e.getMessage() + ")";
+            }
         }
-        return "Unknown Product";
+        return "Unknown Product (No StockItem)";
     }
 
     public Map<String, Object> toRefundDetailsMap(SaleRefund refund, float customerTotalDebt, int customerActiveDebtsCount) {
@@ -117,7 +138,7 @@ public class SaleRefundMapper {
         result.put("customerId", customer.getId());
         result.put("customerName", customer.getName());
         result.put("totalRefundAmount", refund.getTotalRefundAmount());
-        result.put("refundType", determineRefundType(saleInvoice, refund.getTotalRefundAmount()));
+        result.put("refundStatus", refund.getRefundStatus());
         result.put("cashRefundAmount", calculateCashRefund(saleInvoice, refund.getTotalRefundAmount()));
         result.put("debtReductionAmount", calculateDebtReduction(saleInvoice, refund.getTotalRefundAmount()));
         result.put("originalInvoicePaidAmount", saleInvoice.getPaidAmount());
@@ -128,6 +149,8 @@ public class SaleRefundMapper {
         result.put("refundReason", refund.getRefundReason());
         result.put("refundDate", refund.getRefundDate() != null ? 
             refund.getRefundDate().format(java.time.format.DateTimeFormatter.ofPattern("dd-MM-yyyy, HH:mm:ss")) : null);
+       
+        result.put("refundType", determineRefundType(saleInvoice, refund.getTotalRefundAmount()));
         result.put("stockRestored", refund.getStockRestored());
         result.put("customerTotalDebt", customerTotalDebt);
         result.put("activeDebtsCount", customerActiveDebtsCount);
@@ -145,17 +168,26 @@ public class SaleRefundMapper {
         details.put("unitPrice", refundItem.getUnitPrice());
         details.put("subtotal", refundItem.getSubtotal());
         details.put("itemRefundReason", refundItem.getItemRefundReason());
+        details.put("refundType", determineRefundType(refundItem.getSaleInvoiceItem().getSaleInvoice(), refundItem.getSubtotal()));
         details.put("stockRestored", refundItem.getStockRestored());
         
        
         try {
-            String productName = stockItemMapper.getProductName(
-                refundItem.getSaleInvoiceItem().getStockItem().getProductId(),
-                refundItem.getSaleInvoiceItem().getStockItem().getProductType()
-            );
-            details.put("productName", productName);
+            Long productId = refundItem.getSaleInvoiceItem().getStockItem().getProductId();
+            ProductType productType = refundItem.getSaleInvoiceItem().getStockItem().getProductType();
+            
+            if (productId == null) {
+                details.put("productName", "Product ID: null (StockItem ID: " + refundItem.getSaleInvoiceItem().getStockItem().getId() + ")");
+            } else {
+                String productName = stockItemMapper.getProductName(productId, productType);
+                if ("Unknown Product".equals(productName)) {
+                    details.put("productName", "Unknown Product (ID: " + productId + ", Type: " + productType + ")");
+                } else {
+                    details.put("productName", productName);
+                }
+            }
         } catch (Exception e) {
-            details.put("productName", "Unknown Product");
+            details.put("productName", "Unknown Product (Error: " + e.getMessage() + ")");
         }
         
         return details;

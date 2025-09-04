@@ -1,6 +1,7 @@
 package com.Teryaq.sale.entity;
 
 import jakarta.persistence.*;
+import jakarta.persistence.EnumType;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -8,6 +9,7 @@ import lombok.NoArgsConstructor;
 import java.time.LocalDateTime;
 import java.util.List;
 
+import com.Teryaq.sale.enums.RefundStatus;
 import com.Teryaq.user.entity.Pharmacy;
 import com.Teryaq.utils.entity.AuditedEntity;
 import com.fasterxml.jackson.annotation.JsonFormat;
@@ -33,6 +35,10 @@ public class SaleRefund extends AuditedEntity {
     @JsonFormat(pattern = "dd-MM-yyyy'T'HH:mm:ss")
     @Column(nullable = false)
     private LocalDateTime refundDate;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private RefundStatus refundStatus = RefundStatus.NO_REFUND;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "pharmacy_id", nullable = false)

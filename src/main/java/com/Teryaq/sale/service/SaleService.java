@@ -437,6 +437,13 @@ public class SaleService extends BaseSecurityService {
         refund.setTotalRefundAmount(totalRefundAmount);
         refund.setRefundItems(refundItems);
         
+        // تحديث حالة المرتجع
+        if (totalRefundAmount > 0) {
+            refund.setRefundStatus(RefundStatus.PARTIALLY_REFUNDED);
+        } else {
+            refund.setRefundStatus(RefundStatus.NO_REFUND);
+        }
+        
         // حفظ المرتجعات
         SaleRefund savedRefund = saleRefundRepo.save(refund);
         saleRefundItemRepo.saveAll(refundItems);

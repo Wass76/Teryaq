@@ -19,7 +19,7 @@ public interface PharmacyProductRepo extends JpaRepository<PharmacyProduct, Long
     @Query("SELECT DISTINCT p FROM PharmacyProduct p LEFT JOIN FETCH p.translations tr LEFT JOIN FETCH tr.language WHERE p.pharmacy.id = :pharmacyId")
     List<PharmacyProduct> findAllWithTranslations(@Param("pharmacyId") Long pharmacyId);
     
-    @Query("SELECT DISTINCT p FROM PharmacyProduct p LEFT JOIN FETCH p.translations tr LEFT JOIN FETCH tr.language WHERE p.id = :id AND p.pharmacy.id = :pharmacyId")
+    @Query("SELECT DISTINCT p FROM PharmacyProduct p LEFT JOIN FETCH p.translations tr LEFT JOIN FETCH tr.language WHERE p.id = :id")
     Optional<PharmacyProduct> findByIdWithTranslations(@Param("id") Long id);
     
     @Query("""

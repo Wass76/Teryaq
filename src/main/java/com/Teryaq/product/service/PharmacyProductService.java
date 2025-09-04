@@ -22,6 +22,7 @@ import com.Teryaq.utils.exception.UnAuthorizedException;
 import com.Teryaq.language.Language;
 import com.Teryaq.language.LanguageRepo;
 
+
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -221,7 +222,17 @@ public class PharmacyProductService extends BaseSecurityService {
 
         return pharmacyProductMapper.toResponse(saved, lang);
     }
+    // Helper method to fetch product with translations
+    private PharmacyProduct fetchProductWithTranslations(Long productId, Long pharmacyId) {
+        System.out.println("🔍 DEBUG: fetchProductWithTranslations called with productId: " + productId + ", pharmacyId: " + pharmacyId);
+        PharmacyProduct product = pharmacyProductRepo.findByIdAndPharmacyIdWithTranslations(productId, pharmacyId)
+                .orElseThrow(() -> new EntityNotFoundException("Pharmacy Product with ID " + productId + " not found"));
+        System.out.println("🔍 DEBUG: fetchProductWithTranslations returned product with " + 
+                          (product.getTranslations() != null ? product.getTranslations().size() : 0) + " translations");
+        return product;
+    }
 
+    @Transactional(rollbackFor = Exception.class)
     public PharmacyProductDTOResponse editPharmacyProduct(Long id,
                                                          PharmacyProductDTORequest requestDTO,
                                                          String lang) {
@@ -264,26 +275,41 @@ public class PharmacyProductService extends BaseSecurityService {
             
             System.out.println("🔍 DEBUG: After save - tradeName: " + saved.getTradeName() + ", scientificName: " + saved.getScientificName());
             
+            // Handle translations
+            PharmacyProduct updatedProduct = saved;
             if (requestDTO.getTranslations() != null && !requestDTO.getTranslations().isEmpty()) {
-                pharmacyProductTranslationRepo.deleteByProduct(saved);
+                System.out.println("🔍 DEBUG: Processing translations - count: " + requestDTO.getTranslations().size());
                 
+                // Clear existing translations from the entity
+                saved.getTranslations().clear();
+                
+                // Create new translations
                 Set<PharmacyProductTranslation> newTranslations = requestDTO.getTranslations().stream()
                     .map(t -> {
+                        System.out.println("🔍 DEBUG: Processing translation - lang: " + t.getLang() + ", tradeName: [" + t.getTradeName() + "], scientificName: [" + t.getScientificName() + "]");
+                        System.out.println("🔍 DEBUG: Raw bytes - tradeName: " + (t.getTradeName() != null ? java.util.Arrays.toString(t.getTradeName().getBytes()) : "null"));
                         Language language = languageRepo.findByCode(t.getLang())
                                 .orElseThrow(() -> new EntityNotFoundException("Language not found: " + t.getLang()));
-                        // استخدام الحقول المحدثة من الطلب
-                        String updatedTradeName = requestDTO.getTradeName() != null ? requestDTO.getTradeName() : saved.getTradeName();
-                        String updatedScientificName = requestDTO.getScientificName() != null ? requestDTO.getScientificName() : saved.getScientificName();
-                        return new PharmacyProductTranslation(updatedTradeName, updatedScientificName, saved, language);
+                        // استخدام الحقول من الترجمة نفسها
+                        String translationTradeName = t.getTradeName() != null ? t.getTradeName() : saved.getTradeName();
+                        String translationScientificName = t.getScientificName() != null ? t.getScientificName() : saved.getScientificName();
+                        System.out.println("✅ DEBUG: Created translation - tradeName: [" + translationTradeName + "], scientificName: [" + translationScientificName + "]");
+                        return new PharmacyProductTranslation(translationTradeName, translationScientificName, saved, language);
                     })
                     .collect(Collectors.toSet());
 
-                pharmacyProductTranslationRepo.saveAll(newTranslations);
+                // Add new translations to the entity
+                saved.getTranslations().addAll(newTranslations);
+                
+                // Save the entity with updated translations
+                updatedProduct = pharmacyProductRepo.save(saved);
+                System.out.println("✅ DEBUG: Saved product with " + updatedProduct.getTranslations().size() + " translations");
             } else {
                 // تحديث الترجمة الموجودة بالحقول الجديدة إذا لم يتم إرسال ترجمات جديدة
-                Set<PharmacyProductTranslation> existingTranslations = pharmacyProductTranslationRepo.findByProduct(saved);
+                Set<PharmacyProductTranslation> existingTranslations = saved.getTranslations();
                 
                 for (PharmacyProductTranslation translation : existingTranslations) {
+                    // تحديث الترجمة بالحقول الجديدة من الطلب الرئيسي
                     if (requestDTO.getTradeName() != null) {
                         translation.setTradeName(requestDTO.getTradeName());
                     }
@@ -291,10 +317,28 @@ public class PharmacyProductService extends BaseSecurityService {
                         translation.setScientificName(requestDTO.getScientificName());
                     }
                 }
-                pharmacyProductTranslationRepo.saveAll(existingTranslations);
+                
+                // Save the entity with updated translations
+                updatedProduct = pharmacyProductRepo.save(saved);
+                System.out.println("✅ DEBUG: Updated existing translations, total count: " + updatedProduct.getTranslations().size());
             }
             
-            PharmacyProduct finalProduct = pharmacyProductRepo.findByIdAndPharmacyIdWithTranslations(saved.getId(), currentPharmacyId).orElse(saved);
+            // Get the final product (either updated or original saved)
+            PharmacyProduct finalProduct = (requestDTO.getTranslations() != null && !requestDTO.getTranslations().isEmpty()) || 
+                                          (requestDTO.getTradeName() != null || requestDTO.getScientificName() != null) 
+                                          ? updatedProduct : saved;
+            
+            // Fetch the product again with fresh translations using helper method
+            System.out.println("🔍 DEBUG: About to fetch final product with ID: " + finalProduct.getId());
+            finalProduct = fetchProductWithTranslations(finalProduct.getId(), currentPharmacyId);
+            System.out.println("🔍 DEBUG: Final product fetched successfully");
+            
+            System.out.println("🔍 DEBUG: Final product translations count: " + (finalProduct.getTranslations() != null ? finalProduct.getTranslations().size() : 0));
+            if (finalProduct.getTranslations() != null) {
+                finalProduct.getTranslations().forEach(t -> 
+                    System.out.println("🔍 DEBUG: Final translation - lang: " + t.getLanguage().getCode() + ", tradeName: " + t.getTradeName())
+                );
+            }
             
             return pharmacyProductMapper.toResponse(finalProduct, lang);
         }).orElseThrow(() -> new EntityNotFoundException("Pharmacy Product with ID " + id + " not found"));

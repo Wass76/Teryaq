@@ -5,6 +5,8 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.Builder;
 import io.swagger.v3.oas.annotations.media.Schema;
+
+import com.Teryaq.sale.enums.RefundStatus;
 import com.fasterxml.jackson.annotation.JsonFormat;
 
 import java.time.LocalDateTime;
@@ -32,6 +34,9 @@ public class SaleRefundDTOResponse {
     @Schema(description = "Refund date", example = "2024-01-15T10:30:00")
     @JsonFormat(pattern = "dd-MM-yyyy, HH:mm:ss")
     private LocalDateTime refundDate;
+
+    @Schema(description = "Refund status", example = "CREDIT")
+    private RefundStatus refundStatus;
     
     @Schema(description = "Refunded items")
     private List<SaleRefundItemDTOResponse> refundedItems;
