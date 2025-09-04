@@ -1,17 +1,20 @@
 package com.Teryaq.reports.dto.response;
 
+import com.Teryaq.reports.enums.Currency;
+import com.Teryaq.reports.enums.Language;
 import com.Teryaq.reports.enums.ReportType;
-import lombok.Data;
-import lombok.Builder;
-import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 
 /**
- * Response DTO for SRS report generation
+ * Simplified Report Response DTO
+ * Generic response structure for all reports
  */
 @Data
 @Builder
@@ -20,89 +23,32 @@ import java.util.Map;
 public class ReportResponse {
     
     private boolean success;
+    private String message;
+    private ReportType reportType;
+    private Long pharmacyId;
+    private LocalDateTime generatedAt;
+    private Currency currency;
+    private Language language;
     
-    private ReportData data;
+    // Generic data container
+    private Map<String, Object> data;
     
-    private ReportMetadata metadata;
+    // For reports with daily breakdown
+    private List<Map<String, Object>> dailyData;
     
-    @Data
-    @Builder
-    @NoArgsConstructor
-    @AllArgsConstructor
-    public static class ReportData {
-        private SummaryData summary;
-        private List<DetailData> details;
-        private Map<String, ChartData> charts;
-        private FilterInfo filters;
-    }
+    // For reports with summary
+    private Map<String, Object> summary;
     
-    @Data
-    @Builder
-    @NoArgsConstructor
-    @AllArgsConstructor
-    public static class SummaryData {
-        private Long totalRecords;
-        private Double totalAmount;
-        private String currency;
-        private String period;
-        private String reportName;
-        private String reportNameAr;
-    }
+    // For reports with items/details
+    private List<Map<String, Object>> items;
     
-    @Data
-    @Builder
-    @NoArgsConstructor
-    @AllArgsConstructor
-    public static class DetailData {
-        private String id;
-        private String date;
-        private Double amount;
-        private String description;
-        private String descriptionAr;
-        private Map<String, Object> additionalData;
-    }
+    // For category reports
+    private List<Map<String, Object>> categories;
     
-    @Data
-    @Builder
-    @NoArgsConstructor
-    @AllArgsConstructor
-    public static class ChartData {
-        private String type;
-        private String title;
-        private String titleAr;
-        private List<ChartPoint> data;
-    }
+    // For product reports
+    private List<Map<String, Object>> products;
     
-    @Data
-    @Builder
-    @NoArgsConstructor
-    @AllArgsConstructor
-    public static class ChartPoint {
-        private String label;
-        private String labelAr;
-        private Object value;
-        private String color;
-    }
-    
-    @Data
-    @Builder
-    @NoArgsConstructor
-    @AllArgsConstructor
-    public static class FilterInfo {
-        private Map<String, Object> appliedFilters;
-        private List<String> availableFilters;
-    }
-    
-    @Data
-    @Builder
-    @NoArgsConstructor
-    @AllArgsConstructor
-    public static class ReportMetadata {
-        private LocalDateTime generatedAt;
-        private ReportType reportType;
-        private String pharmacyId;
-        private String generatedBy;
-        private String version = "1.0";
-        private String language;
-    }
+    // Error information
+    private String error;
+    private String errorCode;
 }

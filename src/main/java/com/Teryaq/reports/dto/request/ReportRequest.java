@@ -1,17 +1,19 @@
 package com.Teryaq.reports.dto.request;
 
+import com.Teryaq.reports.enums.Currency;
+import com.Teryaq.reports.enums.Language;
 import com.Teryaq.reports.enums.ReportType;
 import jakarta.validation.constraints.NotNull;
-import lombok.Data;
-import lombok.Builder;
-import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.time.LocalDate;
-import java.util.Map;
 
 /**
- * Request DTO for SRS report generation
+ * Simplified Report Request DTO
+ * Used for generating reports with the required parameters
  */
 @Data
 @Builder
@@ -22,25 +24,21 @@ public class ReportRequest {
     @NotNull(message = "Report type is required")
     private ReportType reportType;
     
+    @NotNull(message = "Pharmacy ID is required")
+    private Long pharmacyId;
+    
     @NotNull(message = "Start date is required")
     private LocalDate startDate;
     
     @NotNull(message = "End date is required")
     private LocalDate endDate;
     
-    private String pharmacyId; // Optional for admin reports
+    // For daily reports, use this instead of startDate/endDate
+    private LocalDate date;
     
-    private String currency = "SYP"; // Default to Syrian Pound
+    @Builder.Default
+    private Currency currency = Currency.SYP;
     
-    private String groupBy = "day"; // day, week, month, year
-    
-    private boolean includeDetails = true;
-    
-    private boolean includeCharts = true;
-    
-    private String format = "json"; // json, pdf, excel, csv
-    
-    private Map<String, Object> filters; // Additional filters
-    
-    private String language = "ar"; // Default to Arabic
+    @Builder.Default
+    private Language language = Language.EN;
 }
