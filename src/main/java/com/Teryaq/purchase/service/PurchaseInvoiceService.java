@@ -370,6 +370,7 @@ public class PurchaseInvoiceService extends BaseSecurityService {
         invoice.getItems().forEach(item -> {
             // Calculate actual price after bonus
             Double actualPrice = calculateActualPurchasePrice(item);
+            logger.info("The actual price of the item {} from type {} is {}" , item.getProductId() , item.getProductType() , actualPrice);
             item.setActualPrice(actualPrice);
         });
     }
@@ -379,6 +380,7 @@ public class PurchaseInvoiceService extends BaseSecurityService {
             .mapToDouble(item -> (item.getInvoicePrice() != null ? item.getInvoicePrice() : 0.0) * 
                                 (item.getReceivedQty() != null ? item.getReceivedQty() : 0))
             .sum();
+        logger.info("The total price of the invoice {} is {}",invoice.getId(), total);
         invoice.setTotal(total);
     }
 

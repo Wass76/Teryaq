@@ -31,7 +31,11 @@ public class MoneyBoxResponseDTO {
     private BigDecimal totalBalanceInSYP;
     private BigDecimal totalBalanceInUSD;
     private BigDecimal totalBalanceInEUR;
-    
+
+    // Current exchange rates
+    private BigDecimal currentUSDToSYPRate;
+    private BigDecimal currentEURToSYPRate;
+
     // Transaction summary
     private List<MoneyBoxTransactionResponseDTO> recentTransactions;
     private Integer totalTransactionCount;

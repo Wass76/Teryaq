@@ -44,6 +44,10 @@ public class Pharmacy extends AuditedEntity {
     @OneToMany(mappedBy = "pharmacy")
     private Set<Employee> employees;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    private Area area;
+
+
     @Override
     protected String getSequenceName() {
         return "pharmacy_id_seq";

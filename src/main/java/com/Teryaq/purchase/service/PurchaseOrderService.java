@@ -21,11 +21,14 @@ import com.Teryaq.user.entity.Employee;
 import com.Teryaq.user.repository.SupplierRepository;
 import com.Teryaq.user.repository.UserRepository;
 import com.Teryaq.user.service.BaseSecurityService;
+import com.Teryaq.moneybox.service.ExchangeRateService;
+import com.Teryaq.user.Enum.Currency;
 import com.Teryaq.utils.exception.ConflictException;
 import com.Teryaq.utils.exception.ResourceNotFoundException;
 import com.Teryaq.utils.exception.UnAuthorizedException;
 import jakarta.transaction.Transactional;
 import org.springframework.stereotype.Service;
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.springframework.data.domain.Page;
@@ -41,19 +44,22 @@ public class PurchaseOrderService extends BaseSecurityService {
     private final MasterProductRepo masterProductRepo;
     private final SupplierRepository supplierRepository;
     private final PurchaseOrderMapper purchaseOrderMapper;
+    private final ExchangeRateService exchangeRateService;
 
     public PurchaseOrderService(PurchaseOrderRepo purchaseOrderRepo,
                               PharmacyProductRepo pharmacyProductRepo,
                               MasterProductRepo masterProductRepo,
                               SupplierRepository supplierRepository,
                               PurchaseOrderMapper purchaseOrderMapper,
-                              UserRepository userRepository) {
+                              UserRepository userRepository,
+                              ExchangeRateService exchangeRateService) {
         super(userRepository);
         this.purchaseOrderRepo = purchaseOrderRepo;
         this.pharmacyProductRepo = pharmacyProductRepo;
         this.masterProductRepo = masterProductRepo;
         this.supplierRepository = supplierRepository;
         this.purchaseOrderMapper = purchaseOrderMapper;
+        this.exchangeRateService = exchangeRateService;
     }
 
     @Transactional
@@ -114,11 +120,14 @@ public class PurchaseOrderService extends BaseSecurityService {
         order.getItems().clear();
         order.getItems().addAll(newItems);
         
-        // Recalculate total
-        double total = newItems.stream()
-            .mapToDouble(item -> item.getQuantity() * item.getPrice())
-            .sum();
-        order.setTotal(total);
+        // Recalculate total with proper currency handling
+        BigDecimal total = newItems.stream()
+            .map(item -> BigDecimal.valueOf(item.getQuantity()).multiply(BigDecimal.valueOf(item.getPrice())))
+            .reduce(BigDecimal.ZERO, BigDecimal::add);
+        
+        // Convert total to the order's currency if needed
+        Currency orderCurrency = order.getCurrency();
+        order.setTotal(total.doubleValue());
         
         PurchaseOrder saved = purchaseOrderRepo.save(order);
         

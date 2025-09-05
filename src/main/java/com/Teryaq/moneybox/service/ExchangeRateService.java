@@ -334,4 +334,19 @@ public class ExchangeRateService {
         
         return ExchangeRateMapper.toConversionResponse(amount, fromCurrency, convertedAmount, toCurrency, rate);
     }
+
+    /**
+     * Get default USD to SYP exchange rate
+     */
+    public static BigDecimal getDefaultUsdToSypRate() {
+        return DEFAULT_USD_TO_SYP_RATE;
+    }
+
+    /**
+     * Get default EUR to SYP exchange rate
+     */
+    public static BigDecimal getDefaultEurToSypRate() {
+        return DEFAULT_EUR_TO_SYP_RATE;
+    }
+
 }

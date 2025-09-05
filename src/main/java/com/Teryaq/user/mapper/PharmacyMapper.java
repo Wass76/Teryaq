@@ -41,6 +41,11 @@ public class PharmacyMapper {
             dto.setManagerFirstName(manager.getFirstName());
             dto.setManagerLastName(manager.getLastName());
         }
+        if (pharmacy.getArea() != null){
+            dto.setAreaId(pharmacy.getArea().getId());
+            dto.setAreaName(pharmacy.getArea().getName());
+            dto.setAreaArabicName(pharmacy.getArea().getArabicName());
+        }
         
         // Set isActive from entity field, fallback to calculated value if null
         if (pharmacy.getIsActive() != null) {

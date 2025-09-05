@@ -1,9 +1,9 @@
 package com.Teryaq.reports.controller;
 
 import com.Teryaq.reports.dto.response.*;
-import com.Teryaq.reports.enums.Currency;
 import com.Teryaq.reports.enums.Language;
 import com.Teryaq.reports.service.ReportService;
+import com.Teryaq.user.Enum.Currency;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -52,7 +52,7 @@ public class ReportController {
         log.info("Generating monthly purchase report for period: {} to {}", startDate, endDate);
         try {
             PurchaseReportResponse response = reportService.getMonthlyPurchaseReport(
-                    startDate, endDate, Currency.valueOf(currency), Language.valueOf(language));
+                    startDate, endDate,     Currency.valueOf(currency), Language.valueOf(language));
             return ResponseEntity.ok(response);
         } catch (Exception e) {
             log.error("Error generating monthly purchase report: {}", e.getMessage(), e);

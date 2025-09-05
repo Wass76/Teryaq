@@ -78,10 +78,12 @@ public class PharmacyController {
             @RequestParam(required = false) String pharmacyPhone,
             @Parameter(description = "Pharmacy email address", required = false) 
             @RequestParam(required = false) String pharmacyEmail,
-            @Parameter(description = "Pharmacy opening hours", required = false) 
-            @RequestParam(required = false) String openingHours
+            @Parameter(description = "Pharmacy opening hours", required = false)
+            @RequestParam(required = false) String openingHours,
+            @Parameter(description = "Area ID where the pharmacy is located", required = false)
+            @RequestParam(required = false) Long areaId
     ) {
-        PharmacyResponseDTO pharmacy = pharmacyService.completeRegistration(newPassword, location, managerFirstName,managerLastName, pharmacyPhone , pharmacyEmail, openingHours);
+        PharmacyResponseDTO pharmacy = pharmacyService.completeRegistration(newPassword, location, managerFirstName, managerLastName, pharmacyPhone, pharmacyEmail, openingHours, areaId);
         return ResponseEntity.ok(pharmacy);
     }
 

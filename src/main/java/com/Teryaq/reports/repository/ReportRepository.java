@@ -33,17 +33,19 @@ public interface ReportRepository extends JpaRepository<SaleInvoice, Long> {
     /**
      * Get monthly purchase daily breakdown
      * Returns purchase data for each day in the specified month
+     * Note: Currency conversion will be handled in the service layer
      */
     @Query("SELECT " +
            "DATE(pi.createdAt) as date, " +
            "COUNT(pi) as totalInvoices, " +
            "SUM(pi.total) as totalAmount, " +
            "SUM(pi.total) as totalPaid, " +
-           "AVG(pi.total) as averageAmount " +
+           "AVG(pi.total) as averageAmount, " +
+           "pi.currency as currency " +
            "FROM PurchaseInvoice pi " +
            "WHERE pi.pharmacy.id = :pharmacyId " +
            "AND DATE(pi.createdAt) BETWEEN :startDate AND :endDate " +
-           "GROUP BY DATE(pi.createdAt) " +
+           "GROUP BY DATE(pi.createdAt), pi.currency " +
            "ORDER BY date")
     List<Map<String, Object>> getMonthlyPurchaseDailyBreakdown(
             @Param("pharmacyId") Long pharmacyId,
@@ -53,16 +55,19 @@ public interface ReportRepository extends JpaRepository<SaleInvoice, Long> {
     /**
      * Get monthly purchase summary
      * Returns summary data for the entire month
+     * Note: Currency conversion will be handled in the service layer
      */
     @Query("SELECT " +
            "COUNT(pi) as totalInvoices, " +
            "SUM(pi.total) as totalAmount, " +
            "SUM(pi.total) as totalPaid, " +
-           "AVG(pi.total) as averageAmount " +
+           "AVG(pi.total) as averageAmount, " +
+           "pi.currency as currency " +
            "FROM PurchaseInvoice pi " +
            "WHERE pi.pharmacy.id = :pharmacyId " +
-           "AND DATE(pi.createdAt) BETWEEN :startDate AND :endDate")
-    Map<String, Object> getMonthlyPurchaseSummary(
+           "AND DATE(pi.createdAt) BETWEEN :startDate AND :endDate " +
+           "GROUP BY pi.currency")
+    List<Map<String, Object>> getMonthlyPurchaseSummary(
             @Param("pharmacyId") Long pharmacyId,
             @Param("startDate") LocalDate startDate,
             @Param("endDate") LocalDate endDate);
@@ -70,29 +75,34 @@ public interface ReportRepository extends JpaRepository<SaleInvoice, Long> {
     /**
      * Get daily purchase summary
      * Returns purchase data for a specific day
+     * Note: Currency conversion will be handled in the service layer
      */
     @Query("SELECT " +
            "COUNT(pi) as totalInvoices, " +
            "SUM(pi.total) as totalAmount, " +
            "SUM(pi.total) as totalPaid, " +
-           "AVG(pi.total) as averageAmount " +
+           "AVG(pi.total) as averageAmount, " +
+           "pi.currency as currency " +
            "FROM PurchaseInvoice pi " +
            "WHERE pi.pharmacy.id = :pharmacyId " +
-           "AND DATE(pi.createdAt) = :date")
-    Map<String, Object> getDailyPurchaseSummary(
+           "AND DATE(pi.createdAt) = :date " +
+           "GROUP BY pi.currency")
+    List<Map<String, Object>> getDailyPurchaseSummary(
             @Param("pharmacyId") Long pharmacyId,
             @Param("date") LocalDate date);
     
     /**
      * Get daily purchase items
      * Returns purchase items for a specific day
+     * Note: Currency conversion will be handled in the service layer
      */
     @Query("SELECT " +
            "pii.productId as productName, " +
            "pii.receivedQty as quantity, " +
            "pii.invoicePrice as unitPrice, " +
            "(pii.receivedQty * pii.invoicePrice) as subTotal, " +
-           "pi.supplier.name as supplierName " +
+           "pi.supplier.name as supplierName, " +
+           "pi.currency as currency " +
            "FROM PurchaseInvoiceItem pii " +
            "JOIN pii.purchaseInvoice pi " +
            "WHERE pi.pharmacy.id = :pharmacyId " +
@@ -109,19 +119,21 @@ public interface ReportRepository extends JpaRepository<SaleInvoice, Long> {
     /**
      * Get monthly profit daily breakdown
      * Returns profit data for each day in the specified month
+     * Note: Currency conversion will be handled in the service layer
      */
     @Query("SELECT " +
            "DATE(si.invoiceDate) as date, " +
            "COUNT(si) as totalInvoices, " +
            "SUM(si.totalAmount) as totalRevenue, " +
            "SUM(sii.subTotal - (sii.quantity * sii.stockItem.actualPurchasePrice)) as totalProfit, " +
-           "AVG(si.totalAmount) as averageRevenue " +
+           "AVG(si.totalAmount) as averageRevenue, " +
+           "si.currency as currency " +
            "FROM SaleInvoice si " +
            "JOIN si.items sii " +
            "WHERE si.pharmacy.id = :pharmacyId " +
            "AND DATE(si.invoiceDate) BETWEEN :startDate AND :endDate " +
            "AND si.status = 'SOLD' " +
-           "GROUP BY DATE(si.invoiceDate) " +
+           "GROUP BY DATE(si.invoiceDate), si.currency " +
            "ORDER BY date")
     List<Map<String, Object>> getMonthlyProfitDailyBreakdown(
             @Param("pharmacyId") Long pharmacyId,
@@ -131,18 +143,21 @@ public interface ReportRepository extends JpaRepository<SaleInvoice, Long> {
     /**
      * Get monthly profit summary
      * Returns summary data for the entire month
+     * Note: Currency conversion will be handled in the service layer
      */
     @Query("SELECT " +
            "COUNT(si) as totalInvoices, " +
            "SUM(si.totalAmount) as totalRevenue, " +
            "SUM(sii.subTotal - (sii.quantity * sii.stockItem.actualPurchasePrice)) as totalProfit, " +
-           "AVG(si.totalAmount) as averageRevenue " +
+           "AVG(si.totalAmount) as averageRevenue, " +
+           "si.currency as currency " +
            "FROM SaleInvoice si " +
            "JOIN si.items sii " +
            "WHERE si.pharmacy.id = :pharmacyId " +
            "AND DATE(si.invoiceDate) BETWEEN :startDate AND :endDate " +
-           "AND si.status = 'SOLD'")
-    Map<String, Object> getMonthlyProfitSummary(
+           "AND si.status = 'SOLD' " +
+           "GROUP BY si.currency")
+    List<Map<String, Object>> getMonthlyProfitSummary(
             @Param("pharmacyId") Long pharmacyId,
             @Param("startDate") LocalDate startDate,
             @Param("endDate") LocalDate endDate);
@@ -150,30 +165,35 @@ public interface ReportRepository extends JpaRepository<SaleInvoice, Long> {
     /**
      * Get daily profit summary
      * Returns profit data for a specific day
+     * Note: Currency conversion will be handled in the service layer
      */
     @Query("SELECT " +
            "COUNT(si) as totalInvoices, " +
            "SUM(si.totalAmount) as totalRevenue, " +
            "SUM(sii.subTotal - (sii.quantity * sii.stockItem.actualPurchasePrice)) as totalProfit, " +
-           "AVG(si.totalAmount) as averageRevenue " +
+           "AVG(si.totalAmount) as averageRevenue, " +
+           "si.currency as currency " +
            "FROM SaleInvoice si " +
            "JOIN si.items sii " +
            "WHERE si.pharmacy.id = :pharmacyId " +
            "AND DATE(si.invoiceDate) = :date " +
-           "AND si.status = 'SOLD'")
-    Map<String, Object> getDailyProfitSummary(
+           "AND si.status = 'SOLD' " +
+           "GROUP BY si.currency")
+    List<Map<String, Object>> getDailyProfitSummary(
             @Param("pharmacyId") Long pharmacyId,
             @Param("date") LocalDate date);
     
     /**
      * Get daily profit items
      * Returns profit items for a specific day
+     * Note: Currency conversion will be handled in the service layer
      */
     @Query("SELECT " +
            "sii.stockItem.productName as productName, " +
            "sii.quantity as quantity, " +
            "sii.subTotal as revenue, " +
-           "(sii.subTotal - (sii.quantity * sii.stockItem.actualPurchasePrice)) as profit " +
+           "(sii.subTotal - (sii.quantity * sii.stockItem.actualPurchasePrice)) as profit, " +
+           "si.currency as currency " +
            "FROM SaleInvoiceItem sii " +
            "JOIN sii.saleInvoice si " +
            "WHERE si.pharmacy.id = :pharmacyId " +

@@ -111,6 +111,10 @@ public class MoneyBoxService extends BaseSecurityService {
         MoneyBoxResponseDTO response = MoneyBoxMapper.toResponseDTO(savedMoneyBox);
         response.setTotalBalanceInUSD(calculateUSDBalance(savedMoneyBox.getCurrentBalance()));
         response.setTotalBalanceInEUR(calculateEURBalance(savedMoneyBox.getCurrentBalance()));
+        
+        // Set current exchange rates
+        setExchangeRates(response);
+        
         return response;
     }
     
@@ -123,9 +127,36 @@ public class MoneyBoxService extends BaseSecurityService {
         response.setTotalBalanceInUSD(calculateUSDBalance(moneyBox.getCurrentBalance()));
         response.setTotalBalanceInEUR(calculateEURBalance(moneyBox.getCurrentBalance()));
         
+        // Set current exchange rates
+        setExchangeRates(response);
+        
         return response;
     }
     
+    /**
+     * Set current exchange rates in MoneyBoxResponseDTO with fallback to defaults
+     */
+    private void setExchangeRates(MoneyBoxResponseDTO response) {
+        // Get current exchange rates from database with fallback to defaults
+        try {
+            BigDecimal usdToSypRate = exchangeRateService.getExchangeRate(Currency.USD, Currency.SYP);
+            response.setCurrentUSDToSYPRate(usdToSypRate);
+        } catch (Exception e) {
+            log.warn("Failed to get USD to SYP exchange rate from database, using default: {}", e.getMessage());
+            // Use default rate from ExchangeRateService
+            response.setCurrentUSDToSYPRate(ExchangeRateService.getDefaultUsdToSypRate());
+        }
+        
+        try {
+            BigDecimal eurToSypRate = exchangeRateService.getExchangeRate(Currency.EUR, Currency.SYP);
+            response.setCurrentEURToSYPRate(eurToSypRate);
+        } catch (Exception e) {
+            log.warn("Failed to get EUR to SYP exchange rate from database, using default: {}", e.getMessage());
+            // Use default rate from ExchangeRateService
+            response.setCurrentEURToSYPRate(ExchangeRateService.getDefaultEurToSypRate());
+        }
+    }
+
     /**
      * Calculate USD balance from SYP balance with fallback to default rate
      */
@@ -217,6 +248,10 @@ public class MoneyBoxService extends BaseSecurityService {
         MoneyBoxResponseDTO response = MoneyBoxMapper.toResponseDTO(savedMoneyBox);
         response.setTotalBalanceInUSD(calculateUSDBalance(savedMoneyBox.getCurrentBalance()));
         response.setTotalBalanceInEUR(calculateEURBalance(savedMoneyBox.getCurrentBalance()));
+        
+        // Set current exchange rates
+        setExchangeRates(response);
+        
         return response;
     }
     
@@ -272,6 +307,10 @@ public class MoneyBoxService extends BaseSecurityService {
         MoneyBoxResponseDTO response = MoneyBoxMapper.toResponseDTO(savedMoneyBox);
         response.setTotalBalanceInUSD(calculateUSDBalance(savedMoneyBox.getCurrentBalance()));
         response.setTotalBalanceInEUR(calculateEURBalance(savedMoneyBox.getCurrentBalance()));
+        
+        // Set current exchange rates
+        setExchangeRates(response);
+        
         return response;
     }
     

@@ -4,15 +4,9 @@ import com.Teryaq.user.Enum.PharmacyType;
 import com.Teryaq.user.Enum.UserStatus;
 import com.Teryaq.user.config.RoleConstants;
 import com.Teryaq.user.dto.PharmacyCreateRequestDTO;
-import com.Teryaq.user.entity.Employee;
-import com.Teryaq.user.entity.Pharmacy;
-import com.Teryaq.user.entity.Role;
-import com.Teryaq.user.entity.User;
+import com.Teryaq.user.entity.*;
 import com.Teryaq.user.mapper.PharmacyMapper;
-import com.Teryaq.user.repository.EmployeeRepository;
-import com.Teryaq.user.repository.PharmacyRepository;
-import com.Teryaq.user.repository.RoleRepository;
-import com.Teryaq.user.repository.UserRepository;
+import com.Teryaq.user.repository.*;
 import com.Teryaq.utils.exception.ResourceNotFoundException;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -40,6 +34,8 @@ import com.Teryaq.utils.exception.UnAuthorizedException;
 
 @Service
 public class PharmacyService {
+    @Autowired
+    private AreaRepository areaRepository;
     @Autowired
     private PharmacyRepository pharmacyRepository;
     @Autowired
@@ -244,7 +240,7 @@ public class PharmacyService {
     }
 
     @Transactional
-    public PharmacyResponseDTO completeRegistration(String newPassword, String location, String managerFirstName, String managerLastName, String pharmacyPhone, String pharmacyEmail, String openingHours) {
+    public PharmacyResponseDTO completeRegistration(String newPassword, String location, String managerFirstName, String managerLastName, String pharmacyPhone, String pharmacyEmail, String openingHours, Long areaId) {
         Employee manager = (Employee) userService.getCurrentUser();
         Pharmacy pharmacy = manager.getPharmacy();
         
@@ -261,7 +257,14 @@ public class PharmacyService {
         if (pharmacyPhone != null && !pharmacyPhone.isEmpty()) {
             pharmacy.setPhoneNumber(pharmacyPhone);
         }
-        
+        // Update area if provided
+        if (areaId != null) {
+            Area area = areaRepository.findById(areaId)
+                    .orElseThrow(() -> new RuntimeException("Area not found with id: " + areaId));
+            pharmacy.setArea(area);
+        }
+
+
         // Update the isActive status based on registration completion
         PharmacyMapper.updatePharmacyActiveStatus(pharmacy);
         

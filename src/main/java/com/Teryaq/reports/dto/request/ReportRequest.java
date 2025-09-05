@@ -1,8 +1,8 @@
 package com.Teryaq.reports.dto.request;
 
-import com.Teryaq.reports.enums.Currency;
 import com.Teryaq.reports.enums.Language;
 import com.Teryaq.reports.enums.ReportType;
+import com.Teryaq.user.Enum.Currency;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
