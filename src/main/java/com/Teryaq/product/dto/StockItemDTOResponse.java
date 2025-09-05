@@ -28,14 +28,23 @@ public class StockItemDTOResponse {
     private Integer total; 
     private String supplier; 
     private List<String> categories; 
-    private Integer minStockLevel; 
+    //private Integer minStockLevel; 
 
     @JsonFormat(pattern = "yyyy-MM-dd")
     private LocalDate expiryDate;
     private String batchNo;
     private Double actualPurchasePrice;
     private Float sellingPrice;
-
+ 
+    // New fields for currency conversion
+    private String requestedCurrency;
+    private Boolean pricesConverted;
+    private Float sellingPriceUSD;
+    private Double actualPurchasePriceUSD;
+    private Double exchangeRateSYPToUSD;
+    private String conversionTimestampSYPToUSD;
+    private String rateSource;
+    
     @JsonFormat(pattern = "yyyy-MM-dd")
     private LocalDate dateAdded;
     private Long addedBy;

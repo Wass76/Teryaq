@@ -4,6 +4,7 @@ import com.Teryaq.sale.dto.*;
 import com.Teryaq.sale.entity.*;
 import com.Teryaq.product.entity.StockItem;
 import com.Teryaq.product.mapper.StockItemMapper;
+import com.Teryaq.product.service.CurrencyConversionService;
 import com.Teryaq.user.entity.Customer;
 import com.Teryaq.user.entity.Pharmacy;
 import com.Teryaq.user.Enum.Currency;
@@ -11,6 +12,7 @@ import com.Teryaq.user.Enum.Currency;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -19,6 +21,7 @@ import java.util.stream.Collectors;
 public class SaleMapper {
     
     private final StockItemMapper stockItemMapper;
+    private final CurrencyConversionService currencyConversionService;
     
     public SaleInvoice toEntity(SaleInvoiceDTORequest dto) {
         SaleInvoice invoice = new SaleInvoice();
@@ -45,39 +48,52 @@ public class SaleMapper {
         return invoice;
     }
     
-    public SaleInvoiceItem toEntity(SaleInvoiceItemDTORequest dto, StockItem stockItem) {
+    public SaleInvoiceItem toEntity(SaleInvoiceItemDTORequest dto, StockItem stockItem, Currency currency) {
         SaleInvoiceItem item = new SaleInvoiceItem();
         item.setStockItem(stockItem);
         item.setQuantity(dto.getQuantity());
         
         if (dto.getUnitPrice() != null) {
-            item.setUnitPrice(dto.getUnitPrice());
+            // إذا تم تحديد السعر يدوياً، نطبق تحويل العملة عليه
+            BigDecimal convertedPrice = currencyConversionService.getDisplayPrice(
+                BigDecimal.valueOf(dto.getUnitPrice()), 
+                currency
+            );
+            item.setUnitPrice(convertedPrice.floatValue());
         } else {
-            // FIX: Use selling price instead of purchase price
+            // استخدام سعر البيع من المخزون وتطبيق تحويل العملة
             Float sellingPrice = stockItemMapper.getProductSellingPrice(
                 stockItem.getProductId(), 
                 stockItem.getProductType()
             );
             
             if (sellingPrice != null && sellingPrice > 0) {
-                item.setUnitPrice(sellingPrice);
+                BigDecimal convertedPrice = currencyConversionService.getDisplayPrice(
+                    BigDecimal.valueOf(sellingPrice), 
+                    currency
+                );
+                item.setUnitPrice(convertedPrice.floatValue());
             } else {
                 // Fallback to purchase price if no selling price is set
-                item.setUnitPrice(stockItem.getActualPurchasePrice().floatValue());
+                BigDecimal convertedPrice = currencyConversionService.getDisplayPrice(
+                    BigDecimal.valueOf(stockItem.getActualPurchasePrice()), 
+                    currency
+                );
+                item.setUnitPrice(convertedPrice.floatValue());
             }
         }
         
         return item;
     }
     
-    public List<SaleInvoiceItem> toEntityList(List<SaleInvoiceItemDTORequest> dtos, List<StockItem> stockItems) {
+    public List<SaleInvoiceItem> toEntityList(List<SaleInvoiceItemDTORequest> dtos, List<StockItem> stockItems, Currency currency) {
         return dtos.stream()
             .map(dto -> {
                 StockItem stockItem = stockItems.stream()
                     .filter(stock -> stock.getId().equals(dto.getStockItemId()))
                     .findFirst()
                     .orElseThrow(() -> new EntityNotFoundException("Stock item not found with ID: " + dto.getStockItemId()));
-                return toEntity(dto, stockItem);
+                return toEntity(dto, stockItem, currency);
             })
             .collect(Collectors.toList());
     }

@@ -1,31 +1,34 @@
 package com.Teryaq.product.service;
 
-import com.Teryaq.product.entity.StockItem;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.stream.Collectors;
+
+import org.springframework.context.annotation.Lazy;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import com.Teryaq.product.Enum.ProductType;
 import com.Teryaq.product.dto.StockItemDTOResponse;
 import com.Teryaq.product.dto.StockItemDetailDTOResponse;
 import com.Teryaq.product.dto.StockProductOverallDTOResponse;
+import com.Teryaq.product.entity.StockItem;
+import com.Teryaq.product.mapper.StockItemMapper;
 import com.Teryaq.product.repo.StockItemRepo;
-import com.Teryaq.user.repository.UserRepository;
-import com.Teryaq.user.service.BaseSecurityService;
+import com.Teryaq.user.Enum.Currency;
 import com.Teryaq.user.entity.Employee;
 import com.Teryaq.user.entity.User;
-import com.Teryaq.utils.exception.UnAuthorizedException;
+import com.Teryaq.user.repository.UserRepository;
+import com.Teryaq.user.service.BaseSecurityService;
 import com.Teryaq.utils.exception.ConflictException;
-import jakarta.persistence.EntityNotFoundException;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
+import com.Teryaq.utils.exception.UnAuthorizedException;
 
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Map;
-import java.util.HashMap;
-import java.util.Objects;
-import com.Teryaq.product.mapper.StockItemMapper;
-import org.springframework.context.annotation.Lazy;
-import java.util.stream.Collectors;
-import java.util.ArrayList;
+import jakarta.persistence.EntityNotFoundException;
 
 @Service
 @Transactional
@@ -239,9 +242,15 @@ public class StockService extends BaseSecurityService {
   
 
     public List<StockItemDTOResponse> getAllStockItems() {
+        return getAllStockItems(null);
+    }
+    
+    public List<StockItemDTOResponse> getAllStockItems(Currency currency) {
         Long currentPharmacyId = getCurrentUserPharmacyId();
         List<StockItem> stockItems = stockItemRepo.findByPharmacyId(currentPharmacyId);
-        return stockItemMapper.toResponseList(stockItems);
+        return stockItems.stream()
+            .map(stockItem -> stockItemMapper.toResponse(stockItem, currency))
+            .collect(Collectors.toList());
     }
     
     public List<StockProductOverallDTOResponse> getAllStockProductsOverall() {
@@ -255,7 +264,7 @@ public class StockService extends BaseSecurityService {
                 
                 List<StockItem> stockItems = stockItemRepo.findByProductIdAndProductTypeAndPharmacyId(productId, productType, currentPharmacyId);
                 
-                return stockItemMapper.toProductSummary(productId, productType, stockItems, currentPharmacyId);
+                return stockItemMapper.toProductSummary(productId, productType, stockItems, currentPharmacyId, true); 
             })
             .filter(Objects::nonNull)
             .collect(Collectors.toList());
@@ -278,7 +287,9 @@ public class StockService extends BaseSecurityService {
         details.put("productId", productId);
         details.put("productType", productType);
         details.put("totalQuantity", stockItems.stream().mapToInt(StockItem::getQuantity).sum());
-        details.put("stockItems", stockItemMapper.toResponseList(stockItems));
+        details.put("stockItems", stockItems.stream()
+            .map(item -> stockItemMapper.toResponse(item, Currency.USD)) // Always use USD for dual currency
+            .collect(Collectors.toList()));
         details.put("minStockLevel", stockItemMapper.getMinStockLevel(stockItem.getProductId(), stockItem.getProductType()));
         
         return details;

@@ -1,30 +1,34 @@
 package com.Teryaq.product.mapper;
 
-import com.Teryaq.product.Enum.ProductType;
-import com.Teryaq.product.dto.StockItemDTOResponse;
-import com.Teryaq.product.dto.StockItemDetailDTOResponse;
-import com.Teryaq.product.dto.StockProductOverallDTOResponse;
-import com.Teryaq.product.dto.StockReportDTOResponse;
-import com.Teryaq.product.dto.StockItemWithProductInfoDTOResponse;
-import com.Teryaq.product.entity.StockItem;
-import com.Teryaq.product.entity.PharmacyProduct;
-import com.Teryaq.product.entity.MasterProduct;
-import com.Teryaq.product.entity.Category;
-import com.Teryaq.product.entity.PharmacyProductBarcode;
-import com.Teryaq.product.repo.PharmacyProductRepo;
-import com.Teryaq.product.repo.MasterProductRepo;
-import com.Teryaq.purchase.repository.PurchaseOrderItemRepo;
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Component;
-
 import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import java.util.stream.Collectors;
 import java.util.Optional;
-import java.time.temporal.ChronoUnit;
+import java.util.stream.Collectors;
+
+import org.springframework.stereotype.Component;
+
+import com.Teryaq.product.Enum.ProductType;
+import com.Teryaq.product.dto.StockItemDTOResponse;
+import com.Teryaq.product.dto.StockItemDetailDTOResponse;
+import com.Teryaq.product.dto.StockItemWithProductInfoDTOResponse;
+import com.Teryaq.product.dto.StockProductOverallDTOResponse;
+import com.Teryaq.product.dto.StockReportDTOResponse;
+import com.Teryaq.product.entity.Category;
+import com.Teryaq.product.entity.MasterProduct;
+import com.Teryaq.product.entity.PharmacyProduct;
+import com.Teryaq.product.entity.PharmacyProductBarcode;
+import com.Teryaq.product.entity.StockItem;
+import com.Teryaq.product.repo.MasterProductRepo;
+import com.Teryaq.product.repo.PharmacyProductRepo;
 import com.Teryaq.product.repo.StockItemRepo;
+import com.Teryaq.product.service.CurrencyConversionService;
+import com.Teryaq.purchase.repository.PurchaseOrderItemRepo;
+import com.Teryaq.user.Enum.Currency;
+
+import lombok.RequiredArgsConstructor;
 
 @Component
 @RequiredArgsConstructor
@@ -34,8 +38,13 @@ public class StockItemMapper {
     private final MasterProductRepo masterProductRepo;
     private final PurchaseOrderItemRepo purchaseOrderItemRepo;
     private final StockItemRepo stockItemRepo;
+    private final CurrencyConversionService currencyConversionService;
     
     public StockItemDTOResponse toResponse(StockItem stockItem) {
+        return toResponse(stockItem, null);
+    }
+    
+    public StockItemDTOResponse toResponse(StockItem stockItem, Currency currency) {
         LocalDate today = LocalDate.now();
         LocalDate expiryDate = stockItem.getExpiryDate();
         
@@ -57,15 +66,15 @@ public class StockItemMapper {
         String supplier = getSupplierName(stockItem);
         List<String> categories = getCategories(stockItem.getProductId(), stockItem.getProductType());
         // Use minStockLevel from StockItem directly, fallback to product if null
-        Integer minStockLevel = stockItem.getMinStockLevel() != null ? 
-            stockItem.getMinStockLevel() : 
-            getMinStockLevel(stockItem.getProductId(), stockItem.getProductType());
+        // Integer minStockLevel = stockItem.getMinStockLevel() != null ? 
+        //     stockItem.getMinStockLevel() : 
+        //     getMinStockLevel(stockItem.getProductId(), stockItem.getProductType());
 
         List<String> barcodes = getBarcodes(stockItem.getProductId(), stockItem.getProductType());
         
         Float sellingPrice = getProductSellingPrice(stockItem.getProductId(), stockItem.getProductType());
         
-        return StockItemDTOResponse.builder()
+        StockItemDTOResponse.StockItemDTOResponseBuilder builder = StockItemDTOResponse.builder()
                 .id(stockItem.getId())
                 .productId(stockItem.getProductId())
                 .productName(productName)
@@ -76,11 +85,10 @@ public class StockItemMapper {
                 .total(total)
                 .supplier(supplier)
                 .categories(categories)
-                .minStockLevel(minStockLevel)
                 .expiryDate(stockItem.getExpiryDate())
                 .batchNo(stockItem.getBatchNo())
-                .actualPurchasePrice(stockItem.getActualPurchasePrice())
-                .sellingPrice(sellingPrice)
+                .actualPurchasePrice(Math.round(stockItem.getActualPurchasePrice() * 100.0) / 100.0)
+                .sellingPrice(sellingPrice != null ? Math.round(sellingPrice * 100.0f) / 100.0f : null)
                 .dateAdded(stockItem.getDateAdded())
                 .addedBy(stockItem.getCreatedBy() != null ? stockItem.getCreatedBy() : stockItem.getAddedBy())
                 .purchaseInvoiceId(stockItem.getPurchaseInvoice() != null ? 
@@ -90,8 +98,44 @@ public class StockItemMapper {
                 .daysUntilExpiry(daysUntilExpiry)
                 .pharmacyId(stockItem.getPharmacy().getId())
                 .purchaseInvoiceNumber(stockItem.getPurchaseInvoice() != null ? 
-                    stockItem.getPurchaseInvoice().getInvoiceNumber() : null)
-                .build();
+                    stockItem.getPurchaseInvoice().getInvoiceNumber() : null);
+        
+        // Apply currency conversion if currency is specified
+        if (currency != null && !Currency.SYP.equals(currency)) {
+            applyCurrencyConversion(builder, sellingPrice, stockItem.getActualPurchasePrice(), currency);
+        }
+        
+        return builder.build();
+    }
+    
+    private void applyCurrencyConversion(StockItemDTOResponse.StockItemDTOResponseBuilder builder, 
+                                        Float sellingPrice, Double actualPurchasePrice, Currency currency) {
+        builder.requestedCurrency(currency.name())
+               .pricesConverted(true);
+        
+        // Convert selling price
+        if (sellingPrice != null && sellingPrice > 0) {
+            var convertedPrice = currencyConversionService.convertPriceFromSYP(
+                java.math.BigDecimal.valueOf(sellingPrice), currency);
+            if (convertedPrice != null) {
+                builder.sellingPriceUSD(convertedPrice.getDisplayPrice().floatValue())
+                       .exchangeRateSYPToUSD(convertedPrice.getExchangeRate().doubleValue())
+                       .conversionTimestampSYPToUSD(convertedPrice.getConversionTimestamp())
+                       .rateSource(convertedPrice.getRateSource());
+            }
+        }
+        
+        // Convert actual purchase price
+        if (actualPurchasePrice != null && actualPurchasePrice > 0) {
+            var convertedPrice = currencyConversionService.convertPriceFromSYP(
+                java.math.BigDecimal.valueOf(actualPurchasePrice), currency);
+            if (convertedPrice != null) {
+                builder.actualPurchasePriceUSD(convertedPrice.getDisplayPrice().doubleValue())
+                       .exchangeRateSYPToUSD(convertedPrice.getExchangeRate().doubleValue())
+                       .conversionTimestampSYPToUSD(convertedPrice.getConversionTimestamp())
+                       .rateSource(convertedPrice.getRateSource());
+            }
+        }
     }
     
     public List<StockItemDTOResponse> toResponseList(List<StockItem> stockItems) {
@@ -367,16 +411,25 @@ public class StockItemMapper {
     }
     
     public StockProductOverallDTOResponse toProductSummary(Long productId, ProductType productType, List<StockItem> stockItems, Long pharmacyId) {
+        return toProductSummary(productId, productType, stockItems, pharmacyId, true); // Always enable dual currency
+    }
+    
+    public StockProductOverallDTOResponse toProductSummary(Long productId, ProductType productType, List<StockItem> stockItems, Long pharmacyId, boolean dualCurrency) {
         if (stockItems.isEmpty()) {
             return null;
         }
         
         Integer totalQuantity = stockItems.stream().mapToInt(StockItem::getQuantity).sum();
         Integer totalBonusQuantity = stockItems.stream().mapToInt(item -> item.getBonusQty() != null ? item.getBonusQty() : 0).sum();
-        Double averagePurchasePrice = stockItems.stream()
+        Double actualPurchasePrice = stockItems.stream()
             .mapToDouble(item -> item.getActualPurchasePrice() * item.getQuantity())
             .sum() / totalQuantity;
-        Double totalValue = totalQuantity * averagePurchasePrice;
+        // Round to 2 decimal places
+        actualPurchasePrice = Math.round(actualPurchasePrice * 100.0) / 100.0;
+        
+        Double totalValue = totalQuantity * actualPurchasePrice;
+        // Round to 2 decimal places
+        totalValue = Math.round(totalValue * 100.0) / 100.0;
         
         String productName = getProductName(productId, productType);
         List<String> categories = getCategories(productId, productType);
@@ -404,7 +457,7 @@ public class StockItemMapper {
             .max(LocalDate::compareTo)
             .orElse(null);
         
-        return StockProductOverallDTOResponse.builder()
+        StockProductOverallDTOResponse.StockProductOverallDTOResponseBuilder builder = StockProductOverallDTOResponse.builder()
             .id(stockItems.get(0).getId())
             .productId(productId)
             .productName(productName)
@@ -412,7 +465,7 @@ public class StockItemMapper {
             .barcodes(barcodes)
             .totalQuantity(totalQuantity)
             .totalBonusQuantity(totalBonusQuantity)
-            .averagePurchasePrice(averagePurchasePrice)
+            .actualPurchasePrice(actualPurchasePrice)   
             .totalValue(totalValue)
             .categories(categories)
             .sellingPrice(sellingPrice)
@@ -422,7 +475,51 @@ public class StockItemMapper {
             .earliestExpiryDate(earliestExpiryDate)
             .latestExpiryDate(latestExpiryDate)
             .numberOfBatches(stockItems.size())
-            .pharmacyId(pharmacyId)
-            .build();
+            .pharmacyId(pharmacyId);
+        
+        // Apply dual currency conversion if requested
+        if (dualCurrency) {
+            applyDualCurrencyConversion(builder, sellingPrice, actualPurchasePrice, totalValue);
+        }
+        
+        return builder.build();
+    }
+    
+    private void applyDualCurrencyConversion(StockProductOverallDTOResponse.StockProductOverallDTOResponseBuilder builder,
+                                           Float sellingPrice, Double actualPurchasePrice, Double totalValue) {
+        builder.dualCurrencyDisplay(true);
+        
+        // Convert selling price to USD
+        if (sellingPrice != null && sellingPrice > 0) {
+            var convertedPrice = currencyConversionService.convertPriceFromSYP(sellingPrice, Currency.USD);
+            if (convertedPrice != null) {
+                builder.sellingPriceUSD(convertedPrice.getDisplayPrice().floatValue())
+                       .exchangeRateSYPToUSD(convertedPrice.getExchangeRate().doubleValue())
+                       .conversionTimestampSYPToUSD(convertedPrice.getConversionTimestamp())
+                       .rateSource(convertedPrice.getRateSource());
+            }
+        }
+        
+        // Convert average purchase price to USD
+        if (actualPurchasePrice != null && actualPurchasePrice > 0) {
+            var convertedPrice = currencyConversionService.convertPriceFromSYP(actualPurchasePrice, Currency.USD);
+            if (convertedPrice != null) {
+                builder.actualPurchasePriceUSD(convertedPrice.getDisplayPrice().doubleValue())
+                       .exchangeRateSYPToUSD(convertedPrice.getExchangeRate().doubleValue())
+                       .conversionTimestampSYPToUSD(convertedPrice.getConversionTimestamp())
+                       .rateSource(convertedPrice.getRateSource());
+            }
+        }
+        
+        // Convert total value to USD
+        if (totalValue != null && totalValue > 0) {
+            var convertedPrice = currencyConversionService.convertPriceFromSYP(totalValue, Currency.USD);
+            if (convertedPrice != null) {
+                builder.totalValueUSD(convertedPrice.getDisplayPrice().doubleValue());
+                builder.exchangeRateSYPToUSD(convertedPrice.getExchangeRate().doubleValue())
+                       .conversionTimestampSYPToUSD(convertedPrice.getConversionTimestamp())
+                       .rateSource(convertedPrice.getRateSource());
+            }
+        }
     }
 } 

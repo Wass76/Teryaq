@@ -1,20 +1,22 @@
 package com.Teryaq.moneybox.service;
 
-import com.Teryaq.moneybox.repository.ExchangeRateRepository;
-import com.Teryaq.moneybox.entity.ExchangeRate;
-import com.Teryaq.moneybox.dto.ExchangeRateResponseDTO;
-import com.Teryaq.moneybox.dto.CurrencyConversionResponseDTO;
-import com.Teryaq.moneybox.mapper.ExchangeRateMapper;
-import com.Teryaq.user.Enum.Currency;
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
+
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import com.Teryaq.moneybox.dto.CurrencyConversionResponseDTO;
+import com.Teryaq.moneybox.dto.ExchangeRateResponseDTO;
+import com.Teryaq.moneybox.entity.ExchangeRate;
+import com.Teryaq.moneybox.mapper.ExchangeRateMapper;
+import com.Teryaq.moneybox.repository.ExchangeRateRepository;
+import com.Teryaq.user.Enum.Currency;
+
+import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
@@ -90,7 +92,14 @@ public class ExchangeRateService {
         }
         
         BigDecimal rate = getExchangeRate(fromCurrency, toCurrency);
-        return amount.multiply(rate).setScale(2, RoundingMode.HALF_UP);
+        BigDecimal result = amount.multiply(rate);
+        
+        // For small amounts (like SYP to USD), use higher precision
+        if (fromCurrency == Currency.SYP && (toCurrency == Currency.USD || toCurrency == Currency.EUR)) {
+            return result.setScale(6, RoundingMode.HALF_UP);
+        }
+        
+        return result.setScale(2, RoundingMode.HALF_UP);
     }
     
     /**
