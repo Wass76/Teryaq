@@ -1,23 +1,32 @@
 package com.Teryaq.product.mapper;
 
+import java.util.HashSet;
+import java.util.Set;
+
+import org.springframework.stereotype.Component;
+
 import com.Teryaq.product.Enum.ProductType;
 import com.Teryaq.product.dto.ProductSearchDTOResponse;
 import com.Teryaq.product.entity.MasterProduct;
 import com.Teryaq.product.entity.PharmacyProduct;
 import com.Teryaq.product.repo.StockItemRepo;
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Component;
+import com.Teryaq.product.service.CurrencyConversionService;
+import com.Teryaq.user.Enum.Currency;
 
-import java.util.HashSet;
-import java.util.Set;
+import lombok.RequiredArgsConstructor;
 
 @Component
 @RequiredArgsConstructor
 public class ProductSearchMapper {
     
     private final StockItemRepo stockItemRepo;
+    private final CurrencyConversionService currencyConversionService;
     
     public ProductSearchDTOResponse convertMasterProductToUnifiedDTO(MasterProduct product, String lang, Long pharmacyId) {
+        return convertMasterProductToUnifiedDTO(product, lang, pharmacyId, true); // Always enable dual currency
+    }
+    
+    public ProductSearchDTOResponse convertMasterProductToUnifiedDTO(MasterProduct product, String lang, Long pharmacyId, boolean dualCurrency) {
         // الحصول على الترجمة
         String translatedTradeName = product.getTranslations() != null
                 ? product.getTranslations().stream()
@@ -53,6 +62,13 @@ public class ProductSearchMapper {
                 .refPurchasePrice(product.getRefPurchasePrice())
                 .refSellingPrice(product.getRefSellingPrice())
                 .minStockLevel(product.getMinStockLevel())
+                .dualCurrencyDisplay(dualCurrency)
+                .refPurchasePriceUSD(dualCurrency && product.getRefPurchasePrice() > 0 ? 
+                    currencyConversionService.convertPriceFromSYP(product.getRefPurchasePrice(), Currency.USD).getDisplayPrice().doubleValue() : null)
+                .refSellingPriceUSD(dualCurrency && product.getRefSellingPrice() > 0 ? 
+                    currencyConversionService.convertPriceFromSYP(product.getRefSellingPrice(), Currency.USD).getDisplayPrice().doubleValue() : null)
+                .exchangeRateSYPToUSD(dualCurrency ? 
+                    currencyConversionService.convertPriceFromSYP(1.0f, Currency.USD).getExchangeRate().doubleValue() : null)
                 .notes(translatedNotes)
                 .tax(product.getTax())
                 .quantity(quantity)
@@ -96,6 +112,10 @@ public class ProductSearchMapper {
     }
     
     public ProductSearchDTOResponse convertPharmacyProductToUnifiedDTO(PharmacyProduct product, String lang, Long pharmacyId) {
+        return convertPharmacyProductToUnifiedDTO(product, lang, pharmacyId, true); // Always enable dual currency
+    }
+    
+    public ProductSearchDTOResponse convertPharmacyProductToUnifiedDTO(PharmacyProduct product, String lang, Long pharmacyId, boolean dualCurrency) {
         // الحصول على الترجمة
         String translatedTradeName = product.getTranslations() != null
                 ? product.getTranslations().stream()
@@ -132,9 +152,16 @@ public class ProductSearchMapper {
                 .requiresPrescription(product.getRequiresPrescription())
                 .concentration(product.getConcentration())
                 .size(product.getSize())
-                .refPurchasePrice(product.getRefPurchasePrice())
-                .refSellingPrice(product.getRefSellingPrice())
+                .refPurchasePrice(Math.round(product.getRefPurchasePrice() * 100.0f) / 100.0f)
+                .refSellingPrice(Math.round(product.getRefSellingPrice() * 100.0f) / 100.0f)
                 .minStockLevel(product.getMinStockLevel())
+                .dualCurrencyDisplay(dualCurrency)
+                .refPurchasePriceUSD(dualCurrency && product.getRefPurchasePrice() > 0 ? 
+                    currencyConversionService.convertPriceFromSYP(product.getRefPurchasePrice(), Currency.USD).getDisplayPrice().doubleValue() : null)
+                .refSellingPriceUSD(dualCurrency && product.getRefSellingPrice() > 0 ? 
+                    currencyConversionService.convertPriceFromSYP(product.getRefSellingPrice(), Currency.USD).getDisplayPrice().doubleValue() : null)
+                .exchangeRateSYPToUSD(dualCurrency ? 
+                    currencyConversionService.convertPriceFromSYP(1.0f, Currency.USD).getExchangeRate().doubleValue() : null)
                 .notes(translatedNotes)
                 .tax(product.getTax())
                 .quantity(quantity)

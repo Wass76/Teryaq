@@ -3,7 +3,6 @@ package com.Teryaq.product.dto;
 
 import java.util.Set;
 
-
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -44,5 +43,20 @@ public class ProductSearchDTOResponse {
 
     private String notes;
     private float tax;
-    private Integer quantity; 
+    private Integer quantity;
+    
+    // Currency Support Fields - Simplified for dual currency display
+    private Boolean dualCurrencyDisplay;
+    
+    // USD Price Fields (when dual currency is requested)
+    private Double refPurchasePriceUSD;
+    private Double refSellingPriceUSD;
+    private Double exchangeRateSYPToUSD;
+    
+    /**
+     * Check if dual currency display is enabled
+     */
+    public boolean isDualCurrencyDisplay() {
+        return dualCurrencyDisplay != null && dualCurrencyDisplay;
+    }
 } 

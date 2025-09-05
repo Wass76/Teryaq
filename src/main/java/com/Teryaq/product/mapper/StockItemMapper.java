@@ -295,21 +295,47 @@ public class StockItemMapper {
     }
 
     public String getProductName(Long productId, ProductType productType) {
+        return getProductName(productId, productType, "en"); // Default to English
+    }
+    
+    public String getProductName(Long productId, ProductType productType, String lang) {
         try {
             if (productType == ProductType.PHARMACY) {
                 Optional<PharmacyProduct> pharmacyProduct = pharmacyProductRepo.findById(productId);
                 if (pharmacyProduct.isPresent()) {
-                    return pharmacyProduct.get().getTradeName();
+                    PharmacyProduct product = pharmacyProduct.get();
+                    // Try to get translated name first
+                    String translatedName = getTranslatedPharmacyProductName(product, lang);
+                    return translatedName != null ? translatedName : product.getTradeName();
                 }
             } else if (productType == ProductType.MASTER) {
                 Optional<MasterProduct> masterProduct = masterProductRepo.findById(productId);
                 if (masterProduct.isPresent()) {
-                    return masterProduct.get().getTradeName();
+                    MasterProduct product = masterProduct.get();
+                    // Try to get translated name first
+                    String translatedName = getTranslatedMasterProductName(product, lang);
+                    return translatedName != null ? translatedName : product.getTradeName();
                 }
             }
         } catch (Exception e) {
         }
         return "Unknown Product";
+    }
+    
+    private String getTranslatedPharmacyProductName(PharmacyProduct product, String lang) {
+        return product.getTranslations().stream()
+            .filter(t -> lang.equalsIgnoreCase(t.getLanguage().getCode()))
+            .findFirst()
+            .map(translation -> translation.getTradeName())
+            .orElse(null);
+    }
+    
+    private String getTranslatedMasterProductName(MasterProduct product, String lang) {
+        return product.getTranslations().stream()
+            .filter(t -> lang.equalsIgnoreCase(t.getLanguage().getCode()))
+            .findFirst()
+            .map(translation -> translation.getTradeName())
+            .orElse(null);
     }
     
     public boolean isProductRequiresPrescription(Long productId, ProductType productType) {
@@ -411,10 +437,14 @@ public class StockItemMapper {
     }
     
     public StockProductOverallDTOResponse toProductSummary(Long productId, ProductType productType, List<StockItem> stockItems, Long pharmacyId) {
-        return toProductSummary(productId, productType, stockItems, pharmacyId, true); // Always enable dual currency
+        return toProductSummaryWithLang(productId, productType, stockItems, pharmacyId, true, "en"); // Always enable dual currency, default English
     }
     
     public StockProductOverallDTOResponse toProductSummary(Long productId, ProductType productType, List<StockItem> stockItems, Long pharmacyId, boolean dualCurrency) {
+        return toProductSummaryWithLang(productId, productType, stockItems, pharmacyId, dualCurrency, "en"); // Default English
+    }
+    
+    public StockProductOverallDTOResponse toProductSummaryWithLang(Long productId, ProductType productType, List<StockItem> stockItems, Long pharmacyId, boolean dualCurrency, String lang) {
         if (stockItems.isEmpty()) {
             return null;
         }
@@ -431,7 +461,7 @@ public class StockItemMapper {
         // Round to 2 decimal places
         totalValue = Math.round(totalValue * 100.0) / 100.0;
         
-        String productName = getProductName(productId, productType);
+        String productName = getProductName(productId, productType, lang);
         List<String> categories = getCategories(productId, productType);
         Float sellingPrice = getProductSellingPrice(productId, productType);
         Integer minStockLevel = getMinStockLevel(productId, productType);
