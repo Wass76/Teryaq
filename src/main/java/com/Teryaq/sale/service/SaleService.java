@@ -1,58 +1,58 @@
 package com.Teryaq.sale.service;
 
-import com.Teryaq.moneybox.service.SalesIntegrationService;
-import com.Teryaq.sale.dto.SaleInvoiceDTORequest;
-import com.Teryaq.sale.dto.SaleInvoiceDTOResponse;
-import com.Teryaq.sale.entity.SaleInvoice;
-import com.Teryaq.sale.entity.SaleInvoiceItem;
-import com.Teryaq.sale.enums.InvoiceStatus;
-import com.Teryaq.sale.enums.PaymentStatus;
-import com.Teryaq.sale.enums.RefundStatus;
-import com.Teryaq.sale.mapper.SaleMapper;
-import com.Teryaq.sale.repo.SaleInvoiceRepository;
-import com.Teryaq.sale.repo.SaleInvoiceItemRepository;
-import com.Teryaq.product.entity.StockItem;
-import com.Teryaq.product.repo.StockItemRepo;
-import com.Teryaq.product.service.StockService;
-import com.Teryaq.user.entity.Customer;
-import com.Teryaq.user.entity.Pharmacy;
-import com.Teryaq.user.repository.CustomerRepo;
-import com.Teryaq.user.service.BaseSecurityService;
-import com.Teryaq.utils.exception.ConflictException;
-import com.Teryaq.utils.exception.RequestNotValidException;
-import com.Teryaq.utils.exception.UnAuthorizedException;
-
-import jakarta.persistence.EntityNotFoundException;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import java.util.List;
-import java.util.stream.Collectors;
-import com.Teryaq.sale.dto.SaleInvoiceItemDTORequest;
-import com.Teryaq.product.Enum.PaymentType;
-import com.Teryaq.user.entity.CustomerDebt;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
 
-import com.Teryaq.user.repository.CustomerDebtRepository;
+import com.Teryaq.moneybox.service.SalesIntegrationService;
+import com.Teryaq.product.Enum.PaymentType;
+import com.Teryaq.product.entity.StockItem;
 import com.Teryaq.product.mapper.StockItemMapper;
-import com.Teryaq.user.mapper.CustomerDebtMapper;
-import com.Teryaq.user.repository.UserRepository;
+import com.Teryaq.product.repo.StockItemRepo;
+import com.Teryaq.product.service.StockService;
+import com.Teryaq.sale.dto.SaleInvoiceDTORequest;
+import com.Teryaq.sale.dto.SaleInvoiceDTOResponse;
+import com.Teryaq.sale.dto.SaleInvoiceItemDTORequest;
 import com.Teryaq.sale.dto.SaleRefundDTORequest;
 import com.Teryaq.sale.dto.SaleRefundDTOResponse;
 import com.Teryaq.sale.dto.SaleRefundItemDTORequest;
+import com.Teryaq.sale.entity.SaleInvoice;
+import com.Teryaq.sale.entity.SaleInvoiceItem;
 import com.Teryaq.sale.entity.SaleRefund;
 import com.Teryaq.sale.entity.SaleRefundItem;
+import com.Teryaq.sale.enums.InvoiceStatus;
+import com.Teryaq.sale.enums.PaymentStatus;
+import com.Teryaq.sale.enums.RefundStatus;
+import com.Teryaq.sale.mapper.SaleMapper;
 import com.Teryaq.sale.mapper.SaleRefundMapper;
-import com.Teryaq.sale.repo.SaleRefundRepo;
+import com.Teryaq.sale.repo.SaleInvoiceItemRepository;
+import com.Teryaq.sale.repo.SaleInvoiceRepository;
 import com.Teryaq.sale.repo.SaleRefundItemRepo;
-import java.util.ArrayList;
+import com.Teryaq.sale.repo.SaleRefundRepo;
 import com.Teryaq.user.Enum.Currency;
-import java.util.Arrays;
-import java.util.Map;
+import com.Teryaq.user.entity.Customer;
+import com.Teryaq.user.entity.CustomerDebt;
+import com.Teryaq.user.entity.Pharmacy;
+import com.Teryaq.user.mapper.CustomerDebtMapper;
+import com.Teryaq.user.repository.CustomerDebtRepository;
+import com.Teryaq.user.repository.CustomerRepo;
+import com.Teryaq.user.repository.UserRepository;
+import com.Teryaq.user.service.BaseSecurityService;
+import com.Teryaq.utils.exception.ConflictException;
+import com.Teryaq.utils.exception.RequestNotValidException;
+import com.Teryaq.utils.exception.UnAuthorizedException;
+
+import jakarta.persistence.EntityNotFoundException;
 
 @Service
 public class SaleService extends BaseSecurityService {
@@ -140,6 +140,12 @@ public class SaleService extends BaseSecurityService {
         }
         
         Customer customer = null;
+        
+        // التحقق من أن عمليات الدين تتطلب زبون محدد
+        if (requestDTO.getPaymentType() == PaymentType.CREDIT && requestDTO.getCustomerId() == null) {
+            throw new ConflictException("Credit sales require a specific customer. Please select a customer for credit transactions.");
+        }
+        
         if (requestDTO.getCustomerId() != null) {
             customer = customerRepository.findById(requestDTO.getCustomerId()).orElse(null);
         } else {
@@ -186,7 +192,7 @@ public class SaleService extends BaseSecurityService {
             throw new EntityNotFoundException("Stock items not found with IDs: " + missingIds);
         }
         
-        List<SaleInvoiceItem> items = saleMapper.toEntityList(requestDTO.getItems(), stockItems);
+        List<SaleInvoiceItem> items = saleMapper.toEntityList(requestDTO.getItems(), stockItems, requestDTO.getCurrency());
         
         float total = 0;
         
@@ -272,7 +278,7 @@ public class SaleService extends BaseSecurityService {
             }
         }
         
-        if (customer != null && remainingAmount > 0) {
+        if (customer != null && remainingAmount > 0 && !isCashCustomer(customer)) {
             createCustomerDebt(customer, remainingAmount, savedInvoice, requestDTO);
         }
         
@@ -323,6 +329,10 @@ public class SaleService extends BaseSecurityService {
             logger.error("Error creating cash customer for pharmacy {}: {}", pharmacy.getId(), e.getMessage());
             return null;
         }
+    }
+    
+    private boolean isCashCustomer(Customer customer) {
+        return customer != null && "cash customer".equalsIgnoreCase(customer.getName());
     }
 
    

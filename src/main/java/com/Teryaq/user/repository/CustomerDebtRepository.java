@@ -1,12 +1,13 @@
 package com.Teryaq.user.repository;
 
-import com.Teryaq.user.entity.CustomerDebt;
+import java.util.List;
+
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
-import java.util.List;
+import com.Teryaq.user.entity.CustomerDebt;
 
 @Repository
 public interface CustomerDebtRepository extends JpaRepository<CustomerDebt, Long> {
@@ -62,19 +63,19 @@ public interface CustomerDebtRepository extends JpaRepository<CustomerDebt, Long
            "FROM CustomerDebt d WHERE d.customer.pharmacy.id = :pharmacyId")
     Object[] getDebtStatisticsByPharmacyId(@Param("pharmacyId") Long pharmacyId);
     
-    // توابع جديدة للحصول على الزبائن الذين لديهم ديون
-    @Query("SELECT DISTINCT d.customer FROM CustomerDebt d WHERE d.customer.pharmacy.id = :pharmacyId AND d.status = 'ACTIVE' AND d.remainingAmount > 0")
+    // توابع جديدة للحصول على الزبائن الذين لديهم ديون (استبعاد cash customer)
+    @Query("SELECT DISTINCT d.customer FROM CustomerDebt d WHERE d.customer.pharmacy.id = :pharmacyId AND d.status = 'ACTIVE' AND d.remainingAmount > 0 AND LOWER(d.customer.name) != 'cash customer'")
     List<com.Teryaq.user.entity.Customer> findCustomersWithActiveDebtsByPharmacyId(@Param("pharmacyId") Long pharmacyId);
     
-    @Query("SELECT DISTINCT d.customer FROM CustomerDebt d WHERE d.customer.pharmacy.id = :pharmacyId AND d.status = 'ACTIVE' AND d.dueDate < CURRENT_DATE")
+    @Query("SELECT DISTINCT d.customer FROM CustomerDebt d WHERE d.customer.pharmacy.id = :pharmacyId AND d.status = 'ACTIVE' AND d.dueDate < CURRENT_DATE AND LOWER(d.customer.name) != 'cash customer'")
     List<com.Teryaq.user.entity.Customer> findCustomersWithOverdueDebtsByPharmacyId(@Param("pharmacyId") Long pharmacyId);
     
-    // تابع جديد للحصول على جميع الزبائن الذين لديهم ديون (بما في ذلك الصفرية)
-    @Query("SELECT DISTINCT d.customer FROM CustomerDebt d WHERE d.customer.pharmacy.id = :pharmacyId")
+    // تابع جديد للحصول على جميع الزبائن الذين لديهم ديون (بما في ذلك الصفرية) - استبعاد cash customer
+    @Query("SELECT DISTINCT d.customer FROM CustomerDebt d WHERE d.customer.pharmacy.id = :pharmacyId AND LOWER(d.customer.name) != 'cash customer'")
     List<com.Teryaq.user.entity.Customer> findAllCustomersWithDebtsByPharmacyId(@Param("pharmacyId") Long pharmacyId);
     
-    // تابع للحصول على الزبائن الذين لديهم ديون صفرية
-    @Query("SELECT DISTINCT d.customer FROM CustomerDebt d WHERE d.customer.pharmacy.id = :pharmacyId AND d.remainingAmount = 0")
+    // تابع للحصول على الزبائن الذين لديهم ديون صفرية - استبعاد cash customer
+    @Query("SELECT DISTINCT d.customer FROM CustomerDebt d WHERE d.customer.pharmacy.id = :pharmacyId AND d.remainingAmount = 0 AND LOWER(d.customer.name) != 'cash customer'")
     List<com.Teryaq.user.entity.Customer> findCustomersWithZeroDebtsByPharmacyId(@Param("pharmacyId") Long pharmacyId);
     
 
