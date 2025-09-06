@@ -8,7 +8,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -24,8 +23,8 @@ public interface PurchaseOrderRepo extends JpaRepository<PurchaseOrder, Long> {
     @Query("SELECT po FROM PurchaseOrder po WHERE po.pharmacy.id = :pharmacyId AND po.createdAt BETWEEN :startDate AND :endDate")
     Page<PurchaseOrder> findByPharmacyIdAndCreatedAtBetween(
         @Param("pharmacyId") Long pharmacyId,
-        @Param("startDate") LocalDate startDate,
-        @Param("endDate") LocalDate endDate,
+        @Param("startDate") LocalDateTime startDate,
+        @Param("endDate") LocalDateTime endDate,
         Pageable pageable
     );
     

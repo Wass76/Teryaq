@@ -29,7 +29,6 @@ import com.Teryaq.utils.exception.UnAuthorizedException;
 import jakarta.transaction.Transactional;
 import org.springframework.stereotype.Service;
 import java.math.BigDecimal;
-import java.time.LocalDate;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.springframework.data.domain.Page;
@@ -195,7 +194,7 @@ public class PurchaseOrderService extends BaseSecurityService {
 
     // New method for filtering by time range
     public PaginationDTO<PurchaseOrderDTOResponse> getByTimeRangePaginated(
-            LocalDate startDate, LocalDate endDate, int page, int size, String language) {
+            LocalDateTime startDate, LocalDateTime endDate, int page, int size, String language) {
         Employee employee = validateAndGetEmployee();
         Long pharmacyId = employee.getPharmacy().getId();
         
@@ -215,7 +214,7 @@ public class PurchaseOrderService extends BaseSecurityService {
     }
 
     public PaginationDTO<PurchaseOrderDTOResponse> getByTimeRangePaginated(
-            LocalDate startDate, LocalDate endDate, int page, int size) {
+            LocalDateTime startDate, LocalDateTime endDate, int page, int size) {
         return getByTimeRangePaginated(startDate, endDate, page, size, "ar");
     }
 

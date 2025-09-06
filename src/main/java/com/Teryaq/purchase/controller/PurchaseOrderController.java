@@ -155,9 +155,9 @@ public class PurchaseOrderController {
         @ApiResponse(responseCode = "500", description = "Internal server error")
     })
     public ResponseEntity<PaginationDTO<PurchaseOrderDTOResponse>> getByTimeRangePaginated(
-            @Parameter(description = "Start date and time", example = "YYYY-MM-DD")
+            @Parameter(description = "Start date", example = "2024-03-01")
             @RequestParam LocalDate startDate,
-            @Parameter(description = "End date and time", example = "YYYY-MM-DD")
+            @Parameter(description = "End date", example = "2027-03-01")
             @RequestParam LocalDate endDate,
             @Parameter(description = "Page number (0-based)", example = "0") 
             @RequestParam(defaultValue = "0") int page,
@@ -165,7 +165,11 @@ public class PurchaseOrderController {
             @RequestParam(defaultValue = "10") int size,
             @Parameter(description = "Language code", example = "ar") 
             @RequestParam(defaultValue = "ar") String language) {
-        return ResponseEntity.ok(purchaseOrderService.getByTimeRangePaginated(startDate, endDate, page, size, language));
+        // Convert LocalDate to LocalDateTime for the full day range
+        LocalDateTime startDateTime = startDate.atStartOfDay();
+        LocalDateTime endDateTime = endDate.atTime(23, 59, 59);
+        
+        return ResponseEntity.ok(purchaseOrderService.getByTimeRangePaginated(startDateTime, endDateTime, page, size, language));
     }
 
     @GetMapping("/supplier/{supplierId}")
