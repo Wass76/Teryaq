@@ -1,23 +1,35 @@
 package com.Teryaq.product.controller;
 
-import com.Teryaq.product.dto.PharmacyProductDTORequest;
-import com.Teryaq.product.dto.ProductMultiLangDTOResponse;
-import com.Teryaq.product.service.PharmacyProductService;
-
-import jakarta.validation.Valid;
+import java.util.List;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.Teryaq.product.dto.PharmacyProductDTORequest;
+import com.Teryaq.product.dto.PharmacyProductIdsMaultiLangDTOResponse;
+import com.Teryaq.product.dto.ProductMultiLangDTOResponse;
+import com.Teryaq.product.service.PharmacyProductService;
+
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
-import io.swagger.v3.oas.annotations.tags.Tag;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 
 
 @RestController
@@ -198,5 +210,37 @@ public class PharmacyProductController {
     public ResponseEntity<?> getPharmacyProductByIdMultiLang(
             @Parameter(description = "Pharmacy product ID", example = "1") @PathVariable Long id) {
         return ResponseEntity.ok(pharmacyProductService.getPharmacyProductByIdMultiLang(id));
+    }
+
+    @GetMapping("/multi-lang-with-ids")
+    @Operation(
+        summary = "Get all pharmacy products with multi-language support and IDs",
+        description = "Retrieves all pharmacy products with both Arabic and English translations, including all related entity IDs"
+    )
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Successfully retrieved all pharmacy products with multi-language support and IDs",
+            content = @Content(mediaType = "application/json",
+            schema = @Schema(implementation = PharmacyProductIdsMaultiLangDTOResponse.class))),
+        @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
+    public ResponseEntity<List<PharmacyProductIdsMaultiLangDTOResponse>> getPharmacyProductsWithIdsMultiLang() {
+        return ResponseEntity.ok(pharmacyProductService.getPharmacyProductsWithIdsMultiLang());
+    }
+
+    @GetMapping("/multi-lang-with-ids/{id}")
+    @Operation(
+        summary = "Get pharmacy product by ID with multi-language support and IDs",
+        description = "Retrieves a specific pharmacy product by ID with both Arabic and English translations, including all related entity IDs"
+    )
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Successfully retrieved pharmacy product with multi-language support and IDs",
+            content = @Content(mediaType = "application/json",
+            schema = @Schema(implementation = PharmacyProductIdsMaultiLangDTOResponse.class))),
+        @ApiResponse(responseCode = "404", description = "Pharmacy product not found"),
+        @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
+    public ResponseEntity<PharmacyProductIdsMaultiLangDTOResponse> getPharmacyProductByIdWithIdsMultiLang(
+            @Parameter(description = "Pharmacy product ID", example = "1") @PathVariable Long id) {
+        return ResponseEntity.ok(pharmacyProductService.getPharmacyProductByIdWithIdsMultiLang(id));
     }
 }

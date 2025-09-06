@@ -1,5 +1,11 @@
 package com.Teryaq.user.service;
 
+import java.util.List;
+import java.util.stream.Collectors;
+
+import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
+
 import com.Teryaq.user.dto.CustomerDTORequest;
 import com.Teryaq.user.dto.CustomerDTOResponse;
 import com.Teryaq.user.entity.Customer;
@@ -7,19 +13,13 @@ import com.Teryaq.user.entity.CustomerDebt;
 import com.Teryaq.user.entity.Employee;
 import com.Teryaq.user.entity.User;
 import com.Teryaq.user.mapper.CustomerMapper;
-import com.Teryaq.user.repository.CustomerRepo;
 import com.Teryaq.user.repository.CustomerDebtRepository;
+import com.Teryaq.user.repository.CustomerRepo;
 import com.Teryaq.user.repository.UserRepository;
+import com.Teryaq.utils.exception.ConflictException;
 import com.Teryaq.utils.exception.UnAuthorizedException;
 
-import org.springframework.stereotype.Service;
-import org.springframework.util.StringUtils;
-
 import jakarta.persistence.EntityNotFoundException;
-import com.Teryaq.utils.exception.ConflictException;
-
-import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 public class CustomerService extends BaseSecurityService {
@@ -50,8 +50,14 @@ public class CustomerService extends BaseSecurityService {
         Long currentPharmacyId = employee.getPharmacy().getId();
         return customerRepo.findByPharmacyId(currentPharmacyId)
                 .stream()
+                .filter(customer -> !isCashCustomer(customer)) // Filter out cash customer
                 .map(customerMapper::toResponse)
                 .collect(Collectors.toList());
+    }
+    
+    private boolean isCashCustomer(Customer customer) {
+        return customer.getName() != null && 
+               customer.getName().toLowerCase().trim().equals("cash customer");
     }
 
     public CustomerDTOResponse getCustomerById(Long id) {
@@ -108,6 +114,7 @@ public class CustomerService extends BaseSecurityService {
         if (!StringUtils.hasText(name)) {
             return customerRepo.findByPharmacyId(currentPharmacyId)
                     .stream()
+                    .filter(customer -> !isCashCustomer(customer)) // Filter out cash customer
                     .map(customerMapper::toResponse)
                     .collect(Collectors.toList());
         }
@@ -306,6 +313,7 @@ public class CustomerService extends BaseSecurityService {
         
         return customerRepo.findByPharmacyId(pharmacyId)
                 .stream()
+                .filter(customer -> !isCashCustomer(customer)) // Filter out cash customer
                 .map(customerMapper::toResponse)
                 .collect(Collectors.toList());
     }
@@ -344,6 +352,7 @@ public class CustomerService extends BaseSecurityService {
         if (!StringUtils.hasText(name)) {
             return customerRepo.findByPharmacyId(pharmacyId)
                     .stream()
+                    .filter(customer -> !isCashCustomer(customer)) // Filter out cash customer
                     .map(customerMapper::toResponse)
                     .collect(Collectors.toList());
         }
