@@ -1,28 +1,29 @@
 package com.Teryaq.product.mapper;
 
-import com.Teryaq.product.repo.CategoryRepo;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.stream.Collectors;
+
+import org.springframework.stereotype.Component;
+
 import com.Teryaq.product.Enum.ProductType;
 import com.Teryaq.product.dto.PharmacyProductDTORequest;
 import com.Teryaq.product.dto.PharmacyProductDTOResponse;
+import com.Teryaq.product.dto.PharmacyProductIdsMaultiLangDTOResponse;
 import com.Teryaq.product.dto.PharmacyProductListDTO;
 import com.Teryaq.product.dto.ProductMultiLangDTOResponse;
-//import com.Teryaq.product.dto.PharmacyProductTranslationDTOResponse;
 import com.Teryaq.product.entity.Category;
 import com.Teryaq.product.entity.PharmacyProduct;
 import com.Teryaq.product.entity.PharmacyProductBarcode;
 import com.Teryaq.product.entity.PharmacyProductTranslation;
-import com.Teryaq.product.repo.TypeRepo;
+import com.Teryaq.product.repo.CategoryRepo;
 import com.Teryaq.product.repo.FormRepo;
 import com.Teryaq.product.repo.ManufacturerRepo;
+import com.Teryaq.product.repo.TypeRepo;
 import com.Teryaq.user.repository.PharmacyRepository;
 
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Component;
-
-import java.util.HashSet;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 @Component
 @RequiredArgsConstructor
@@ -330,6 +331,124 @@ public class PharmacyProductMapper {
                 .scientificNameAr(scientificNameAr)
                 .scientificNameEn(scientificNameEn)
                 .pharmacyId(product.getPharmacy() != null ? product.getPharmacy().getId() : null)
+                .build();
+    }
+
+    public PharmacyProductIdsMaultiLangDTOResponse toPharmacyProductIdsMaultiLangResponse(PharmacyProduct product) {
+        // Get Arabic and English translations for product names
+        PharmacyProductTranslation arabicTranslation = product.getTranslations() != null
+                ? product.getTranslations().stream()
+                .filter(t -> t.getLanguage() != null && "ar".equalsIgnoreCase(t.getLanguage().getCode()))
+                .findFirst()
+                .orElse(null)
+                : null;
+                
+        PharmacyProductTranslation englishTranslation = product.getTranslations() != null
+                ? product.getTranslations().stream()
+                .filter(t -> t.getLanguage() != null && "en".equalsIgnoreCase(t.getLanguage().getCode()))
+                .findFirst()
+                .orElse(null)
+                : null;
+
+        // Set names - use translations if available, otherwise use original names
+        String tradeNameAr = arabicTranslation != null ? arabicTranslation.getTradeName() : product.getTradeName();
+        String tradeNameEn = englishTranslation != null ? englishTranslation.getTradeName() : product.getTradeName();
+        String scientificNameAr = arabicTranslation != null ? arabicTranslation.getScientificName() : product.getScientificName();
+        String scientificNameEn = englishTranslation != null ? englishTranslation.getScientificName() : product.getScientificName();
+
+        // Get category translations
+        Set<String> categoriesAr = new HashSet<>();
+        Set<String> categoriesEn = new HashSet<>();
+        if (product.getCategories() != null) {
+            product.getCategories().forEach(category -> {
+                // Arabic category names
+                String categoryAr = category.getTranslations() != null
+                        ? category.getTranslations().stream()
+                        .filter(t -> "ar".equalsIgnoreCase(t.getLanguage().getCode()))
+                        .findFirst()
+                        .map(com.Teryaq.product.entity.CategoryTranslation::getName)
+                        .orElse(category.getName())
+                        : category.getName();
+                categoriesAr.add(categoryAr);
+                
+                // English category names
+                String categoryEn = category.getTranslations() != null
+                        ? category.getTranslations().stream()
+                        .filter(t -> "en".equalsIgnoreCase(t.getLanguage().getCode()))
+                        .findFirst()
+                        .map(com.Teryaq.product.entity.CategoryTranslation::getName)
+                        .orElse(category.getName())
+                        : category.getName();
+                categoriesEn.add(categoryEn);
+            });
+        }
+
+        return PharmacyProductIdsMaultiLangDTOResponse.builder()
+                .id(product.getId())
+                .tradeNameAr(tradeNameAr)
+                .tradeNameEn(tradeNameEn)
+                .scientificNameAr(scientificNameAr)
+                .scientificNameEn(scientificNameEn)
+                .concentration(product.getConcentration())
+                .size(product.getSize())
+                .refPurchasePrice(product.getRefPurchasePrice())
+                .refSellingPrice(product.getRefSellingPrice())
+                .minStockLevel(product.getMinStockLevel())
+                .notes(product.getNotes())
+                .tax(product.getTax())
+                .barcodes(product.getBarcodes() != null ? 
+                    product.getBarcodes().stream()
+                        .map(PharmacyProductBarcode::getBarcode)
+                        .collect(Collectors.toSet()) : new HashSet<>())
+                .productTypeNameAr(ProductType.PHARMACY.getTranslatedName("ar"))
+                .productTypeNameEn(ProductType.PHARMACY.getTranslatedName("en"))
+                .requiresPrescription(product.getRequiresPrescription())
+                .pharmacyId(product.getPharmacy() != null ? product.getPharmacy().getId() : null)
+                .pharmacyName(product.getPharmacy() != null ? product.getPharmacy().getName() : null)
+                .typeId(product.getType() != null ? product.getType().getId() : null)
+                .typeAr(product.getType() != null ? 
+                    product.getType().getTranslations().stream()
+                        .filter(t -> "ar".equalsIgnoreCase(t.getLanguage().getCode()))
+                        .findFirst()
+                        .map(com.Teryaq.product.entity.TypeTranslation::getName)
+                        .orElse(product.getType().getName()) : null)
+                .typeEn(product.getType() != null ? 
+                    product.getType().getTranslations().stream()
+                        .filter(t -> "en".equalsIgnoreCase(t.getLanguage().getCode()))
+                        .findFirst()
+                        .map(com.Teryaq.product.entity.TypeTranslation::getName)
+                        .orElse(product.getType().getName()) : null)
+                .formId(product.getForm() != null ? product.getForm().getId() : null)
+                .formAr(product.getForm() != null ? 
+                    product.getForm().getTranslations().stream()
+                        .filter(t -> "ar".equalsIgnoreCase(t.getLanguage().getCode()))
+                        .findFirst()
+                        .map(com.Teryaq.product.entity.FormTranslation::getName)
+                        .orElse(product.getForm().getName()) : null)
+                .formEn(product.getForm() != null ? 
+                    product.getForm().getTranslations().stream()
+                        .filter(t -> "en".equalsIgnoreCase(t.getLanguage().getCode()))
+                        .findFirst()
+                        .map(com.Teryaq.product.entity.FormTranslation::getName)
+                        .orElse(product.getForm().getName()) : null)
+                .manufacturerId(product.getManufacturer() != null ? product.getManufacturer().getId() : null)
+                .manufacturerAr(product.getManufacturer() != null ? 
+                    product.getManufacturer().getTranslations().stream()
+                        .filter(t -> "ar".equalsIgnoreCase(t.getLanguage().getCode()))
+                        .findFirst()
+                        .map(com.Teryaq.product.entity.ManufacturerTranslation::getName)
+                        .orElse(product.getManufacturer().getName()) : null)
+                .manufacturerEn(product.getManufacturer() != null ? 
+                    product.getManufacturer().getTranslations().stream()
+                        .filter(t -> "en".equalsIgnoreCase(t.getLanguage().getCode()))
+                        .findFirst()
+                        .map(com.Teryaq.product.entity.ManufacturerTranslation::getName)
+                        .orElse(product.getManufacturer().getName()) : null)
+                .categoryIds(product.getCategories() != null ? product.getCategories().stream()
+                        .map(Category::getId)
+                        .collect(Collectors.toSet()) : new HashSet<>())
+                .categoriesAr(categoriesAr)
+                .categoriesEn(categoriesEn)
                 .build();
     }
 

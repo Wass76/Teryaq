@@ -1,17 +1,32 @@
 package com.Teryaq.product.service;
 
-import com.Teryaq.product.dto.PharmacyProductDTORequest;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
+
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import com.Teryaq.language.Language;
+import com.Teryaq.language.LanguageRepo;
 import com.Teryaq.product.Enum.ProductType;
+import com.Teryaq.product.dto.PaginationDTO;
+import com.Teryaq.product.dto.PharmacyProductDTORequest;
 import com.Teryaq.product.dto.PharmacyProductDTOResponse;
+import com.Teryaq.product.dto.PharmacyProductIdsMaultiLangDTOResponse;
 import com.Teryaq.product.dto.PharmacyProductListDTO;
 import com.Teryaq.product.dto.ProductMultiLangDTOResponse;
 import com.Teryaq.product.entity.PharmacyProduct;
 import com.Teryaq.product.entity.PharmacyProductTranslation;
 import com.Teryaq.product.mapper.PharmacyProductMapper;
+import com.Teryaq.product.repo.MasterProductRepo;
 import com.Teryaq.product.repo.PharmacyProductBarcodeRepo;
 import com.Teryaq.product.repo.PharmacyProductRepo;
 import com.Teryaq.product.repo.PharmacyProductTranslationRepo;
-import com.Teryaq.product.repo.MasterProductRepo;
 import com.Teryaq.product.repo.StockItemRepo;
 import com.Teryaq.user.entity.Employee;
 import com.Teryaq.user.entity.User;
@@ -19,22 +34,8 @@ import com.Teryaq.user.repository.UserRepository;
 import com.Teryaq.user.service.BaseSecurityService;
 import com.Teryaq.utils.exception.ConflictException;
 import com.Teryaq.utils.exception.UnAuthorizedException;
-import com.Teryaq.language.Language;
-import com.Teryaq.language.LanguageRepo;
-
 
 import jakarta.persistence.EntityNotFoundException;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-import com.Teryaq.product.dto.PaginationDTO;
-
-import java.util.List;
-import java.util.HashSet;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 @Service
 @Transactional
@@ -404,6 +405,42 @@ public class PharmacyProductService extends BaseSecurityService {
         PharmacyProduct product = pharmacyProductRepo.findByIdAndPharmacyIdWithTranslations(id, currentPharmacyId)
                 .orElseThrow(() -> new EntityNotFoundException("Pharmacy Product with ID " + id + " not found"));
         return pharmacyProductMapper.toMultiLangResponse(product);
+    }
+
+    public List<PharmacyProductIdsMaultiLangDTOResponse> getPharmacyProductsWithIdsMultiLang() {
+        User currentUser = getCurrentUser();
+        if (!(currentUser instanceof Employee)) {
+            throw new UnAuthorizedException("Only pharmacy employees can get pharmacy products");
+        }
+        
+        Employee employee = (Employee) currentUser;
+        if (employee.getPharmacy() == null) {
+            throw new UnAuthorizedException("Employee is not associated with any pharmacy");
+        }
+        
+        Long currentPharmacyId = employee.getPharmacy().getId();
+        List<PharmacyProduct> pharmacyProducts = pharmacyProductRepo.findAllWithTranslations(currentPharmacyId);
+        
+        return pharmacyProducts.stream()
+                .map(pharmacyProductMapper::toPharmacyProductIdsMaultiLangResponse)
+                .collect(Collectors.toList());
+    }
+
+    public PharmacyProductIdsMaultiLangDTOResponse getPharmacyProductByIdWithIdsMultiLang(Long id) {
+        User currentUser = getCurrentUser();
+        if (!(currentUser instanceof Employee)) {
+            throw new UnAuthorizedException("Only pharmacy employees can get pharmacy products");
+        }
+        
+        Employee employee = (Employee) currentUser;
+        if (employee.getPharmacy() == null) {
+            throw new UnAuthorizedException("Employee is not associated with any pharmacy");
+        }
+        
+        Long currentPharmacyId = employee.getPharmacy().getId();
+        PharmacyProduct product = pharmacyProductRepo.findByIdAndPharmacyIdWithTranslations(id, currentPharmacyId)
+                .orElseThrow(() -> new EntityNotFoundException("Pharmacy Product with ID " + id + " not found"));
+        return pharmacyProductMapper.toPharmacyProductIdsMaultiLangResponse(product);
     }
 
 
