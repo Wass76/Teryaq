@@ -1,6 +1,6 @@
 # API Request Bodies Guide - Teryaq Pharmacy System
 
-This guide provides comprehensive examples of request bodies for creating purchase orders, purchase invoices, and sales invoices in the Teryaq pharmacy management system.
+This guide provides comprehensive examples of request bodies for creating purchase orders, purchase invoices, sales invoices, and managing employees in the Teryaq pharmacy management system.
 
 ---
 
@@ -13,10 +13,11 @@ This guide provides comprehensive examples of request bodies for creating purcha
 5. [Pharmacy Products](#pharmacy-products)
 6. [Suppliers](#suppliers)
 7. [Customers](#customers)
-8. [Field Descriptions](#field-descriptions)
-9. [Validation Rules](#validation-rules)
-10. [Common Error Scenarios](#common-error-scenarios)
-11. [Testing Examples](#testing-examples)
+8. [Employees](#employees)
+9. [Field Descriptions](#field-descriptions)
+10. [Validation Rules](#validation-rules)
+11. [Common Error Scenarios](#common-error-scenarios)
+12. [Testing Examples](#testing-examples)
 
 ---
 
@@ -665,6 +666,165 @@ Content-Type: application/json
 
 ---
 
+## 👨‍💼 Employees
+
+**Endpoint:** `POST /api/v1/employees`
+
+**Description:** Creates a new employee in the pharmacy with working hours configuration.
+
+### Request Body Structure
+
+```json
+{
+  "firstName": "John",
+  "lastName": "Doe",
+  "password": "Password!1",
+  "phoneNumber": "1234567890",
+  "status": "ACTIVE",
+  "dateOfHire": "2024-01-15",
+  "roleId": 2,
+  "workingHoursRequests": [
+    {
+      "daysOfWeek": ["MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY"],
+      "shifts": [
+        {
+          "startTime": "09:00",
+          "endTime": "17:00",
+          "description": "Regular Shift"
+        }
+      ]
+    },
+    {
+      "daysOfWeek": ["SATURDAY"],
+      "shifts": [
+        {
+          "startTime": "10:00",
+          "endTime": "14:00",
+          "description": "Weekend Shift"
+        }
+      ]
+    }
+  ]
+}
+```
+
+### Complete Examples
+
+#### 1. Full-Time Employee with Regular Hours
+```json
+{
+  "firstName": "Ahmed",
+  "lastName": "Al-Hassan",
+  "password": "SecurePass123!",
+  "phoneNumber": "1112223333",
+  "status": "ACTIVE",
+  "dateOfHire": "2024-01-15",
+  "roleId": 2,
+  "workingHoursRequests": [
+    {
+      "daysOfWeek": ["MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY"],
+      "shifts": [
+        {
+          "startTime": "08:00",
+          "endTime": "16:00",
+          "description": "Morning Shift"
+        }
+      ]
+    }
+  ]
+}
+```
+
+#### 2. Part-Time Employee with Multiple Shifts
+```json
+{
+  "firstName": "Fatima",
+  "lastName": "Al-Rashid",
+  "password": "MyPassword456!",
+  "phoneNumber": "4445556666",
+  "status": "ACTIVE",
+  "dateOfHire": "2024-02-01",
+  "roleId": 3,
+  "workingHoursRequests": [
+    {
+      "daysOfWeek": ["MONDAY", "WEDNESDAY", "FRIDAY"],
+      "shifts": [
+        {
+          "startTime": "09:00",
+          "endTime": "13:00",
+          "description": "Morning Part-Time"
+        },
+        {
+          "startTime": "14:00",
+          "endTime": "18:00",
+          "description": "Afternoon Part-Time"
+        }
+      ]
+    },
+    {
+      "daysOfWeek": ["SATURDAY"],
+      "shifts": [
+        {
+          "startTime": "10:00",
+          "endTime": "16:00",
+          "description": "Weekend Shift"
+        }
+      ]
+    }
+  ]
+}
+```
+
+#### 3. Manager with Flexible Hours
+```json
+{
+  "firstName": "Mohammed",
+  "lastName": "Al-Ahmad",
+  "password": "ManagerPass789!",
+  "phoneNumber": "7778889999",
+  "status": "ACTIVE",
+  "dateOfHire": "2024-01-01",
+  "roleId": 1,
+  "workingHoursRequests": [
+    {
+      "daysOfWeek": ["MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY"],
+      "shifts": [
+        {
+          "startTime": "07:00",
+          "endTime": "15:00",
+          "description": "Early Shift"
+        }
+      ]
+    },
+    {
+      "daysOfWeek": ["SATURDAY"],
+      "shifts": [
+        {
+          "startTime": "09:00",
+          "endTime": "13:00",
+          "description": "Weekend Management"
+        }
+      ]
+    }
+  ]
+}
+```
+
+### Query Parameters
+
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `language` | String | No | "ar" | Language code (ar/en) |
+
+### Headers Required
+
+```
+Authorization: Bearer YOUR_JWT_TOKEN
+Content-Type: application/json
+```
+
+---
+
 ## 📝 Field Descriptions
 
 ### Purchase Order Fields
@@ -789,6 +949,34 @@ Content-Type: application/json
 | `address` | String | No | Customer address | "Midan, Damascus, Syria" |
 | `notes` | String | No | Additional notes | "Regular customer" |
 
+### Employee Fields
+
+| Field | Type | Required | Description | Example |
+|-------|------|----------|-------------|---------|
+| `firstName` | String | Yes | Employee's first name | "John" |
+| `lastName` | String | Yes | Employee's last name | "Doe" |
+| `password` | String | Yes | Employee's password (must meet security requirements) | "Password!1" |
+| `phoneNumber` | String | No | Employee's phone number | "1234567890" |
+| `status` | UserStatus | No | Employee's status (default: ACTIVE) | "ACTIVE", "INACTIVE" |
+| `dateOfHire` | LocalDate | No | Employee's hire date (YYYY-MM-DD) | "2024-01-15" |
+| `roleId` | Long | No | Role ID for the employee | 1, 2, 3 |
+| `workingHoursRequests` | List | No | Working hours configuration | Array of working hours |
+
+#### Working Hours Request Fields
+
+| Field | Type | Required | Description | Example |
+|-------|------|----------|-------------|---------|
+| `daysOfWeek` | List<DayOfWeek> | Yes | Days to apply the same working hours | ["MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY"] |
+| `shifts` | List<WorkShiftDTO> | Yes | Shifts to apply to specified days | Array of shift objects |
+
+#### Work Shift Fields
+
+| Field | Type | Required | Description | Example |
+|-------|------|----------|-------------|---------|
+| `startTime` | LocalTime | Yes | Start time of the shift (HH:mm) | "09:00" |
+| `endTime` | LocalTime | Yes | End time of the shift (HH:mm) | "17:00" |
+| `description` | String | No | Description of the shift | "Regular Shift" |
+
 ---
 
 ## ✅ Validation Rules
@@ -874,6 +1062,22 @@ Content-Type: application/json
 - **address**: Optional string
 - **notes**: Optional string
 
+### Employee Validation
+
+- **firstName**: Must not be blank
+- **lastName**: Must not be blank
+- **password**: Must meet password security requirements (minimum length, complexity)
+- **phoneNumber**: Optional string
+- **status**: Must be either "ACTIVE" or "INACTIVE" (default: ACTIVE)
+- **dateOfHire**: Must be a valid date in YYYY-MM-DD format
+- **roleId**: Must exist in database (if provided)
+- **workingHoursRequests**: Optional array of working hours configurations
+- **workingHoursRequests[].daysOfWeek**: Must contain valid day names (MONDAY, TUESDAY, etc.)
+- **workingHoursRequests[].shifts**: Must contain at least one shift
+- **workingHoursRequests[].shifts[].startTime**: Must be valid time in HH:mm format
+- **workingHoursRequests[].shifts[].endTime**: Must be valid time in HH:mm format and after startTime
+- **workingHoursRequests[].shifts[].description**: Optional string
+
 ---
 
 ## 🚨 Common Error Scenarios
@@ -919,6 +1123,19 @@ Content-Type: application/json
 | Invalid discount value | 400 | Discount exceeds limits | Use valid discount value |
 | Missing debt due date | 400 | Credit sale without due date | Add debt due date for credit sales |
 | Invalid payment amount | 400 | Payment amount validation failed | Use valid payment amount |
+
+### Employee Errors
+
+| Error | Status | Cause | Solution |
+|-------|--------|-------|----------|
+| Invalid password format | 400 | Password doesn't meet security requirements | Use strong password with required criteria |
+| Invalid role ID | 400 | Role doesn't exist | Use valid role ID |
+| Invalid status | 400 | Status not recognized | Use "ACTIVE" or "INACTIVE" |
+| Invalid date format | 400 | Date not in YYYY-MM-DD format | Use correct date format |
+| Invalid time format | 400 | Time not in HH:mm format | Use correct time format |
+| End time before start time | 400 | Shift end time is before start time | Ensure end time is after start time |
+| Invalid day of week | 400 | Day name not recognized | Use valid day names (MONDAY, TUESDAY, etc.) |
+| Access denied | 403 | Insufficient permissions | Requires PHARMACY_MANAGER role |
 
 ---
 
@@ -1082,6 +1299,44 @@ curl -X POST "http://localhost:8080/api/v1/customers" \
   }'
 ```
 
+#### 8. Create Employee
+```bash
+curl -X POST "http://localhost:8080/api/v1/employees" \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -d '{
+    "firstName": "Ahmed",
+    "lastName": "Al-Hassan",
+    "password": "SecurePass123!",
+    "phoneNumber": "1112223333",
+    "status": "ACTIVE",
+    "dateOfHire": "2024-01-15",
+    "roleId": 2,
+    "workingHoursRequests": [
+      {
+        "daysOfWeek": ["MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY"],
+        "shifts": [
+          {
+            "startTime": "08:00",
+            "endTime": "16:00",
+            "description": "Morning Shift"
+          }
+        ]
+      },
+      {
+        "daysOfWeek": ["SATURDAY"],
+        "shifts": [
+          {
+            "startTime": "10:00",
+            "endTime": "14:00",
+            "description": "Weekend Shift"
+          }
+        ]
+      }
+    ]
+  }'
+```
+
 ### Postman Examples
 
 #### Environment Variables
@@ -1092,7 +1347,9 @@ curl -X POST "http://localhost:8080/api/v1/customers" \
   "supplier_id": "1",
   "customer_id": "1",
   "product_id": "1",
-  "stock_item_id": "1"
+  "stock_item_id": "1",
+  "employee_id": "1",
+  "role_id": "2"
 }
 ```
 
@@ -1102,7 +1359,9 @@ curl -X POST "http://localhost:8080/api/v1/customers" \
   "supplierId": "{{supplier_id}}",
   "customerId": "{{customer_id}}",
   "productId": "{{product_id}}",
-  "stockItemId": "{{stock_item_id}}"
+  "stockItemId": "{{stock_item_id}}",
+  "employeeId": "{{employee_id}}",
+  "roleId": "{{role_id}}"
 }
 ```
 
@@ -1120,6 +1379,7 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 - **Purchase Orders**: PHARMACY_MANAGER or EMPLOYEE
 - **Purchase Invoices**: PHARMACY_MANAGER or EMPLOYEE
 - **Sales**: PHARMACY_MANAGER
+- **Employee Management**: PHARMACY_MANAGER
 
 ### Pharmacy Scoping
 - All operations are automatically scoped to the current user's pharmacy
@@ -1198,6 +1458,64 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
       "quantity": 2,
       "unitPrice": 800.0,
       "subTotal": 1600.0
+    }
+  ],
+  "createdAt": "2024-01-15T10:30:00"
+}
+```
+
+### Successful Employee Response
+```json
+{
+  "id": 1,
+  "firstName": "Ahmed",
+  "lastName": "Al-Hassan",
+  "phoneNumber": "1112223333",
+  "status": "ACTIVE",
+  "dateOfHire": "2024-01-15",
+  "roleId": 2,
+  "workingHours": [
+    {
+      "id": 1,
+      "dayOfWeek": "MONDAY",
+      "startTime": "08:00",
+      "endTime": "16:00",
+      "description": "Morning Shift"
+    },
+    {
+      "id": 2,
+      "dayOfWeek": "TUESDAY",
+      "startTime": "08:00",
+      "endTime": "16:00",
+      "description": "Morning Shift"
+    },
+    {
+      "id": 3,
+      "dayOfWeek": "WEDNESDAY",
+      "startTime": "08:00",
+      "endTime": "16:00",
+      "description": "Morning Shift"
+    },
+    {
+      "id": 4,
+      "dayOfWeek": "THURSDAY",
+      "startTime": "08:00",
+      "endTime": "16:00",
+      "description": "Morning Shift"
+    },
+    {
+      "id": 5,
+      "dayOfWeek": "FRIDAY",
+      "startTime": "08:00",
+      "endTime": "16:00",
+      "description": "Morning Shift"
+    },
+    {
+      "id": 6,
+      "dayOfWeek": "SATURDAY",
+      "startTime": "10:00",
+      "endTime": "14:00",
+      "description": "Weekend Shift"
     }
   ],
   "createdAt": "2024-01-15T10:30:00"

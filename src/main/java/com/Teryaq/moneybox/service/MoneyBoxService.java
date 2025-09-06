@@ -220,45 +220,24 @@ public class MoneyBoxService extends BaseSecurityService {
             throw new ConflictException("Transaction amount cannot be zero");
         }
         
-        // Convert amount to SYP if it's not already in SYP
-        BigDecimal amountInSYP = amount;
-        Currency originalCurrency = currency != null ? currency : Currency.SYP;
-        
-        if (!Currency.SYP.equals(originalCurrency)) {
-            try {
-                amountInSYP = exchangeRateService.convertToSYP(amount, originalCurrency);
-                log.info("Converted {} {} to {} SYP", amount, originalCurrency, amountInSYP);
-            } catch (Exception e) {
-                log.warn("Failed to convert currency: {}. Using original amount.", e.getMessage());
-                // Fallback: use original amount
-                amountInSYP = amount;
-            }
-        }
-        
-        BigDecimal balanceBefore = moneyBox.getCurrentBalance();
-        BigDecimal newBalance = balanceBefore.add(amountInSYP);
-        
         // Use more descriptive transaction types for manual transactions
-        TransactionType transactionType = (amountInSYP.compareTo(BigDecimal.ZERO) > 0) 
+        TransactionType transactionType = (amount.compareTo(BigDecimal.ZERO) > 0) 
             ? TransactionType.CASH_DEPOSIT 
             : TransactionType.CASH_WITHDRAWAL;
         
-        // Update money box balance
-        moneyBox.setCurrentBalance(newBalance);
-        MoneyBox savedMoneyBox = moneyBoxRepository.save(moneyBox);
-        
-        // Create transaction record with descriptive description using enhanced audit service
-        String transactionDescription = (amountInSYP.compareTo(BigDecimal.ZERO) > 0) 
+        // Create transaction record FIRST using enhanced audit service
+        // The audit service will handle balance calculation and moneyBox update
+        String transactionDescription = (amount.compareTo(BigDecimal.ZERO) > 0) 
             ? "Manual cash deposit: " + (description != null ? description : "Cash added to money box")
             : "Manual cash withdrawal: " + (description != null ? description : "Cash removed from money box");
         
-        enhancedAuditService.recordFinancialOperation(
-            savedMoneyBox.getId(),
+        MoneyBoxTransaction savedTransaction = enhancedAuditService.recordFinancialOperation(
+            moneyBox.getId(),
             transactionType,
             amount,
-            originalCurrency,
+            currency != null ? currency : Currency.SYP,
             transactionDescription,
-            String.valueOf(savedMoneyBox.getId()),
+            String.valueOf(moneyBox.getId()),
             "MANUAL_TRANSACTION",
             getCurrentUser().getId(),
             getCurrentUser().getClass().getSimpleName(),
@@ -266,12 +245,16 @@ public class MoneyBoxService extends BaseSecurityService {
             Map.of("pharmacyId", currentPharmacyId, "description", description != null ? description : "")
         );
         
-        log.info("Manual {} transaction added. New balance for pharmacy {}: {}", 
-                transactionType, currentPharmacyId, newBalance);
+        // Get updated moneyBox after transaction recording
+        MoneyBox updatedMoneyBox = moneyBoxRepository.findById(moneyBox.getId())
+            .orElseThrow(() -> new RuntimeException("MoneyBox not found after transaction"));
         
-        MoneyBoxResponseDTO response = MoneyBoxMapper.toResponseDTO(savedMoneyBox);
-        response.setTotalBalanceInUSD(calculateUSDBalance(savedMoneyBox.getCurrentBalance()));
-        response.setTotalBalanceInEUR(calculateEURBalance(savedMoneyBox.getCurrentBalance()));
+        log.info("Manual {} transaction added. New balance for pharmacy {}: {}", 
+                transactionType, currentPharmacyId, updatedMoneyBox.getCurrentBalance());
+        
+        MoneyBoxResponseDTO response = MoneyBoxMapper.toResponseDTO(updatedMoneyBox);
+        response.setTotalBalanceInUSD(calculateUSDBalance(updatedMoneyBox.getCurrentBalance()));
+        response.setTotalBalanceInEUR(calculateEURBalance(updatedMoneyBox.getCurrentBalance()));
         
         // Set current exchange rates
         setExchangeRates(response);
@@ -311,15 +294,14 @@ public class MoneyBoxService extends BaseSecurityService {
         BigDecimal balanceBefore = moneyBox.getCurrentBalance();
         BigDecimal difference = actualCashCount.subtract(balanceBefore);
         
-        // Update money box
+        // Update reconciliation fields
         moneyBox.setReconciledBalance(actualCashCount);
         moneyBox.setLastReconciled(LocalDateTime.now());
         
-        // If there's a difference, create adjustment transaction
+        // If there's a difference, create adjustment transaction FIRST
         if (difference.compareTo(BigDecimal.ZERO) != 0) {
-            moneyBox.setCurrentBalance(actualCashCount);
-            
             // Create adjustment transaction record using enhanced audit service
+            // The audit service will handle balance calculation and moneyBox update
             enhancedAuditService.recordFinancialOperation(
                 moneyBox.getId(),
                 TransactionType.ADJUSTMENT,
@@ -335,6 +317,7 @@ public class MoneyBoxService extends BaseSecurityService {
             );
         }
         
+        // Save the reconciliation fields (balance will be updated by the transaction if there was a difference)
         MoneyBox savedMoneyBox = moneyBoxRepository.save(moneyBox);
         log.info("Cash reconciled for pharmacy: {}", currentPharmacyId);
         

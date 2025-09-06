@@ -29,6 +29,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import jakarta.validation.constraints.DecimalMin;
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -197,19 +198,25 @@ public class MoneyBoxController {
             @Min(0) @RequestParam(defaultValue = "0") int page,
             @Parameter(description = "Number of items per page (1-100)", example = "10") 
             @Min(1) @Max(100) @RequestParam(defaultValue = "10") int size,
-            @Parameter(description = "Start date (ISO format, optional)",example = "2024-01-01T00:00:00") 
-            @RequestParam(required = false) LocalDateTime startDate,
-            @Parameter(description = "End date (ISO format, optional)",example = "2024-01-01T00:00:00") 
-            @RequestParam(required = false) LocalDateTime endDate,
+            @Parameter(description = "Start date", example = "2024-01-01") 
+            @RequestParam(required = false) LocalDate startDate,
+            @Parameter(description = "End date", example = "2024-01-31") 
+            @RequestParam(required = false) LocalDate endDate,
             @Parameter(description = "Transaction type (optional)") 
             @RequestParam(required = false) String transactionType) {
         
         PaginationDTO<MoneyBoxTransactionResponseDTO> transactions;
         
         if (startDate != null && endDate != null && transactionType != null) {
-            transactions = moneyBoxService.getAllTransactionsPaginated(startDate, endDate, transactionType, page, size);
+            // Convert LocalDate to LocalDateTime for the full day range
+            LocalDateTime startDateTime = startDate.atStartOfDay();
+            LocalDateTime endDateTime = endDate.atTime(23, 59, 59);
+            transactions = moneyBoxService.getAllTransactionsPaginated(startDateTime, endDateTime, transactionType, page, size);
         } else if (startDate != null && endDate != null) {
-            transactions = moneyBoxService.getAllTransactionsPaginated(startDate, endDate, page, size);
+            // Convert LocalDate to LocalDateTime for the full day range
+            LocalDateTime startDateTime = startDate.atStartOfDay();
+            LocalDateTime endDateTime = endDate.atTime(23, 59, 59);
+            transactions = moneyBoxService.getAllTransactionsPaginated(startDateTime, endDateTime, page, size);
         } else if (transactionType != null) {
             transactions = moneyBoxService.getAllTransactionsPaginated(transactionType, page, size);
         } else {

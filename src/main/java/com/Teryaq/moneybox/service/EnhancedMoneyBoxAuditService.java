@@ -96,14 +96,27 @@ public class EnhancedMoneyBoxAuditService {
             MoneyBox moneyBox = moneyBoxRepository.findById(moneyBoxId)
                     .orElseThrow(() -> new RuntimeException("MoneyBox not found with ID: " + moneyBoxId));
             
+            // Update the moneyBox balance BEFORE creating the transaction
+            moneyBox.setCurrentBalance(newBalance);
+            moneyBox = moneyBoxRepository.save(moneyBox);
+            
             // Create enhanced MoneyBoxTransaction
             MoneyBoxTransaction transaction = new MoneyBoxTransaction();
             transaction.setMoneyBox(moneyBox);
             transaction.setTransactionType(transactionType);
             
-            // Store the correct sign for the transaction amount
-            BigDecimal transactionAmount = isExpenseTransaction(transactionType) ? 
-                convertedAmount.negate() : convertedAmount;
+            // Store the transaction amount with correct sign for display purposes
+            BigDecimal transactionAmount;
+            if (transactionType == TransactionType.CASH_DEPOSIT || transactionType == TransactionType.CASH_WITHDRAWAL) {
+                // For manual transactions, store the amount as-is (already has correct sign)
+                transactionAmount = convertedAmount;
+            } else if (isExpenseTransaction(transactionType)) {
+                // For expense transactions, store as negative
+                transactionAmount = convertedAmount.negate();
+            } else {
+                // For revenue transactions, store as positive
+                transactionAmount = convertedAmount;
+            }
             transaction.setAmount(transactionAmount);
             
             transaction.setBalanceBefore(currentBalance);
@@ -438,11 +451,17 @@ public class EnhancedMoneyBoxAuditService {
     }
     
     private BigDecimal calculateNewBalance(BigDecimal currentBalance, BigDecimal amount, TransactionType transactionType) {
-        // Implement balance calculation logic based on transaction type
-        if (isRevenueTransaction(transactionType)) {
+        // For manual transactions (CASH_DEPOSIT/CASH_WITHDRAWAL), the amount already has the correct sign
+        // For other transaction types, we need to determine the sign based on transaction type
+        if (transactionType == TransactionType.CASH_DEPOSIT || transactionType == TransactionType.CASH_WITHDRAWAL) {
+            // Manual transactions: amount already has correct sign
             return currentBalance.add(amount);
+        } else if (isRevenueTransaction(transactionType)) {
+            // Revenue transactions: always add positive amount
+            return currentBalance.add(amount.abs());
         } else if (isExpenseTransaction(transactionType)) {
-            return currentBalance.subtract(amount);
+            // Expense transactions: always subtract positive amount
+            return currentBalance.subtract(amount.abs());
         }
         return currentBalance;
     }
