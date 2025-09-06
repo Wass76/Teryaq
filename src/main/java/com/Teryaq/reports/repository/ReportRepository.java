@@ -249,6 +249,7 @@ public interface ReportRepository extends JpaRepository<SaleInvoice, Long> {
     /**
      * Get top 10 products monthly
      * Returns the top 10 most sold products in the pharmacy for the specified month
+     * Includes profit calculations and currency information
      */
     @Query("SELECT " +
            "sii.stockItem.productId as productId, " +
@@ -256,13 +257,19 @@ public interface ReportRepository extends JpaRepository<SaleInvoice, Long> {
            "sii.stockItem.productName as productName, " +
            "SUM(sii.quantity) as totalQuantity, " +
            "SUM(sii.subTotal) as totalRevenue, " +
-           "COUNT(DISTINCT si) as invoiceCount " +
+           "AVG(sii.unitPrice) as averagePrice, " +
+           "SUM(CASE " +
+           "  WHEN sii.stockItem.actualPurchasePrice IS NULL THEN sii.subTotal " +
+           "  ELSE (sii.subTotal - (sii.quantity * sii.stockItem.actualPurchasePrice)) " +
+           "END) as totalProfit, " +
+           "COUNT(DISTINCT si) as invoiceCount, " +
+           "si.currency as currency " +
            "FROM SaleInvoiceItem sii " +
            "JOIN sii.saleInvoice si " +
            "WHERE si.pharmacy.id = :pharmacyId " +
            "AND DATE(si.invoiceDate) BETWEEN :startDate AND :endDate " +
            "AND si.status = 'SOLD' " +
-           "GROUP BY sii.stockItem.productId, sii.stockItem.productType, sii.stockItem.productName " +
+           "GROUP BY sii.stockItem.productId, sii.stockItem.productType, sii.stockItem.productName, si.currency " +
            "ORDER BY totalQuantity DESC")
     List<Map<String, Object>> getTop10Products(
             @Param("pharmacyId") Long pharmacyId,

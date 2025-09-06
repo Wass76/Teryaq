@@ -1,9 +1,6 @@
 package com.Teryaq.product.service;
 
-import com.Teryaq.product.dto.MProductDTORequest;
-import com.Teryaq.product.dto.MProductDTOResponse;
-import com.Teryaq.product.dto.ProductMultiLangDTOResponse;
-import com.Teryaq.product.dto.SearchDTORequest;
+import com.Teryaq.product.dto.*;
 import com.Teryaq.product.Enum.ProductType;
 import com.Teryaq.product.repo.StockItemRepo;
 import com.Teryaq.product.entity.MasterProduct;
@@ -19,7 +16,6 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import com.Teryaq.product.dto.PaginationDTO;
 import com.Teryaq.language.LanguageRepo;
 import com.Teryaq.language.Language;
 import com.Teryaq.user.service.BaseSecurityService;
@@ -133,6 +129,37 @@ public class MasterProductService extends BaseSecurityService {
                     return translation;
                 })
                 .collect(java.util.stream.Collectors.toSet());
+            masterProductTranslationRepo.saveAll(translations);
+            saved.setTranslations(translations);
+        }
+
+        return masterProductMapper.toResponse(saved, lang);
+    }
+
+    public MProductDTOResponse insertMasterProduct(PharmaceuticalProductRequest requestDTO, String lang) {
+        if(masterProductRepo.findByBarcode(requestDTO.getBarcode()).isPresent()) {
+            throw new ConflictException("Barcode already exists");
+        }
+        MasterProduct product = masterProductMapper.toEntity(requestDTO);
+        MasterProduct saved = masterProductRepo.save(product);
+
+        // حفظ الترجمات إذا وجدت
+        if (requestDTO.getTranslations() != null && !requestDTO.getTranslations().isEmpty()) {
+            Set<MasterProductTranslation> translations = requestDTO.getTranslations().stream()
+                    .map(t -> {
+                        Language language = null;
+                        if (t.getLang() != null) {
+                            language = languageRepo.findByCode(t.getLang())
+                                    .orElseThrow(() -> new EntityNotFoundException("Language not found: " + t.getLang()));
+                        }
+                        MasterProductTranslation translation = new MasterProductTranslation();
+                        translation.setTradeName(t.getTradeName());
+                        translation.setScientificName(t.getScientificName());
+                        translation.setProduct(saved);
+                        translation.setLanguage(language);
+                        return translation;
+                    })
+                    .collect(java.util.stream.Collectors.toSet());
             masterProductTranslationRepo.saveAll(translations);
             saved.setTranslations(translations);
         }

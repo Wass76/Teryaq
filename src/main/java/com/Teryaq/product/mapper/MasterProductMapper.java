@@ -3,6 +3,7 @@ package com.Teryaq.product.mapper;
 import com.Teryaq.product.Enum.ProductType;
 import com.Teryaq.product.dto.MProductDTORequest;
 import com.Teryaq.product.dto.MProductDTOResponse;
+import com.Teryaq.product.dto.PharmaceuticalProductRequest;
 import com.Teryaq.product.dto.ProductMultiLangDTOResponse;
 //import com.Teryaq.product.dto.MProductTranslationDTOResponse;
 import com.Teryaq.product.entity.*;
@@ -44,6 +45,29 @@ public class MasterProductMapper {
 
         if (dto.getTypeId() != null)
             product.setType(typeRepo.findById(dto.getTypeId()).orElse(null));
+
+        if (dto.getFormId() != null)
+            product.setForm(formRepo.findById(dto.getFormId()).orElse(null));
+
+        if (dto.getManufacturerId() != null)
+            product.setManufacturer(manufacturerRepo.findById(dto.getManufacturerId()).orElse(null));
+
+        return product;
+    }
+
+    public MasterProduct toEntity(PharmaceuticalProductRequest dto) {
+        MasterProduct product = new MasterProduct();
+
+        product.setTradeName(dto.getTradeName());
+        product.setScientificName(dto.getScientificName());
+        product.setConcentration(dto.getConcentration());
+        product.setSize(dto.getSize());
+        product.setRefPurchasePrice(dto.getRefPurchasePrice());
+        product.setRefSellingPrice(dto.getRefSellingPrice());
+        product.setNotes(dto.getNotes());
+        product.setTax(dto.getTax());
+        product.setBarcode(dto.getBarcode());
+        product.setRequiresPrescription(false);
 
         if (dto.getFormId() != null)
             product.setForm(formRepo.findById(dto.getFormId()).orElse(null));

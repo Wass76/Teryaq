@@ -315,15 +315,25 @@ public class MoneyBoxService extends BaseSecurityService {
                 null, null, null,
                 Map.of("pharmacyId", currentPharmacyId, "actualCount", actualCashCount, "expectedCount", balanceBefore, "difference", difference)
             );
+            
+            // IMPORTANT: After the audit service runs, we need to fetch the updated MoneyBox
+            // and set the balance to the exact reconciled amount
+            MoneyBox updatedMoneyBox = moneyBoxRepository.findById(moneyBox.getId())
+                .orElseThrow(() -> new RuntimeException("MoneyBox not found after transaction"));
+            updatedMoneyBox.setCurrentBalance(actualCashCount);
+            updatedMoneyBox.setReconciledBalance(actualCashCount);
+            updatedMoneyBox.setLastReconciled(LocalDateTime.now());
+            moneyBox = moneyBoxRepository.save(updatedMoneyBox);
+        } else {
+            // No difference, just save the reconciliation fields
+            MoneyBox savedMoneyBox = moneyBoxRepository.save(moneyBox);
+            moneyBox = savedMoneyBox;
         }
-        
-        // Save the reconciliation fields (balance will be updated by the transaction if there was a difference)
-        MoneyBox savedMoneyBox = moneyBoxRepository.save(moneyBox);
         log.info("Cash reconciled for pharmacy: {}", currentPharmacyId);
         
-        MoneyBoxResponseDTO response = MoneyBoxMapper.toResponseDTO(savedMoneyBox);
-        response.setTotalBalanceInUSD(calculateUSDBalance(savedMoneyBox.getCurrentBalance()));
-        response.setTotalBalanceInEUR(calculateEURBalance(savedMoneyBox.getCurrentBalance()));
+        MoneyBoxResponseDTO response = MoneyBoxMapper.toResponseDTO(moneyBox);
+        response.setTotalBalanceInUSD(calculateUSDBalance(moneyBox.getCurrentBalance()));
+        response.setTotalBalanceInEUR(calculateEURBalance(moneyBox.getCurrentBalance()));
         
         // Set current exchange rates
         setExchangeRates(response);

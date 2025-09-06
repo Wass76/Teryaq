@@ -2,6 +2,7 @@ package com.Teryaq.reports.dto.response;
 
 import com.Teryaq.product.Enum.ProductType;
 import com.Teryaq.reports.enums.Language;
+import com.Teryaq.user.Enum.Currency;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -24,6 +25,7 @@ public class ProductReportResponse {
     private Long pharmacyId;
     private LocalDateTime generatedAt;
     private Language language;
+    private Currency currency;
     
     // Report period
     private LocalDate startDate;

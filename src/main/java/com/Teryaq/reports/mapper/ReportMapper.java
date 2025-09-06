@@ -233,11 +233,11 @@ public class ReportMapper {
                 .productId(getLongValue(raw.get("productId"), 0L))
                 .productType(convertToProductType(raw.get("productType")))
                 .productName(getStringValue(raw.get("productName"), "Unknown"))
-                .totalSales(getLongValue(raw.get("totalSales"), 0L))
+                .totalSales(getLongValue(raw.get("invoiceCount"), 0L)) // Using invoiceCount as totalSales
                 .totalRevenue(getDoubleValue(raw.get("totalRevenue"), 0.0))
                 .totalQuantity(getIntegerValue(raw.get("totalQuantity"), 0))
                 .averagePrice(getDoubleValue(raw.get("averagePrice"), 0.0))
-                .profit(getDoubleValue(raw.get("profit"), 0.0))
+                .profit(getDoubleValue(raw.get("totalProfit"), 0.0))
                 .profitMargin(getDoubleValue(raw.get("profitMargin"), 0.0))
                 .build();
     }

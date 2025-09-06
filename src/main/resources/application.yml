@@ -2,19 +2,37 @@ server:
   port: 3000
 
 spring:
+  # File upload configuration (updated for pharmaceutical import)
+  servlet:
+    multipart:
+      max-file-size: 50MB
+      max-request-size: 50MB
+      enabled: true
+
   management:
     endpoints:
       web:
         exposure:
-          include=*:
+          include: "*"
+
   application:
     name: Teryaq
+
   datasource:
     url: jdbc:postgresql://localhost:5432/teryaq
     username: postgres
     password: password
     driver-class-name: org.postgresql.Driver
     name: teryaq
+
+    # Connection pool settings for better performance
+    hikari:
+      maximum-pool-size: 20
+      minimum-idle: 5
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+
   flyway:
     enabled: false
     locations: classpath:/db/migration # This is the default path Flyway looks in
@@ -24,10 +42,13 @@ spring:
     baseline-on-migrate: true
     baseline-version: 8
     validate-on-migrate: true
-#    init-sql: SET search_path TO public;
+  #    init-sql: SET search_path TO public;
+
   jpa:
     hibernate:
-      ddl-auto: update
+      ddl-auto: create
+      naming:
+        physical-strategy: org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl
     defer-datasource-initialization: false
     open-in-view: true
     properties:
@@ -36,9 +57,108 @@ spring:
         globally_quoted_identifiers: true
         globally_quoted_identifiers_skip_column_definitions: true
         enable_lazy_load_no_trans: true
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        jdbc:
+          batch_size: 50
+        order_inserts: true
+        order_updates: true
+        batch_versioned_data: true
     show-sql: true
 
-
-
-
+# JWT Configuration
 jwtKey: 7402bb3c24c35f15d1a7f1422078d9c1a4d9ebf1a276ff01ac84e6407625532e
+
+# Pharmaceutical import service configuration
+pharmaceutical:
+  # Path to Python scripts directory (Docker container path)
+  python:
+    script:
+      path: ${PYTHON_SCRIPT_PATH:/app/scripts/}
+
+  # Temporary directory for file processing (Docker container path)
+  temp:
+    dir: ${TEMP_DIR:/tmp/pharmaceutical/}
+
+  # Import settings
+  import:
+    # Maximum number of products to process in one batch
+    batch-size: ${IMPORT_BATCH_SIZE:1000}
+
+    # Timeout for Python script execution (in seconds)
+    script-timeout: ${SCRIPT_TIMEOUT:300}
+
+    # Enable/disable validation
+    validation:
+      enabled: ${VALIDATION_ENABLED:true}
+
+    # Database connection for Python script (PostgreSQL format)
+    database:
+      # Connection string format for Python script
+      connection-string: ${DB_CONNECTION_STRING:postgresql://postgres:password@localhost:5432/teryaq}
+# Management endpoints (enhanced)
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,database,pharmaceutical
+  endpoint:
+    health:
+      show-details: always
+  health:
+    db:
+      enabled: true
+
+# Custom application properties for pharmaceutical service
+app:
+  # Existing entity mappings (adjust table names as per your database)
+  entities:
+    manufacturer:
+      table-name: manufacturers
+      id-column: id
+      name-column: name
+
+    form:
+      table-name: forms
+      id-column: id
+      name-column: name
+
+    master-product:
+      table-name: master_product
+      id-column: id
+      trade-name-column: trade_name
+      scientific-name-column: scientific_name
+
+  # Translation settings
+  translation:
+    enabled: ${TRANSLATION_ENABLED:true}
+    default-language: ar
+
+  # Validation settings
+  validation:
+    barcode:
+      unique: true
+      length: 13
+
+    prices:
+      min-value: 0.0
+      max-value: 999999.99
+
+# Docker Compose specific configurations
+---
+spring:
+  config:
+    activate:
+      on-profile: docker
+
+  datasource:
+    # Docker Compose service names
+    url: jdbc:postgresql://postgres:5432/teryaq
+    username: postgres
+    password: password
+
+pharmaceutical:
+  import:
+    database:
+      # Docker Compose database connection
+      connection-string: postgresql://postgres:password@postgres:5432/teryaq
+

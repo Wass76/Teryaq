@@ -339,6 +339,66 @@ public class ReportService extends BaseSecurityService {
             .collect(Collectors.toList());
     }
     
+    /**
+     * Process currency-aware product data and convert to target currency
+     * Handles product report data with profit calculations
+     */
+    private List<Map<String, Object>> processCurrencyAwareProductData(List<Map<String, Object>> rawProducts, Currency targetCurrency) {
+        return rawProducts.stream()
+            .map(product -> {
+                // Handle null values safely
+                Object currencyObj = product.get("currency");
+                Object revenueObj = product.get("totalRevenue");
+                Object profitObj = product.get("totalProfit");
+                Object averagePriceObj = product.get("averagePrice");
+                Object productIdObj = product.get("productId");
+                Object productTypeObj = product.get("productType");
+                Object productNameObj = product.get("productName");
+                Object quantityObj = product.get("totalQuantity");
+                Object invoiceCountObj = product.get("invoiceCount");
+                
+                // Skip this product if essential fields are null
+                if (currencyObj == null || revenueObj == null || productIdObj == null) {
+                    log.warn("Skipping product with null essential fields: {}", product);
+                    return null;
+                }
+                
+                Currency currency = Currency.valueOf(currencyObj.toString());
+                BigDecimal revenueInSYP = new BigDecimal(revenueObj.toString());
+                BigDecimal profitInSYP = profitObj != null ? new BigDecimal(profitObj.toString()) : BigDecimal.ZERO;
+                BigDecimal averagePriceInSYP = averagePriceObj != null ? new BigDecimal(averagePriceObj.toString()) : BigDecimal.ZERO;
+                
+                // Convert to SYP for consistent calculation
+                BigDecimal revenueConverted = convertToSYP(revenueInSYP, currency);
+                BigDecimal profitConverted = convertToSYP(profitInSYP, currency);
+                BigDecimal averagePriceConverted = convertToSYP(averagePriceInSYP, currency);
+                
+                // Convert from SYP to target currency for display
+                BigDecimal finalRevenue = convertFromSYP(revenueConverted, targetCurrency);
+                BigDecimal finalProfit = convertFromSYP(profitConverted, targetCurrency);
+                BigDecimal finalAveragePrice = convertFromSYP(averagePriceConverted, targetCurrency);
+                
+                // Calculate profit margin
+                Double profitMargin = finalRevenue.compareTo(BigDecimal.ZERO) > 0 ? 
+                    finalProfit.divide(finalRevenue, 4, BigDecimal.ROUND_HALF_UP).multiply(BigDecimal.valueOf(100)).doubleValue() : 0.0;
+                
+                return Map.of(
+                    "productId", productIdObj,
+                    "productType", productTypeObj != null ? productTypeObj : "UNKNOWN",
+                    "productName", productNameObj != null ? productNameObj.toString() : "Unknown Product",
+                    "totalQuantity", quantityObj != null ? quantityObj : 0,
+                    "totalRevenue", finalRevenue,
+                    "averagePrice", finalAveragePrice,
+                    "totalProfit", finalProfit,
+                    "profitMargin", profitMargin,
+                    "invoiceCount", invoiceCountObj != null ? invoiceCountObj : 0,
+                    "currency", targetCurrency.name()
+                );
+            })
+            .filter(Objects::nonNull) // Remove null entries
+            .collect(Collectors.toList());
+    }
+    
     // ============================================================================
     // PURCHASE REPORTS
     // ============================================================================
@@ -576,17 +636,22 @@ public class ReportService extends BaseSecurityService {
     /**
      * Get Top 10 Products Monthly
      * Returns the top 10 most sold products in the pharmacy for the specified month
+     * Includes currency conversion and profit calculations
      */
-    public ProductReportResponse getTop10Products(LocalDate startDate, LocalDate endDate, Language language) {
-        Long pharmacyId = getCurrentUserPharmacyId();
+    public ProductReportResponse getTop10Products(Long pharmacyId, LocalDate startDate, LocalDate endDate, Currency currency, Language language) {
         log.info("Generating top 10 products report for pharmacy: {}, period: {} to {}", pharmacyId, startDate, endDate);
         
         try {
-            // Get top 10 products
+            // Get top products with currency information
             List<Map<String, Object>> productsRaw = reportRepository.getTop10Products(pharmacyId, startDate, endDate);
             
-            // Convert to DTOs using mapper
-            List<ProductReportResponse.ProductData> products = reportMapper.toProductDataList(productsRaw);
+            // Process currency-aware product data
+            List<Map<String, Object>> processedProducts = processCurrencyAwareProductData(productsRaw, currency);
+            
+            // Limit to top 10 and convert to DTOs using mapper
+            List<ProductReportResponse.ProductData> products = reportMapper.toProductDataList(
+                processedProducts.stream().limit(10).collect(Collectors.toList())
+            );
             
             // Build response
             ProductReportResponse response = new ProductReportResponse();
@@ -594,6 +659,7 @@ public class ReportService extends BaseSecurityService {
             response.setPharmacyId(pharmacyId);
             response.setStartDate(startDate);
             response.setEndDate(endDate);
+            response.setCurrency(currency);
             response.setLanguage(language);
             response.setGeneratedAt(LocalDateTime.now());
             response.setProducts(products);
