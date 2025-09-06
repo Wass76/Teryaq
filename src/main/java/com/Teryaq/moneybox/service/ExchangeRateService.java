@@ -1,22 +1,21 @@
 package com.Teryaq.moneybox.service;
 
+import com.Teryaq.moneybox.repository.ExchangeRateRepository;
+import com.Teryaq.moneybox.entity.ExchangeRate;
+import com.Teryaq.moneybox.dto.ExchangeRateResponseDTO;
+import com.Teryaq.moneybox.dto.CurrencyConversionResponseDTO;
+import com.Teryaq.moneybox.mapper.ExchangeRateMapper;
+import com.Teryaq.user.Enum.Currency;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
-
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
-import com.Teryaq.moneybox.dto.CurrencyConversionResponseDTO;
-import com.Teryaq.moneybox.dto.ExchangeRateResponseDTO;
-import com.Teryaq.moneybox.entity.ExchangeRate;
-import com.Teryaq.moneybox.mapper.ExchangeRateMapper;
-import com.Teryaq.moneybox.repository.ExchangeRateRepository;
-import com.Teryaq.user.Enum.Currency;
-
-import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
@@ -27,6 +26,20 @@ public class ExchangeRateService {
     // Default exchange rates for production fallback
     private static final BigDecimal DEFAULT_USD_TO_SYP_RATE = new BigDecimal("10000");
     private static final BigDecimal DEFAULT_EUR_TO_SYP_RATE = new BigDecimal("11000");
+    
+    /**
+     * Get default USD to SYP exchange rate
+     */
+    public static BigDecimal getDefaultUsdToSypRate() {
+        return DEFAULT_USD_TO_SYP_RATE;
+    }
+    
+    /**
+     * Get default EUR to SYP exchange rate
+     */
+    public static BigDecimal getDefaultEurToSypRate() {
+        return DEFAULT_EUR_TO_SYP_RATE;
+    }
     
     /**
      * Get current exchange rate for currency pair
@@ -92,14 +105,7 @@ public class ExchangeRateService {
         }
         
         BigDecimal rate = getExchangeRate(fromCurrency, toCurrency);
-        BigDecimal result = amount.multiply(rate);
-        
-        // For small amounts (like SYP to USD), use higher precision
-        if (fromCurrency == Currency.SYP && (toCurrency == Currency.USD || toCurrency == Currency.EUR)) {
-            return result.setScale(6, RoundingMode.HALF_UP);
-        }
-        
-        return result.setScale(2, RoundingMode.HALF_UP);
+        return amount.multiply(rate).setScale(2, RoundingMode.HALF_UP);
     }
     
     /**
@@ -188,10 +194,12 @@ public class ExchangeRateService {
         }
         
         try {
-            // Deactivate any existing active rates for this currency pair
+            // Get old rate for audit trail
+            BigDecimal oldRateValue = null;
             Optional<ExchangeRate> existingRate = exchangeRateRepository.findByFromCurrencyAndToCurrencyAndIsActiveTrue(fromCurrency, toCurrency);
             if (existingRate.isPresent()) {
                 ExchangeRate oldRate = existingRate.get();
+                oldRateValue = oldRate.getRate();
                 oldRate.setIsActive(false);
                 oldRate.setEffectiveTo(LocalDateTime.now());
                 exchangeRateRepository.save(oldRate);
@@ -208,6 +216,9 @@ public class ExchangeRateService {
             newRate.setNotes(notes);
             
             ExchangeRate savedRate = exchangeRateRepository.save(newRate);
+            
+            // Exchange rate change logged in ExchangeRate entity itself
+            // Audit trail is maintained through the ExchangeRate table
             
             // Automatically generate reverse exchange rate
             generateReverseExchangeRate(fromCurrency, toCurrency, rate, source, notes);
@@ -343,19 +354,4 @@ public class ExchangeRateService {
         
         return ExchangeRateMapper.toConversionResponse(amount, fromCurrency, convertedAmount, toCurrency, rate);
     }
-
-    /**
-     * Get default USD to SYP exchange rate
-     */
-    public static BigDecimal getDefaultUsdToSypRate() {
-        return DEFAULT_USD_TO_SYP_RATE;
-    }
-
-    /**
-     * Get default EUR to SYP exchange rate
-     */
-    public static BigDecimal getDefaultEurToSypRate() {
-        return DEFAULT_EUR_TO_SYP_RATE;
-    }
-
 }

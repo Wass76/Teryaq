@@ -6,7 +6,9 @@ import java.time.LocalDate;
 @Data
 public class PurchaseInvoiceItemDTOResponse {
     private Long id;
+    private Long productId;
     private String productName;
+    private String productType;
     private Integer receivedQty;
     private Integer bonusQty;
     private Double invoicePrice;

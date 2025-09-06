@@ -1,5 +1,7 @@
 package com.Teryaq.purchase.service;
 
+import com.Teryaq.moneybox.enums.TransactionType;
+import com.Teryaq.moneybox.repository.MoneyBoxRepository;
 import com.Teryaq.product.Enum.OrderStatus;
 import com.Teryaq.product.Enum.ProductType;
 import com.Teryaq.product.dto.*;
@@ -27,6 +29,8 @@ import com.Teryaq.user.service.BaseSecurityService;
 import com.Teryaq.utils.exception.ConflictException;
 import com.Teryaq.utils.exception.ResourceNotFoundException;
 import com.Teryaq.moneybox.service.PurchaseIntegrationService;
+import com.Teryaq.moneybox.service.ExchangeRateService;
+import com.Teryaq.moneybox.service.EnhancedMoneyBoxAuditService;
 import jakarta.transaction.Transactional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -36,6 +40,7 @@ import org.springframework.stereotype.Service;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
@@ -56,17 +61,22 @@ public class PurchaseInvoiceService extends BaseSecurityService {
     private final StockItemRepo stockItemRepo;
     private final MasterProductRepo masterProductRepo;
     private final PurchaseIntegrationService purchaseIntegrationService;
+    private final ExchangeRateService exchangeRateService;
+    private final EnhancedMoneyBoxAuditService enhancedAuditService;
+    private final MoneyBoxRepository moneyBoxRepository;
 
     public PurchaseInvoiceService(PurchaseInvoiceRepo purchaseInvoiceRepo,
-                                PurchaseInvoiceItemRepo purchaseInvoiceItemRepo,
-                                PurchaseOrderRepo purchaseOrderRepo,
-                                PharmacyProductRepo pharmacyProductRepo,
-                                SupplierRepository supplierRepository,
-                                PurchaseInvoiceMapper purchaseInvoiceMapper,
-                                StockItemRepo stockItemRepo,
-                                MasterProductRepo masterProductRepo,
-                                PurchaseIntegrationService purchaseIntegrationService,
-                                com.Teryaq.user.repository.UserRepository userRepository) {
+                                  PurchaseInvoiceItemRepo purchaseInvoiceItemRepo,
+                                  PurchaseOrderRepo purchaseOrderRepo,
+                                  PharmacyProductRepo pharmacyProductRepo,
+                                  SupplierRepository supplierRepository,
+                                  PurchaseInvoiceMapper purchaseInvoiceMapper,
+                                  StockItemRepo stockItemRepo,
+                                  MasterProductRepo masterProductRepo,
+                                  PurchaseIntegrationService purchaseIntegrationService,
+                                  ExchangeRateService exchangeRateService,
+                                  EnhancedMoneyBoxAuditService enhancedAuditService,
+                                  com.Teryaq.user.repository.UserRepository userRepository, MoneyBoxRepository moneyBoxRepository) {
         super(userRepository);
         this.purchaseInvoiceRepo = purchaseInvoiceRepo;
         this.purchaseInvoiceItemRepo = purchaseInvoiceItemRepo;
@@ -77,6 +87,9 @@ public class PurchaseInvoiceService extends BaseSecurityService {
         this.stockItemRepo = stockItemRepo;
         this.masterProductRepo = masterProductRepo;
         this.purchaseIntegrationService = purchaseIntegrationService;
+        this.exchangeRateService = exchangeRateService;
+        this.enhancedAuditService = enhancedAuditService;
+        this.moneyBoxRepository = moneyBoxRepository;
     }
 
     @Transactional
@@ -161,11 +174,9 @@ public class PurchaseInvoiceService extends BaseSecurityService {
         invoice.getItems().clear();
         invoice.getItems().addAll(items);
         
-        // Recalculate total
-        double total = items.stream()
-            .mapToDouble(item -> item.getReceivedQty() * item.getInvoicePrice())
-            .sum();
-        invoice.setTotal(total);
+        // Convert prices to SYP and recalculate totals
+        setInvoiceItemPrices(invoice);
+        calculateInvoiceTotal(invoice);
         
         PurchaseInvoice saved = purchaseInvoiceRepo.save(invoice);
         
@@ -177,7 +188,7 @@ public class PurchaseInvoiceService extends BaseSecurityService {
                 purchaseIntegrationService.recordPurchasePayment(
                     currentPharmacyId,
                     saved.getId(),
-                    java.math.BigDecimal.valueOf(saved.getTotal()),
+                    BigDecimal.valueOf(saved.getTotal()),
                     request.getCurrency()
                 );
                 logger.info("Cash purchase recorded in Money Box for edited invoice: {}", saved.getId());
@@ -344,6 +355,33 @@ public class PurchaseInvoiceService extends BaseSecurityService {
         PurchaseInvoice saved = purchaseInvoiceRepo.save(invoice);
         saveInvoiceItems(saved);
         
+            // Record financial audit trail using enhanced MoneyBox audit
+            // Only record for non-cash payments (cash payments are handled by purchaseIntegrationService)
+            if (request.getPaymentMethod() != com.Teryaq.product.Enum.PaymentMethod.CASH) {
+                try {
+                    // Get MoneyBox ID for the current pharmacy
+                    Long moneyBoxId = getMoneyBoxIdForPharmacy(currentPharmacy.getId());
+                    
+                    enhancedAuditService.recordFinancialOperation(
+                        moneyBoxId,
+                        com.Teryaq.moneybox.enums.TransactionType.PURCHASE_PAYMENT,
+                        BigDecimal.valueOf(saved.getTotal()),
+                        request.getCurrency(),
+                        "Purchase invoice created for supplier: " + supplier.getName(),
+                        String.valueOf(saved.getId()),
+                        "PURCHASE_INVOICE",
+                        getCurrentUser().getId(),
+                        getCurrentUser().getClass().getSimpleName(),
+                        null, // IP address - would need to be passed from controller
+                        null, // User agent - would need to be passed from controller
+                        null, // Session ID - would need to be passed from controller
+                        Map.of("supplierId", supplier.getId(), "paymentMethod", request.getPaymentMethod().name())
+                    );
+                } catch (Exception e) {
+                    logger.warn("Failed to record enhanced audit trail for invoice {}: {}", saved.getId(), e.getMessage());
+                }
+            }
+        
         // Integrate with Money Box for cash payments
         if (request.getPaymentMethod() == com.Teryaq.product.Enum.PaymentMethod.CASH) {
             try {
@@ -355,6 +393,9 @@ public class PurchaseInvoiceService extends BaseSecurityService {
                     BigDecimal.valueOf(saved.getTotal()),
                     request.getCurrency()
                 );
+                // Note: purchaseIntegrationService.recordPurchasePayment() already creates the transaction
+                // No need for additional enhancedAuditService.recordFinancialOperation() call
+                
                 logger.info("Cash purchase recorded in Money Box for invoice: {}", saved.getId());
             } catch (Exception e) {
                 logger.warn("Failed to record cash purchase in Money Box for invoice {}: {}", 
@@ -367,21 +408,35 @@ public class PurchaseInvoiceService extends BaseSecurityService {
     }
 
     private void setInvoiceItemPrices(PurchaseInvoice invoice) {
+        Currency invoiceCurrency = invoice.getCurrency();
+        
         invoice.getItems().forEach(item -> {
-            // Calculate actual price after bonus
+            // Convert invoice price from request currency to SYP before storing
+            Double invoicePriceInSYP = convertPriceToSYP(item.getInvoicePrice(), invoiceCurrency);
+            item.setInvoicePrice(invoicePriceInSYP);
+            
+            // Calculate actual price after bonus (now in SYP)
             Double actualPrice = calculateActualPurchasePrice(item);
-            logger.info("The actual price of the item {} from type {} is {}" , item.getProductId() , item.getProductType() , actualPrice);
+            logger.info("The actual price of the item {} from type {} is {} SYP (converted from {} {})" , 
+                item.getProductId(), item.getProductType(), actualPrice, item.getInvoicePrice(), invoiceCurrency);
             item.setActualPrice(actualPrice);
         });
     }
 
     private void calculateInvoiceTotal(PurchaseInvoice invoice) {
-        double total = invoice.getItems().stream()
+        // Calculate total in SYP (since all prices are now stored in SYP)
+        double totalInSYP = invoice.getItems().stream()
             .mapToDouble(item -> (item.getInvoicePrice() != null ? item.getInvoicePrice() : 0.0) * 
                                 (item.getReceivedQty() != null ? item.getReceivedQty() : 0))
             .sum();
-        logger.info("The total price of the invoice {} is {}",invoice.getId(), total);
-        invoice.setTotal(total);
+        
+        // Convert total from SYP to the invoice currency for storage
+        Currency invoiceCurrency = invoice.getCurrency();
+        Double totalInRequestedCurrency = convertPriceFromSYP(totalInSYP, invoiceCurrency);
+        
+        logger.info("The total price of the invoice {} is {} {} (calculated from {} SYP)", 
+            invoice.getId(), totalInRequestedCurrency, invoiceCurrency, totalInSYP);
+        invoice.setTotal(totalInRequestedCurrency);
     }
 
     private void saveInvoiceItems(PurchaseInvoice invoice) {
@@ -527,11 +582,17 @@ public class PurchaseInvoiceService extends BaseSecurityService {
         }
         
         // Update refSellingPrice if provided in the request
-        if (requestItem.getSellingPrice() != null && !requestItem.getSellingPrice().equals(product.getRefSellingPrice())) {
-            product.setRefSellingPrice(requestItem.getSellingPrice().floatValue());
-            updated = true;
-            logger.info("Updated refSellingPrice for PharmacyProduct {} from {} to {}", 
-                product.getId(), product.getRefSellingPrice(), requestItem.getSellingPrice());
+        if (requestItem.getSellingPrice() != null) {
+            // Convert selling price from request currency to SYP before storing
+            Currency requestCurrency = item.getPurchaseInvoice().getCurrency();
+            Double sellingPriceInSYP = convertSellingPriceToSYP(requestItem.getSellingPrice(), requestCurrency);
+            
+            if (!sellingPriceInSYP.equals(product.getRefSellingPrice())) {
+                product.setRefSellingPrice(sellingPriceInSYP.floatValue());
+                updated = true;
+                logger.info("Updated refSellingPrice for PharmacyProduct {} from {} to {} (converted from {} {} to SYP)", 
+                    product.getId(), product.getRefSellingPrice(), sellingPriceInSYP, requestItem.getSellingPrice(), requestCurrency);
+            }
         }
         
         // Update minStockLevel if provided in the request
@@ -609,5 +670,58 @@ public class PurchaseInvoiceService extends BaseSecurityService {
             .distinct()
             .toList();
         return masterProductRepo.findAllById(allMasterProductIds);
+    }
+    
+    /**
+     * Convert selling price from request currency to SYP for storage
+     */
+    private Double convertSellingPriceToSYP(Double sellingPrice, Currency requestCurrency) {
+        if (requestCurrency == Currency.SYP) {
+            return sellingPrice;
+        }
+        
+        BigDecimal sellingPriceBigDecimal = BigDecimal.valueOf(sellingPrice);
+        BigDecimal sellingPriceInSYP = exchangeRateService.convertToSYP(sellingPriceBigDecimal, requestCurrency);
+        
+        return sellingPriceInSYP.doubleValue();
+    }
+    
+    /**
+     * Convert any price from request currency to SYP for storage
+     */
+    private Double convertPriceToSYP(Double price, Currency requestCurrency) {
+        if (requestCurrency == Currency.SYP) {
+            return price;
+        }
+        
+        BigDecimal priceBigDecimal = BigDecimal.valueOf(price);
+        BigDecimal priceInSYP = exchangeRateService.convertToSYP(priceBigDecimal, requestCurrency);
+        
+        return priceInSYP.doubleValue();
+    }
+    
+    /**
+     * Convert any price from SYP to the requested currency for display
+     */
+    private Double convertPriceFromSYP(Double priceInSYP, Currency targetCurrency) {
+        if (targetCurrency == Currency.SYP) {
+            return priceInSYP;
+        }
+        
+        BigDecimal priceBigDecimal = BigDecimal.valueOf(priceInSYP);
+        BigDecimal priceInTargetCurrency = exchangeRateService.convertFromSYP(priceBigDecimal, targetCurrency);
+        
+        return priceInTargetCurrency.doubleValue();
+    }
+    
+    // Helper method to get MoneyBox ID for pharmacy
+    private Long getMoneyBoxIdForPharmacy(Long pharmacyId) {
+
+      return   moneyBoxRepository.findByPharmacyId(pharmacyId).orElseThrow(
+                () -> new ResourceNotFoundException("There in no moneyBox for Pharmacy with ID: " + pharmacyId)
+        ).getId();
+        // This would need to be implemented based on your MoneyBox service
+        // For now, return pharmacyId as MoneyBox ID (assuming 1:1 relationship)
+        // You'll need to implement this based on your existing MoneyBox service logic
     }
 } 

@@ -59,4 +59,40 @@ public interface MoneyBoxTransactionRepository extends JpaRepository<MoneyBoxTra
     Long countTransactionsByType(@Param("moneyBoxId") Long moneyBoxId, @Param("transactionType") TransactionType transactionType);
     
     List<MoneyBoxTransaction> findByReferenceIdAndReferenceType(String referenceId, String referenceType);
+    
+    // Enhanced audit query methods
+    List<MoneyBoxTransaction> findByMoneyBoxIdAndCreatedAtBetween(Long moneyBoxId, LocalDateTime startDate, LocalDateTime endDate);
+    
+    // Note: Using existing findByReferenceIdAndReferenceType instead of findByEntityTypeAndEntityId
+    // List<MoneyBoxTransaction> findByReferenceIdAndReferenceType(String referenceId, String referenceType); // Already exists
+    
+    List<MoneyBoxTransaction> findByMoneyBoxIdAndOperationStatusAndCreatedAtBetween(
+            Long moneyBoxId, String operationStatus, LocalDateTime startDate, LocalDateTime endDate);
+    
+    List<MoneyBoxTransaction> findByCreatedByAndCreatedAtBetween(
+            Long createdBy, LocalDateTime startDate, LocalDateTime endDate);
+    
+    @Query("SELECT t FROM MoneyBoxTransaction t WHERE t.moneyBox.id = :moneyBoxId AND t.originalCurrency = :currency AND t.createdAt BETWEEN :startDate AND :endDate ORDER BY t.createdAt DESC")
+    List<MoneyBoxTransaction> findByMoneyBoxIdAndOriginalCurrencyAndCreatedAtBetween(
+            @Param("moneyBoxId") Long moneyBoxId, 
+            @Param("currency") com.Teryaq.user.Enum.Currency currency,
+            @Param("startDate") LocalDateTime startDate, 
+            @Param("endDate") LocalDateTime endDate);
+    
+    @Query("SELECT COUNT(t) FROM MoneyBoxTransaction t WHERE t.moneyBox.id = :moneyBoxId AND t.operationStatus = :status AND t.createdAt BETWEEN :startDate AND :endDate")
+    Long countTransactionsByStatusAndPeriod(
+            @Param("moneyBoxId") Long moneyBoxId, 
+            @Param("status") String status,
+            @Param("startDate") LocalDateTime startDate, 
+            @Param("endDate") LocalDateTime endDate);
+    
+    @Query("SELECT t.transactionType, COUNT(t), SUM(t.convertedAmount) FROM MoneyBoxTransaction t WHERE t.moneyBox.id = :moneyBoxId AND t.createdAt BETWEEN :startDate AND :endDate GROUP BY t.transactionType")
+    List<Object[]> getTransactionSummaryByType(
+            @Param("moneyBoxId") Long moneyBoxId, 
+            @Param("startDate") LocalDateTime startDate, 
+            @Param("endDate") LocalDateTime endDate);
+    
+    // Method to get the latest transaction for balance calculation
+    @Query("SELECT t FROM MoneyBoxTransaction t WHERE t.moneyBox.id = :moneyBoxId ORDER BY t.createdAt DESC LIMIT 1")
+    java.util.Optional<MoneyBoxTransaction> findTopByMoneyBoxIdOrderByCreatedAtDesc(@Param("moneyBoxId") Long moneyBoxId);
 }

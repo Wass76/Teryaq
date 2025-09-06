@@ -12,8 +12,11 @@ import com.Teryaq.user.entity.Supplier;
 import com.Teryaq.product.entity.PharmacyProductTranslation;
 import com.Teryaq.product.entity.MasterProductTranslation;
 import com.Teryaq.product.repo.StockItemRepo;
+import com.Teryaq.moneybox.service.ExchangeRateService;
+import com.Teryaq.user.Enum.Currency;
 import org.springframework.stereotype.Component;
 import org.springframework.beans.factory.annotation.Autowired;
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.stream.Collectors;
 import com.Teryaq.product.Enum.ProductType;
@@ -23,6 +26,9 @@ public class PurchaseInvoiceMapper {
     
     @Autowired
     private StockItemRepo stockItemRepo;
+    
+    @Autowired
+    private ExchangeRateService exchangeRateService;
     
     public PurchaseInvoice toEntity(PurchaseInvoiceDTORequest dto, Supplier supplier, List<PurchaseInvoiceItem> items) {
         PurchaseInvoice invoice = new PurchaseInvoice();
@@ -100,23 +106,39 @@ public class PurchaseInvoiceMapper {
     public PurchaseInvoiceItemDTOResponse toItemResponse(PurchaseInvoiceItem item, String productName, PharmacyProduct pharmacyProduct, MasterProduct masterProduct) {
         PurchaseInvoiceItemDTOResponse dto = new PurchaseInvoiceItemDTOResponse();
         dto.setId(item.getId());
+        dto.setProductId(item.getProductId());
         dto.setProductName(productName);
+        dto.setProductType(item.getProductType().name());
         dto.setReceivedQty(item.getReceivedQty());
         dto.setBonusQty(item.getBonusQty());
-        dto.setInvoicePrice(item.getInvoicePrice());
-        dto.setActualPrice(item.getActualPrice());
+        
+        // Convert prices from SYP to the invoice currency for display
+        Currency invoiceCurrency = item.getPurchaseInvoice().getCurrency();
+        Double invoicePriceInRequestedCurrency = convertPriceFromSYP(item.getInvoicePrice(), invoiceCurrency);
+        Double actualPriceInRequestedCurrency = convertPriceFromSYP(item.getActualPrice(), invoiceCurrency);
+        
+        dto.setInvoicePrice(invoicePriceInRequestedCurrency);
+        dto.setActualPrice(actualPriceInRequestedCurrency);
         dto.setBatchNo(item.getBatchNo());
         dto.setExpiryDate(item.getExpiryDate());
         
         // Set refSellingPrice and minStockLevel based on product type
         if (item.getProductType() == ProductType.PHARMACY && pharmacyProduct != null) {
-            dto.setRefSellingPrice((double) pharmacyProduct.getRefSellingPrice());
+            // Convert selling price from SYP to the invoice currency for display
+            Double sellingPriceInSYP = (double) pharmacyProduct.getRefSellingPrice();
+            Double sellingPriceInRequestedCurrency = convertSellingPriceFromSYP(sellingPriceInSYP, item.getPurchaseInvoice().getCurrency());
+            dto.setRefSellingPrice(sellingPriceInRequestedCurrency);
+            
             // Use minStockLevel from StockItem if available, otherwise from product
             dto.setMinStockLevel(getMinStockLevelFromStockItem(item.getProductId(), item.getProductType()) != null ? 
                 getMinStockLevelFromStockItem(item.getProductId(), item.getProductType()) : 
                 pharmacyProduct.getMinStockLevel());
         } else if (item.getProductType() == ProductType.MASTER && masterProduct != null) {
-            dto.setRefSellingPrice((double) masterProduct.getRefSellingPrice());
+            // Convert selling price from SYP to the invoice currency for display
+            Double sellingPriceInSYP = (double) masterProduct.getRefSellingPrice();
+            Double sellingPriceInRequestedCurrency = convertSellingPriceFromSYP(sellingPriceInSYP, item.getPurchaseInvoice().getCurrency());
+            dto.setRefSellingPrice(sellingPriceInRequestedCurrency);
+            
             // Use minStockLevel from StockItem if available, otherwise from product
             dto.setMinStockLevel(getMinStockLevelFromStockItem(item.getProductId(), item.getProductType()) != null ? 
                 getMinStockLevelFromStockItem(item.getProductId(), item.getProductType()) : 
@@ -140,5 +162,33 @@ public class PurchaseInvoiceMapper {
         } catch (Exception e) {
         }
         return null;
+    }
+    
+    /**
+     * Convert selling price from SYP to the requested currency for display
+     */
+    private Double convertSellingPriceFromSYP(Double sellingPriceInSYP, Currency targetCurrency) {
+        if (targetCurrency == Currency.SYP) {
+            return sellingPriceInSYP;
+        }
+        
+        BigDecimal sellingPriceBigDecimal = BigDecimal.valueOf(sellingPriceInSYP);
+        BigDecimal sellingPriceInTargetCurrency = exchangeRateService.convertFromSYP(sellingPriceBigDecimal, targetCurrency);
+        
+        return sellingPriceInTargetCurrency.doubleValue();
+    }
+    
+    /**
+     * Convert any price from SYP to the requested currency for display
+     */
+    private Double convertPriceFromSYP(Double priceInSYP, Currency targetCurrency) {
+        if (targetCurrency == Currency.SYP) {
+            return priceInSYP;
+        }
+        
+        BigDecimal priceBigDecimal = BigDecimal.valueOf(priceInSYP);
+        BigDecimal priceInTargetCurrency = exchangeRateService.convertFromSYP(priceBigDecimal, targetCurrency);
+        
+        return priceInTargetCurrency.doubleValue();
     }
 } 

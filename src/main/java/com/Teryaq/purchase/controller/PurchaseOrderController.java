@@ -19,6 +19,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import jakarta.validation.Valid;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @RestController
@@ -154,19 +155,17 @@ public class PurchaseOrderController {
         @ApiResponse(responseCode = "500", description = "Internal server error")
     })
     public ResponseEntity<PaginationDTO<PurchaseOrderDTOResponse>> getByTimeRangePaginated(
-            @Parameter(description = "Start date and time (ISO format)", example = "2024-01-01T00:00:00") 
-            @RequestParam String startDate,
-            @Parameter(description = "End date and time (ISO format)", example = "2024-12-31T23:59:59") 
-            @RequestParam String endDate,
+            @Parameter(description = "Start date and time", example = "YYYY-MM-DD")
+            @RequestParam LocalDate startDate,
+            @Parameter(description = "End date and time", example = "YYYY-MM-DD")
+            @RequestParam LocalDate endDate,
             @Parameter(description = "Page number (0-based)", example = "0") 
             @RequestParam(defaultValue = "0") int page,
             @Parameter(description = "Number of items per page", example = "10") 
             @RequestParam(defaultValue = "10") int size,
             @Parameter(description = "Language code", example = "ar") 
             @RequestParam(defaultValue = "ar") String language) {
-        LocalDateTime start = LocalDateTime.parse(startDate);
-        LocalDateTime end = LocalDateTime.parse(endDate);
-        return ResponseEntity.ok(purchaseOrderService.getByTimeRangePaginated(start, end, page, size, language));
+        return ResponseEntity.ok(purchaseOrderService.getByTimeRangePaginated(startDate, endDate, page, size, language));
     }
 
     @GetMapping("/supplier/{supplierId}")

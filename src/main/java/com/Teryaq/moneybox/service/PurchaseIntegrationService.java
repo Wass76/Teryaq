@@ -6,6 +6,7 @@ import com.Teryaq.moneybox.enums.TransactionType;
 import com.Teryaq.moneybox.repository.MoneyBoxRepository;
 import com.Teryaq.moneybox.repository.MoneyBoxTransactionRepository;
 import com.Teryaq.user.Enum.Currency;
+import com.Teryaq.moneybox.service.EnhancedMoneyBoxAuditService;
 import com.Teryaq.utils.exception.ConflictException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -14,6 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -23,6 +25,7 @@ public class PurchaseIntegrationService {
     private final MoneyBoxRepository moneyBoxRepository;
     private final MoneyBoxTransactionRepository transactionRepository;
     private final ExchangeRateService exchangeRateService;
+    private final EnhancedMoneyBoxAuditService enhancedAuditService;
     
     /**
      * Records a purchase payment in the money box with automatic currency conversion to SYP
@@ -36,56 +39,24 @@ public class PurchaseIntegrationService {
         try {
             MoneyBox moneyBox = findMoneyBoxByPharmacyId(pharmacyId);
             
-            // Convert amount to SYP if it's not already in SYP
-            BigDecimal amountInSYP = amount;
-            BigDecimal exchangeRate = BigDecimal.ONE;
-            Currency originalCurrency = currency;
-            BigDecimal originalAmount = amount;
+            // Use enhanced audit service to record the transaction
+            enhancedAuditService.recordFinancialOperation(
+                moneyBox.getId(),
+                TransactionType.PURCHASE_PAYMENT,
+                amount, // Positive amount - the service will handle the sign based on transaction type
+                currency,
+                "Purchase payment for purchase ID: " + purchaseId + 
+                (currency != Currency.SYP ? " (Converted from " + currency + ")" : ""),
+                String.valueOf(purchaseId),
+                "PURCHASE",
+                null, // User ID - would need to be passed from service
+                null, // User type - would need to be passed from service
+                null, null, null, // IP, User Agent, Session ID
+                Map.of("pharmacyId", pharmacyId, "paymentMethod", "CASH")
+            );
             
-            if (!Currency.SYP.equals(currency)) {
-                try {
-                    amountInSYP = exchangeRateService.convertToSYP(amount, currency);
-                    exchangeRate = exchangeRateService.getExchangeRate(currency, Currency.SYP);
-                    log.info("Converted {} {} to {} SYP using rate: {}", 
-                            amount, currency, amountInSYP, exchangeRate);
-                } catch (Exception e) {
-                    log.warn("Failed to convert currency for purchase {}: {}. Using original amount.", 
-                            purchaseId, e.getMessage());
-                    // Fallback: use original amount but mark as unconverted
-                    amountInSYP = amount;
-                    exchangeRate = BigDecimal.ZERO;
-                }
-            }
-            
-            // Create transaction record with enhanced currency information
-            MoneyBoxTransaction transaction = new MoneyBoxTransaction();
-            transaction.setMoneyBox(moneyBox);
-            transaction.setTransactionType(TransactionType.PURCHASE_PAYMENT);
-            transaction.setAmount(amountInSYP.negate()); // Negative amount as it's an expense
-            transaction.setOriginalCurrency(originalCurrency);
-            transaction.setOriginalAmount(originalAmount);
-            transaction.setConvertedCurrency(Currency.SYP);
-            transaction.setConvertedAmount(amountInSYP);
-            transaction.setExchangeRate(exchangeRate);
-            transaction.setConversionTimestamp(LocalDateTime.now());
-            transaction.setConversionSource("EXCHANGE_RATE_SERVICE");
-            transaction.setBalanceBefore(moneyBox.getCurrentBalance());
-            transaction.setBalanceAfter(moneyBox.getCurrentBalance().subtract(amountInSYP));
-            transaction.setDescription("Purchase payment for purchase ID: " + purchaseId + 
-                                   (originalCurrency != Currency.SYP ? " (Converted from " + originalCurrency + ")" : ""));
-            transaction.setReferenceId(String.valueOf(purchaseId));
-            transaction.setReferenceType("PURCHASE");
-            transaction.setCreatedAt(LocalDateTime.now());
-            
-            // Update money box balance (always in SYP)
-            moneyBox.setCurrentBalance(moneyBox.getCurrentBalance().subtract(amountInSYP));
-            
-            // Save both transaction and updated money box
-            transactionRepository.save(transaction);
-            moneyBoxRepository.save(moneyBox);
-            
-            log.info("Purchase payment recorded successfully. Amount: {} {} -> {} SYP. New balance: {}", 
-                    originalAmount, originalCurrency, amountInSYP, moneyBox.getCurrentBalance());
+            log.info("Purchase payment recorded successfully using enhanced audit service. Amount: {} {}", 
+                    amount, currency);
         } catch (Exception e) {
             log.error("Failed to record purchase payment for purchase {}: {}", purchaseId, e.getMessage(), e);
             throw new RuntimeException("Failed to record purchase payment in MoneyBox", e);
@@ -104,56 +75,24 @@ public class PurchaseIntegrationService {
         try {
             MoneyBox moneyBox = findMoneyBoxByPharmacyId(pharmacyId);
             
-            // Convert amount to SYP if it's not already in SYP
-            BigDecimal amountInSYP = amount;
-            BigDecimal exchangeRate = BigDecimal.ONE;
-            Currency originalCurrency = currency;
-            BigDecimal originalAmount = amount;
+            // Use enhanced audit service to record the transaction
+            enhancedAuditService.recordFinancialOperation(
+                moneyBox.getId(),
+                TransactionType.INCOME, // Treat refund as income
+                amount,
+                currency,
+                "Refund for purchase ID: " + purchaseId + 
+                (currency != Currency.SYP ? " (Converted from " + currency + ")" : ""),
+                String.valueOf(purchaseId),
+                "PURCHASE_REFUND",
+                null, // User ID - would need to be passed from service
+                null, // User type - would need to be passed from service
+                null, null, null, // IP, User Agent, Session ID
+                Map.of("pharmacyId", pharmacyId, "refundType", "PURCHASE")
+            );
             
-            if (!Currency.SYP.equals(currency)) {
-                try {
-                    amountInSYP = exchangeRateService.convertToSYP(amount, currency);
-                    exchangeRate = exchangeRateService.getExchangeRate(currency, Currency.SYP);
-                    log.info("Converted {} {} to {} SYP using rate: {}", 
-                            amount, currency, amountInSYP, exchangeRate);
-                } catch (Exception e) {
-                    log.warn("Failed to convert currency for purchase refund {}: {}. Using original amount.", 
-                            purchaseId, e.getMessage());
-                    // Fallback: use original amount but mark as unconverted
-                    amountInSYP = amount;
-                    exchangeRate = BigDecimal.ZERO;
-                }
-            }
-            
-            // Create transaction record with enhanced currency information
-            MoneyBoxTransaction transaction = new MoneyBoxTransaction();
-            transaction.setMoneyBox(moneyBox);
-            transaction.setTransactionType(TransactionType.INCOME); // Treat refund as income
-            transaction.setAmount(amountInSYP);
-            transaction.setOriginalCurrency(originalCurrency);
-            transaction.setOriginalAmount(originalAmount);
-            transaction.setConvertedCurrency(Currency.SYP);
-            transaction.setConvertedAmount(amountInSYP);
-            transaction.setExchangeRate(exchangeRate);
-            transaction.setConversionTimestamp(LocalDateTime.now());
-            transaction.setConversionSource("EXCHANGE_RATE_SERVICE");
-            transaction.setBalanceBefore(moneyBox.getCurrentBalance());
-            transaction.setBalanceAfter(moneyBox.getCurrentBalance().add(amountInSYP));
-            transaction.setDescription("Refund for purchase ID: " + purchaseId + 
-                                   (originalCurrency != Currency.SYP ? " (Converted from " + originalCurrency + ")" : ""));
-            transaction.setReferenceId(String.valueOf(purchaseId));
-            transaction.setReferenceType("PURCHASE_REFUND");
-            transaction.setCreatedAt(LocalDateTime.now());
-            
-            // Update money box balance (always in SYP)
-            moneyBox.setCurrentBalance(moneyBox.getCurrentBalance().add(amountInSYP));
-            
-            // Save both transaction and updated money box
-            transactionRepository.save(transaction);
-            moneyBoxRepository.save(moneyBox);
-            
-            log.info("Purchase refund recorded successfully. Amount: {} {} -> {} SYP. New balance: {}", 
-                    originalAmount, originalCurrency, amountInSYP, moneyBox.getCurrentBalance());
+            log.info("Purchase refund recorded successfully using enhanced audit service. Amount: {} {}", 
+                    amount, currency);
         } catch (Exception e) {
             log.error("Failed to record purchase refund for purchase {}: {}", purchaseId, e.getMessage(), e);
             throw new RuntimeException("Failed to record purchase refund in MoneyBox", e);
@@ -190,54 +129,23 @@ public class PurchaseIntegrationService {
         try {
             MoneyBox moneyBox = findMoneyBoxByPharmacyId(pharmacyId);
             
-            // Convert amount to SYP if it's not already in SYP
-            BigDecimal amountInSYP = amount;
-            BigDecimal exchangeRate = BigDecimal.ONE;
-            Currency originalCurrency = currency;
-            BigDecimal originalAmount = amount;
+            // Use enhanced audit service to record the transaction
+            enhancedAuditService.recordFinancialOperation(
+                moneyBox.getId(),
+                TransactionType.EXPENSE,
+                amount, // Positive amount - the service will handle the sign based on transaction type
+                currency,
+                expenseDescription + (currency != Currency.SYP ? " (Converted from " + currency + ")" : ""),
+                null, // No specific reference ID for general expenses
+                "EXPENSE",
+                null, // User ID - would need to be passed from service
+                null, // User type - would need to be passed from service
+                null, null, null, // IP, User Agent, Session ID
+                Map.of("pharmacyId", pharmacyId, "expenseType", "GENERAL")
+            );
             
-            if (!Currency.SYP.equals(currency)) {
-                try {
-                    amountInSYP = exchangeRateService.convertToSYP(amount, currency);
-                    exchangeRate = exchangeRateService.getExchangeRate(currency, Currency.SYP);
-                    log.info("Converted {} {} to {} SYP using rate: {}", 
-                            amount, currency, amountInSYP, exchangeRate);
-                } catch (Exception e) {
-                    log.warn("Failed to convert currency for expense: {}. Using original amount.", e.getMessage());
-                    // Fallback: use original amount but mark as unconverted
-                    amountInSYP = amount;
-                    exchangeRate = BigDecimal.ZERO;
-                }
-            }
-            
-            // Create transaction record with enhanced currency information
-            MoneyBoxTransaction transaction = new MoneyBoxTransaction();
-            transaction.setMoneyBox(moneyBox);
-            transaction.setTransactionType(TransactionType.EXPENSE);
-            transaction.setAmount(amountInSYP.negate()); // Negative amount as it's an expense
-            transaction.setOriginalCurrency(originalCurrency);
-            transaction.setOriginalAmount(originalAmount);
-            transaction.setConvertedCurrency(Currency.SYP);
-            transaction.setConvertedAmount(amountInSYP);
-            transaction.setExchangeRate(exchangeRate);
-            transaction.setConversionTimestamp(LocalDateTime.now());
-            transaction.setConversionSource("EXCHANGE_RATE_SERVICE");
-            transaction.setBalanceBefore(moneyBox.getCurrentBalance());
-            transaction.setBalanceAfter(moneyBox.getCurrentBalance().subtract(amountInSYP));
-            transaction.setDescription(expenseDescription + 
-                                   (originalCurrency != Currency.SYP ? " (Converted from " + originalCurrency + ")" : ""));
-            transaction.setReferenceType("EXPENSE");
-            transaction.setCreatedAt(LocalDateTime.now());
-            
-            // Update money box balance (always in SYP)
-            moneyBox.setCurrentBalance(moneyBox.getCurrentBalance().subtract(amountInSYP));
-            
-            // Save both transaction and updated money box
-            transactionRepository.save(transaction);
-            moneyBoxRepository.save(moneyBox);
-            
-            log.info("Expense recorded successfully. Amount: {} {} -> {} SYP. New balance: {}", 
-                    originalAmount, originalCurrency, amountInSYP, moneyBox.getCurrentBalance());
+            log.info("Expense recorded successfully using enhanced audit service. Amount: {} {}", 
+                    amount, currency);
         } catch (Exception e) {
             log.error("Failed to record expense: pharmacy={}, description={}, amount={}", 
                      pharmacyId, expenseDescription, amount, e.getMessage(), e);
@@ -257,54 +165,23 @@ public class PurchaseIntegrationService {
         try {
             MoneyBox moneyBox = findMoneyBoxByPharmacyId(pharmacyId);
             
-            // Convert amount to SYP if it's not already in SYP
-            BigDecimal amountInSYP = amount;
-            BigDecimal exchangeRate = BigDecimal.ONE;
-            Currency originalCurrency = currency;
-            BigDecimal originalAmount = amount;
+            // Use enhanced audit service to record the transaction
+            enhancedAuditService.recordFinancialOperation(
+                moneyBox.getId(),
+                TransactionType.INCOME,
+                amount,
+                currency,
+                incomeDescription + (currency != Currency.SYP ? " (Converted from " + currency + ")" : ""),
+                null, // No specific reference ID for general income
+                "INCOME",
+                null, // User ID - would need to be passed from service
+                null, // User type - would need to be passed from service
+                null, null, null, // IP, User Agent, Session ID
+                Map.of("pharmacyId", pharmacyId, "incomeType", "GENERAL")
+            );
             
-            if (!Currency.SYP.equals(currency)) {
-                try {
-                    amountInSYP = exchangeRateService.convertToSYP(amount, currency);
-                    exchangeRate = exchangeRateService.getExchangeRate(currency, Currency.SYP);
-                    log.info("Converted {} {} to {} SYP using rate: {}", 
-                            amount, currency, amountInSYP, exchangeRate);
-                } catch (Exception e) {
-                    log.warn("Failed to convert currency for income: {}. Using original amount.", e.getMessage());
-                    // Fallback: use original amount but mark as unconverted
-                    amountInSYP = amount;
-                    exchangeRate = BigDecimal.ZERO;
-                }
-            }
-            
-            // Create transaction record with enhanced currency information
-            MoneyBoxTransaction transaction = new MoneyBoxTransaction();
-            transaction.setMoneyBox(moneyBox);
-            transaction.setTransactionType(TransactionType.INCOME);
-            transaction.setAmount(amountInSYP);
-            transaction.setOriginalCurrency(originalCurrency);
-            transaction.setOriginalAmount(originalAmount);
-            transaction.setConvertedCurrency(Currency.SYP);
-            transaction.setConvertedAmount(amountInSYP);
-            transaction.setExchangeRate(exchangeRate);
-            transaction.setConversionTimestamp(LocalDateTime.now());
-            transaction.setConversionSource("EXCHANGE_RATE_SERVICE");
-            transaction.setBalanceBefore(moneyBox.getCurrentBalance());
-            transaction.setBalanceAfter(moneyBox.getCurrentBalance().add(amountInSYP));
-            transaction.setDescription(incomeDescription + 
-                                   (originalCurrency != Currency.SYP ? " (Converted from " + originalCurrency + ")" : ""));
-            transaction.setReferenceType("INCOME");
-            transaction.setCreatedAt(LocalDateTime.now());
-            
-            // Update money box balance (always in SYP)
-            moneyBox.setCurrentBalance(moneyBox.getCurrentBalance().add(amountInSYP));
-            
-            // Save both transaction and updated money box
-            transactionRepository.save(transaction);
-            moneyBoxRepository.save(moneyBox);
-            
-            log.info("Income recorded successfully. Amount: {} {} -> {} SYP. New balance: {}", 
-                    originalAmount, originalCurrency, amountInSYP, moneyBox.getCurrentBalance());
+            log.info("Income recorded successfully using enhanced audit service. Amount: {} {}", 
+                    amount, currency);
         } catch (Exception e) {
             log.error("Failed to record income: pharmacy={}, description={}, amount={}", 
                      pharmacyId, incomeDescription, amount, e.getMessage(), e);

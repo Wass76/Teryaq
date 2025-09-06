@@ -77,4 +77,26 @@ public class MoneyBoxTransaction {
     
     @Column(name = "created_by")
     private Long createdBy; // Store user ID reference
+    
+    // Enhanced audit fields for comprehensive financial tracking
+    @Column(name = "operation_status", length = 20)
+    private String operationStatus = "SUCCESS"; // SUCCESS, FAILED, PENDING
+    
+    @Column(name = "error_message", length = 2000)
+    private String errorMessage; // Error details for failed operations
+    
+    @Column(name = "ip_address", length = 45)
+    private String ipAddress; // User's IP address
+    
+    @Column(name = "user_agent", length = 500)
+    private String userAgent; // User's browser/client info
+    
+    @Column(name = "session_id", length = 100)
+    private String sessionId; // User session identifier
+    
+    @Column(name = "user_type", length = 50)
+    private String userType; // Type of user (PHARMACIST, ADMIN, etc.)
+    
+    @Column(name = "additional_data", columnDefinition = "TEXT")
+    private String additionalData; // JSON string for additional context
 }

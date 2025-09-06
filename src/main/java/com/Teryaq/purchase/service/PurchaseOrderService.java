@@ -29,6 +29,7 @@ import com.Teryaq.utils.exception.UnAuthorizedException;
 import jakarta.transaction.Transactional;
 import org.springframework.stereotype.Service;
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.springframework.data.domain.Page;
@@ -121,13 +122,18 @@ public class PurchaseOrderService extends BaseSecurityService {
         order.getItems().addAll(newItems);
         
         // Recalculate total with proper currency handling
-        BigDecimal total = newItems.stream()
-            .map(item -> BigDecimal.valueOf(item.getQuantity()).multiply(BigDecimal.valueOf(item.getPrice())))
+        Currency orderCurrency = order.getCurrency();
+        BigDecimal totalInSYP = newItems.stream()
+            .map(item -> {
+                // Convert each item price to SYP for consistent calculation
+                BigDecimal itemPriceInSYP = convertItemPriceToSYP(item, orderCurrency);
+                return BigDecimal.valueOf(item.getQuantity()).multiply(itemPriceInSYP);
+            })
             .reduce(BigDecimal.ZERO, BigDecimal::add);
         
-        // Convert total to the order's currency if needed
-        Currency orderCurrency = order.getCurrency();
-        order.setTotal(total.doubleValue());
+        // Convert total from SYP to order currency for storage
+        BigDecimal totalInOrderCurrency = exchangeRateService.convertFromSYP(totalInSYP, orderCurrency);
+        order.setTotal(totalInOrderCurrency.doubleValue());
         
         PurchaseOrder saved = purchaseOrderRepo.save(order);
         
@@ -189,7 +195,7 @@ public class PurchaseOrderService extends BaseSecurityService {
 
     // New method for filtering by time range
     public PaginationDTO<PurchaseOrderDTOResponse> getByTimeRangePaginated(
-            LocalDateTime startDate, LocalDateTime endDate, int page, int size, String language) {
+            LocalDate startDate, LocalDate endDate, int page, int size, String language) {
         Employee employee = validateAndGetEmployee();
         Long pharmacyId = employee.getPharmacy().getId();
         
@@ -209,7 +215,7 @@ public class PurchaseOrderService extends BaseSecurityService {
     }
 
     public PaginationDTO<PurchaseOrderDTOResponse> getByTimeRangePaginated(
-            LocalDateTime startDate, LocalDateTime endDate, int page, int size) {
+            LocalDate startDate, LocalDate endDate, int page, int size) {
         return getByTimeRangePaginated(startDate, endDate, page, size, "ar");
     }
 
@@ -305,8 +311,9 @@ public class PurchaseOrderService extends BaseSecurityService {
 
     // Private helper methods for order item creation
     private List<PurchaseOrderItem> createOrderItems(PurchaseOrderDTORequest request) {
+        Currency orderCurrency = request.getCurrency();
         List<PurchaseOrderItem> items = request.getItems().stream()
-            .map(item -> createOrderItem(item))
+            .map(item -> createOrderItem(item, orderCurrency))
             .collect(Collectors.toList());
         
         if (items.isEmpty()) {
@@ -316,7 +323,7 @@ public class PurchaseOrderService extends BaseSecurityService {
         return items;
     }
 
-    private PurchaseOrderItem createOrderItem(PurchaseOrderItemDTORequest itemDto) {
+    private PurchaseOrderItem createOrderItem(PurchaseOrderItemDTORequest itemDto, Currency orderCurrency) {
         String barcode = itemDto.getBarcode();
         Double price = itemDto.getPrice();
         
@@ -327,7 +334,7 @@ public class PurchaseOrderService extends BaseSecurityService {
         } else if (itemDto.getProductType() == ProductType.MASTER) {
             MasterProduct product = getMasterProduct(itemDto.getProductId());
             barcode = getBarcodeForMasterProduct(product, barcode);
-            price = getPriceForMasterProduct(product);
+            price = getPriceForMasterProduct(product, orderCurrency);
         } else {
             throw new ConflictException("Invalid productType: " + itemDto.getProductType());
         }
@@ -366,8 +373,19 @@ public class PurchaseOrderService extends BaseSecurityService {
         return price;
     }
 
-    private Double getPriceForMasterProduct(MasterProduct product) {
-        return (double) product.getRefPurchasePrice();
+    private Double getPriceForMasterProduct(MasterProduct product, Currency orderCurrency) {
+        double priceInSYP = product.getRefPurchasePrice();
+        
+        // If the order currency is SYP, return as is
+        if (orderCurrency == Currency.SYP) {
+            return priceInSYP;
+        }
+        
+        // Convert from SYP to the order currency
+        BigDecimal priceInSYPBigDecimal = BigDecimal.valueOf(priceInSYP);
+        BigDecimal convertedPrice = exchangeRateService.convertFromSYP(priceInSYPBigDecimal, orderCurrency);
+        
+        return convertedPrice.doubleValue();
     }
 
     // Private helper methods for product retrieval
@@ -405,5 +423,30 @@ public class PurchaseOrderService extends BaseSecurityService {
             .distinct()
             .toList();
         return masterProductRepo.findAllById(allMasterProductIds);
+    }
+    
+    /**
+     * Convert item price to SYP for consistent total calculation
+     * This handles the mixed currency issue where pharmacy products and master products
+     * might be in different currencies
+     */
+    private BigDecimal convertItemPriceToSYP(PurchaseOrderItem item, Currency orderCurrency) {
+        BigDecimal itemPrice = BigDecimal.valueOf(item.getPrice());
+        
+        if (item.getProductType() == ProductType.PHARMACY) {
+            // Pharmacy products: price is stored in SYP (no conversion in getPriceForPharmacyProduct)
+            return itemPrice; // Already in SYP
+        } else if (item.getProductType() == ProductType.MASTER) {
+            // Master products: price is converted to order currency in getPriceForMasterProduct
+            // We need to convert it back to SYP for consistent calculation
+            if (orderCurrency == Currency.SYP) {
+                return itemPrice; // Order currency is SYP, so price is already in SYP
+            } else {
+                // Convert from order currency back to SYP
+                return exchangeRateService.convertToSYP(itemPrice, orderCurrency);
+            }
+        } else {
+            throw new ConflictException("Invalid productType: " + item.getProductType());
+        }
     }
 } 

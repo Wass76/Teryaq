@@ -1,9 +1,10 @@
 package com.Teryaq.reports.repository;
 
 import com.Teryaq.sale.entity.SaleInvoice;
-import com.Teryaq.purchase.entity.PurchaseInvoice;
 import com.Teryaq.sale.entity.SaleInvoiceItem;
 import com.Teryaq.purchase.entity.PurchaseInvoiceItem;
+import com.Teryaq.product.entity.PharmacyProduct;
+import com.Teryaq.product.entity.MasterProduct;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -125,7 +126,10 @@ public interface ReportRepository extends JpaRepository<SaleInvoice, Long> {
            "DATE(si.invoiceDate) as date, " +
            "COUNT(si) as totalInvoices, " +
            "SUM(si.totalAmount) as totalRevenue, " +
-           "SUM(sii.subTotal - (sii.quantity * sii.stockItem.actualPurchasePrice)) as totalProfit, " +
+           "SUM(CASE " +
+           "  WHEN sii.stockItem.actualPurchasePrice IS NULL THEN sii.subTotal " +
+           "  ELSE (sii.subTotal - (sii.quantity * sii.stockItem.actualPurchasePrice)) " +
+           "END) as totalProfit, " +
            "AVG(si.totalAmount) as averageRevenue, " +
            "si.currency as currency " +
            "FROM SaleInvoice si " +
@@ -170,7 +174,10 @@ public interface ReportRepository extends JpaRepository<SaleInvoice, Long> {
     @Query("SELECT " +
            "COUNT(si) as totalInvoices, " +
            "SUM(si.totalAmount) as totalRevenue, " +
-           "SUM(sii.subTotal - (sii.quantity * sii.stockItem.actualPurchasePrice)) as totalProfit, " +
+           "SUM(CASE " +
+           "  WHEN sii.stockItem.actualPurchasePrice IS NULL THEN sii.subTotal " +
+           "  ELSE (sii.subTotal - (sii.quantity * sii.stockItem.actualPurchasePrice)) " +
+           "END) as totalProfit, " +
            "AVG(si.totalAmount) as averageRevenue, " +
            "si.currency as currency " +
            "FROM SaleInvoice si " +
@@ -189,17 +196,26 @@ public interface ReportRepository extends JpaRepository<SaleInvoice, Long> {
      * Note: Currency conversion will be handled in the service layer
      */
     @Query("SELECT " +
+           "sii.stockItem.productId as productId, " +
+           "sii.stockItem.productType as productType, " +
            "sii.stockItem.productName as productName, " +
            "sii.quantity as quantity, " +
            "sii.subTotal as revenue, " +
-           "(sii.subTotal - (sii.quantity * sii.stockItem.actualPurchasePrice)) as profit, " +
+           "CASE " +
+           "  WHEN sii.stockItem.actualPurchasePrice IS NULL THEN sii.subTotal " +
+           "  ELSE (sii.subTotal - (sii.quantity * sii.stockItem.actualPurchasePrice)) " +
+           "END as profit, " +
            "si.currency as currency " +
            "FROM SaleInvoiceItem sii " +
            "JOIN sii.saleInvoice si " +
            "WHERE si.pharmacy.id = :pharmacyId " +
            "AND DATE(si.invoiceDate) = :date " +
            "AND si.status = 'SOLD' " +
-           "ORDER BY (sii.subTotal - (sii.quantity * sii.stockItem.actualPurchasePrice)) DESC")
+           "ORDER BY " +
+           "CASE " +
+           "  WHEN sii.stockItem.actualPurchasePrice IS NULL THEN sii.subTotal " +
+           "  ELSE (sii.subTotal - (sii.quantity * sii.stockItem.actualPurchasePrice)) " +
+           "END DESC")
     List<Map<String, Object>> getDailyProfitItems(
             @Param("pharmacyId") Long pharmacyId,
             @Param("date") LocalDate date);

@@ -6,6 +6,7 @@ import com.Teryaq.moneybox.enums.TransactionType;
 import com.Teryaq.moneybox.repository.MoneyBoxRepository;
 import com.Teryaq.moneybox.repository.MoneyBoxTransactionRepository;
 import com.Teryaq.user.Enum.Currency;
+import com.Teryaq.moneybox.service.EnhancedMoneyBoxAuditService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -13,6 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -22,6 +24,7 @@ public class SalesIntegrationService {
     private final MoneyBoxRepository moneyBoxRepository;
     private final MoneyBoxTransactionRepository transactionRepository;
     private final ExchangeRateService exchangeRateService;
+    private final EnhancedMoneyBoxAuditService enhancedAuditService;
     
     /**
      * Records a sale payment in the money box with automatic currency conversion to SYP
@@ -56,35 +59,26 @@ public class SalesIntegrationService {
                 }
             }
             
-            // Create transaction record with enhanced currency information
-            MoneyBoxTransaction transaction = new MoneyBoxTransaction();
-            transaction.setMoneyBox(moneyBox);
-            transaction.setTransactionType(TransactionType.SALE_PAYMENT);
-            transaction.setAmount(amountInSYP);
-            transaction.setOriginalCurrency(originalCurrency);
-            transaction.setOriginalAmount(originalAmount);
-            transaction.setConvertedCurrency(Currency.SYP);
-            transaction.setConvertedAmount(amountInSYP);
-            transaction.setExchangeRate(exchangeRate);
-            transaction.setConversionTimestamp(LocalDateTime.now());
-            transaction.setConversionSource("EXCHANGE_RATE_SERVICE");
-            transaction.setBalanceBefore(moneyBox.getCurrentBalance());
-            transaction.setBalanceAfter(moneyBox.getCurrentBalance().add(amountInSYP));
-            transaction.setDescription("Sale payment for sale ID: " + saleId + 
-                                   (originalCurrency != Currency.SYP ? " (Converted from " + originalCurrency + ")" : ""));
-            transaction.setReferenceId(String.valueOf(saleId));
-            transaction.setReferenceType("SALE");
-            transaction.setCreatedAt(LocalDateTime.now());
+            // Record transaction using enhanced audit service (it will handle balance updates)
+            enhancedAuditService.recordFinancialOperation(
+                moneyBox.getId(),
+                TransactionType.SALE_PAYMENT,
+                originalAmount,
+                originalCurrency,
+                "Sale payment for sale ID: " + saleId + 
+                (originalCurrency != Currency.SYP ? " (Converted from " + originalCurrency + ")" : ""),
+                String.valueOf(saleId),
+                "SALE",
+                null, // userId - would need to be passed from calling service
+                null, // userType - would need to be passed from calling service
+                null, // ipAddress - would need to be passed from calling service
+                null, // userAgent - would need to be passed from calling service
+                null, // sessionId - would need to be passed from calling service
+                Map.of("saleId", saleId, "pharmacyId", pharmacyId, "conversionRate", exchangeRate)
+            );
             
-            // Update money box balance (always in SYP)
-            moneyBox.setCurrentBalance(moneyBox.getCurrentBalance().add(amountInSYP));
-            
-            // Save both transaction and updated money box
-            transactionRepository.save(transaction);
-            moneyBoxRepository.save(moneyBox);
-            
-            log.info("Sale payment recorded successfully. Amount: {} {} -> {} SYP. New balance: {}", 
-                    originalAmount, originalCurrency, amountInSYP, moneyBox.getCurrentBalance());
+            log.info("Sale payment recorded successfully using enhanced audit service. Amount: {} {}", 
+                    originalAmount, originalCurrency);
         } catch (Exception e) {
             log.error("Failed to record sale payment for sale {}: {}", saleId, e.getMessage(), e);
             throw new RuntimeException("Failed to record sale payment in MoneyBox", e);
@@ -124,35 +118,26 @@ public class SalesIntegrationService {
                 }
             }
             
-            // Create transaction record with enhanced currency information
-            MoneyBoxTransaction transaction = new MoneyBoxTransaction();
-            transaction.setMoneyBox(moneyBox);
-            transaction.setTransactionType(TransactionType.SALE_REFUND); // Use specific refund type
-            transaction.setAmount(amountInSYP.negate()); // Negative amount for refund (money going out)
-            transaction.setOriginalCurrency(originalCurrency);
-            transaction.setOriginalAmount(originalAmount);
-            transaction.setConvertedCurrency(Currency.SYP);
-            transaction.setConvertedAmount(amountInSYP);
-            transaction.setExchangeRate(exchangeRate);
-            transaction.setConversionTimestamp(LocalDateTime.now());
-            transaction.setConversionSource("EXCHANGE_RATE_SERVICE");
-            transaction.setBalanceBefore(moneyBox.getCurrentBalance());
-            transaction.setBalanceAfter(moneyBox.getCurrentBalance().subtract(amountInSYP));
-            transaction.setDescription("Sale refund for sale ID: " + saleId + 
-                                   (originalCurrency != Currency.SYP ? " (Converted from " + originalCurrency + ")" : ""));
-            transaction.setReferenceId(String.valueOf(saleId));
-            transaction.setReferenceType("SALE_REFUND");
-            transaction.setCreatedAt(LocalDateTime.now());
+            // Record transaction using enhanced audit service (it will handle balance updates)
+            enhancedAuditService.recordFinancialOperation(
+                moneyBox.getId(),
+                TransactionType.SALE_REFUND,
+                originalAmount,
+                originalCurrency,
+                "Sale refund for sale ID: " + saleId + 
+                (originalCurrency != Currency.SYP ? " (Converted from " + originalCurrency + ")" : ""),
+                String.valueOf(saleId),
+                "SALE_REFUND",
+                null, // userId - would need to be passed from calling service
+                null, // userType - would need to be passed from calling service
+                null, // ipAddress - would need to be passed from calling service
+                null, // userAgent - would need to be passed from calling service
+                null, // sessionId - would need to be passed from calling service
+                Map.of("saleId", saleId, "pharmacyId", pharmacyId, "conversionRate", exchangeRate)
+            );
             
-            // Update money box balance (always in SYP) - subtract because we're giving money back to customer
-            moneyBox.setCurrentBalance(moneyBox.getCurrentBalance().subtract(amountInSYP));
-            
-            // Save both transaction and updated money box
-            transactionRepository.save(transaction);
-            moneyBoxRepository.save(moneyBox);
-            
-            log.info("Sale refund recorded successfully. Amount: {} {} -> {} SYP. New balance: {}", 
-                    originalAmount, originalCurrency, amountInSYP, moneyBox.getCurrentBalance());
+            log.info("Sale refund recorded successfully using enhanced audit service. Amount: {} {}", 
+                    originalAmount, originalCurrency);
         } catch (Exception e) {
             log.error("Failed to record sale refund for sale {}: {}", saleId, e.getMessage(), e);
             throw new RuntimeException("Failed to record sale refund in MoneyBox", e);

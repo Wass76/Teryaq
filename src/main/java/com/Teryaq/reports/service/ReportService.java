@@ -8,6 +8,10 @@ import com.Teryaq.user.Enum.Currency;
 import com.Teryaq.user.repository.UserRepository;
 import com.Teryaq.user.service.BaseSecurityService;
 import com.Teryaq.moneybox.service.ExchangeRateService;
+import com.Teryaq.product.entity.PharmacyProduct;
+import com.Teryaq.product.entity.MasterProduct;
+import com.Teryaq.product.repo.PharmacyProductRepo;
+import com.Teryaq.product.repo.MasterProductRepo;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
@@ -16,6 +20,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 /**
@@ -35,12 +40,18 @@ public class ReportService extends BaseSecurityService {
     private final ReportRepository reportRepository;
     private final ReportMapper reportMapper;
     private final ExchangeRateService exchangeRateService;
+    private final PharmacyProductRepo pharmacyProductRepo;
+    private final MasterProductRepo masterProductRepo;
     
-    public ReportService(UserRepository userRepository, ReportRepository reportRepository, ReportMapper reportMapper, ExchangeRateService exchangeRateService) {
+    public ReportService(UserRepository userRepository, ReportRepository reportRepository, ReportMapper reportMapper, 
+                        ExchangeRateService exchangeRateService, PharmacyProductRepo pharmacyProductRepo, 
+                        MasterProductRepo masterProductRepo) {
         super(userRepository);
         this.reportRepository = reportRepository;
         this.reportMapper = reportMapper;
         this.exchangeRateService = exchangeRateService;
+        this.pharmacyProductRepo = pharmacyProductRepo;
+        this.masterProductRepo = masterProductRepo;
     }
     
     // ============================================================================
@@ -80,10 +91,22 @@ public class ReportService extends BaseSecurityService {
         BigDecimal sumForAverage = BigDecimal.ZERO;
         
         for (Map<String, Object> data : rawData) {
-            Currency currency = Currency.valueOf(data.get("currency").toString());
-            BigDecimal amount = new BigDecimal(data.get("totalAmount").toString());
-            BigDecimal paid = new BigDecimal(data.get("totalPaid").toString());
-            int invoices = ((Number) data.get("totalInvoices")).intValue();
+            // Handle null values safely
+            Object currencyObj = data.get("currency");
+            Object amountObj = data.get("totalAmount");
+            Object paidObj = data.get("totalPaid");
+            Object invoicesObj = data.get("totalInvoices");
+            
+            // Skip this data entry if essential fields are null
+            if (currencyObj == null || amountObj == null || paidObj == null || invoicesObj == null) {
+                log.warn("Skipping data entry with null essential fields: {}", data);
+                continue;
+            }
+            
+            Currency currency = Currency.valueOf(currencyObj.toString());
+            BigDecimal amount = new BigDecimal(amountObj.toString());
+            BigDecimal paid = new BigDecimal(paidObj.toString());
+            int invoices = ((Number) invoicesObj).intValue();
             
             // Convert to SYP for consistent calculation
             BigDecimal amountInSYP = convertToSYP(amount, currency);
@@ -95,13 +118,16 @@ public class ReportService extends BaseSecurityService {
             sumForAverage = sumForAverage.add(amountInSYP);
             
             // Handle profit and revenue if present
-            if (data.containsKey("totalProfit")) {
-                BigDecimal profit = new BigDecimal(data.get("totalProfit").toString());
+            Object profitObj = data.get("totalProfit");
+            if (profitObj != null) {
+                BigDecimal profit = new BigDecimal(profitObj.toString());
                 BigDecimal profitInSYP = convertToSYP(profit, currency);
                 totalProfit = totalProfit.add(profitInSYP);
             }
-            if (data.containsKey("totalRevenue")) {
-                BigDecimal revenue = new BigDecimal(data.get("totalRevenue").toString());
+            
+            Object revenueObj = data.get("totalRevenue");
+            if (revenueObj != null) {
+                BigDecimal revenue = new BigDecimal(revenueObj.toString());
                 BigDecimal revenueInSYP = convertToSYP(revenue, currency);
                 totalRevenue = totalRevenue.add(revenueInSYP);
             }
@@ -137,28 +163,139 @@ public class ReportService extends BaseSecurityService {
     }
     
     /**
+     * Process currency-aware daily data and convert to target currency
+     * This method processes daily breakdown data (not summary data)
+     */
+    private List<Map<String, Object>> processCurrencyAwareDailyData(List<Map<String, Object>> rawData, Currency targetCurrency) {
+        return rawData.stream()
+            .map(data -> {
+                // Handle null values safely
+                Object currencyObj = data.get("currency");
+                Object amountObj = data.get("totalAmount");
+                Object paidObj = data.get("totalPaid");
+                Object invoicesObj = data.get("totalInvoices");
+                Object averageObj = data.get("averageAmount");
+                Object dateObj = data.get("date");
+                
+                // Skip this data entry if essential fields are null
+                if (currencyObj == null || amountObj == null || paidObj == null || invoicesObj == null || averageObj == null || dateObj == null) {
+                    log.warn("Skipping daily data entry with null essential fields: {}", data);
+                    return null;
+                }
+                
+                Currency currency = Currency.valueOf(currencyObj.toString());
+                BigDecimal amount = new BigDecimal(amountObj.toString());
+                BigDecimal paid = new BigDecimal(paidObj.toString());
+                BigDecimal average = new BigDecimal(averageObj.toString());
+                int invoices = ((Number) invoicesObj).intValue();
+                
+                // Convert to SYP for consistent calculation
+                BigDecimal amountInSYP = convertToSYP(amount, currency);
+                BigDecimal paidInSYP = convertToSYP(paid, currency);
+                BigDecimal averageInSYP = convertToSYP(average, currency);
+                
+                // Convert from SYP to target currency for display
+                BigDecimal finalAmount = convertFromSYP(amountInSYP, targetCurrency);
+                BigDecimal finalPaid = convertFromSYP(paidInSYP, targetCurrency);
+                BigDecimal finalAverage = convertFromSYP(averageInSYP, targetCurrency);
+                
+                return Map.of(
+                    "date", dateObj,
+                    "totalInvoices", invoices,
+                    "totalAmount", finalAmount,
+                    "totalPaid", finalPaid,
+                    "averageAmount", finalAverage,
+                    "currency", targetCurrency.name()
+                );
+            })
+            .filter(Objects::nonNull) // Remove null entries
+            .collect(Collectors.toList());
+    }
+    
+    /**
+     * Process currency-aware daily profit data and convert to target currency
+     * This method processes daily profit breakdown data (not summary data)
+     */
+    private List<Map<String, Object>> processCurrencyAwareDailyProfitData(List<Map<String, Object>> rawData, Currency targetCurrency) {
+        return rawData.stream()
+            .map(data -> {
+                // Handle null values safely
+                Object currencyObj = data.get("currency");
+                Object revenueObj = data.get("totalRevenue");
+                Object profitObj = data.get("totalProfit");
+                Object invoicesObj = data.get("totalInvoices");
+                Object averageObj = data.get("averageRevenue");
+                Object dateObj = data.get("date");
+                
+                // Skip this data entry if essential fields are null
+                if (currencyObj == null || revenueObj == null || profitObj == null || invoicesObj == null || averageObj == null || dateObj == null) {
+                    log.warn("Skipping daily profit data entry with null essential fields: {}", data);
+                    return null;
+                }
+                
+                Currency currency = Currency.valueOf(currencyObj.toString());
+                BigDecimal revenue = new BigDecimal(revenueObj.toString());
+                BigDecimal profit = new BigDecimal(profitObj.toString());
+                BigDecimal average = new BigDecimal(averageObj.toString());
+                int invoices = ((Number) invoicesObj).intValue();
+                
+                // Convert to SYP for consistent calculation
+                BigDecimal revenueInSYP = convertToSYP(revenue, currency);
+                BigDecimal profitInSYP = convertToSYP(profit, currency);
+                BigDecimal averageInSYP = convertToSYP(average, currency);
+                
+                // Convert from SYP to target currency for display
+                BigDecimal finalRevenue = convertFromSYP(revenueInSYP, targetCurrency);
+                BigDecimal finalProfit = convertFromSYP(profitInSYP, targetCurrency);
+                BigDecimal finalAverage = convertFromSYP(averageInSYP, targetCurrency);
+                
+                return Map.of(
+                    "date", dateObj,
+                    "totalInvoices", invoices,
+                    "totalRevenue", finalRevenue,
+                    "totalProfit", finalProfit,
+                    "averageRevenue", finalAverage,
+                    "currency", targetCurrency.name()
+                );
+            })
+            .filter(Objects::nonNull) // Remove null entries
+            .collect(Collectors.toList());
+    }
+    
+    /**
      * Process currency-aware items and convert to target currency
+     * Note: Prices from database are already in SYP, so we only convert from SYP to target currency
      */
     private List<Map<String, Object>> processCurrencyAwareItems(List<Map<String, Object>> rawItems, Currency targetCurrency) {
         return rawItems.stream()
             .map(item -> {
-                Currency itemCurrency = Currency.valueOf(item.get("currency").toString());
-                BigDecimal unitPrice = new BigDecimal(item.get("unitPrice").toString());
-                BigDecimal subTotal = new BigDecimal(item.get("subTotal").toString());
+                // Handle null values safely
+                Object unitPriceObj = item.get("unitPrice");
+                Object subTotalObj = item.get("subTotal");
+                Object productNameObj = item.get("productName");
+                Object quantityObj = item.get("quantity");
+                Object supplierNameObj = item.get("supplierName");
                 
-                // Convert to SYP first, then to target currency
-                BigDecimal unitPriceInSYP = convertToSYP(unitPrice, itemCurrency);
-                BigDecimal subTotalInSYP = convertToSYP(subTotal, itemCurrency);
+                // Convert to BigDecimal with null safety
+                BigDecimal unitPriceInSYP = unitPriceObj != null ? 
+                    new BigDecimal(unitPriceObj.toString()) : BigDecimal.ZERO;
+                BigDecimal subTotalInSYP = subTotalObj != null ? 
+                    new BigDecimal(subTotalObj.toString()) : BigDecimal.ZERO;
                 
+                // Convert from SYP to target currency
                 BigDecimal finalUnitPrice = convertFromSYP(unitPriceInSYP, targetCurrency);
                 BigDecimal finalSubTotal = convertFromSYP(subTotalInSYP, targetCurrency);
                 
+                // Get actual product name instead of product ID
+                String productName = productNameObj != null ? 
+                    getProductName(productNameObj.toString()) : "Unknown Product";
+                
                 return Map.of(
-                    "productName", item.get("productName"),
-                    "quantity", item.get("quantity"),
+                    "productName", productName,
+                    "quantity", quantityObj != null ? quantityObj : 0,
                     "unitPrice", finalUnitPrice,
                     "subTotal", finalSubTotal,
-                    "supplierName", item.get("supplierName"),
+                    "supplierName", supplierNameObj != null ? supplierNameObj.toString() : "Unknown Supplier",
                     "currency", targetCurrency.name()
                 );
             })
@@ -167,24 +304,33 @@ public class ReportService extends BaseSecurityService {
     
     /**
      * Process currency-aware profit items and convert to target currency
+     * Note: Prices from database are already in SYP, so we only convert from SYP to target currency
      */
     private List<Map<String, Object>> processCurrencyAwareProfitItems(List<Map<String, Object>> rawItems, Currency targetCurrency) {
         return rawItems.stream()
             .map(item -> {
-                Currency itemCurrency = Currency.valueOf(item.get("currency").toString());
-                BigDecimal revenue = new BigDecimal(item.get("revenue").toString());
-                BigDecimal profit = new BigDecimal(item.get("profit").toString());
+                // Handle null values safely
+                Object revenueObj = item.get("revenue");
+                Object profitObj = item.get("profit");
+                Object productNameObj = item.get("productName");
+                Object quantityObj = item.get("quantity");
                 
-                // Convert to SYP first, then to target currency
-                BigDecimal revenueInSYP = convertToSYP(revenue, itemCurrency);
-                BigDecimal profitInSYP = convertToSYP(profit, itemCurrency);
+                // Convert to BigDecimal with null safety
+                BigDecimal revenueInSYP = revenueObj != null ? 
+                    new BigDecimal(revenueObj.toString()) : BigDecimal.ZERO;
+                BigDecimal profitInSYP = profitObj != null ? 
+                    new BigDecimal(profitObj.toString()) : BigDecimal.ZERO;
                 
+                // Convert from SYP to target currency
                 BigDecimal finalRevenue = convertFromSYP(revenueInSYP, targetCurrency);
                 BigDecimal finalProfit = convertFromSYP(profitInSYP, targetCurrency);
                 
+                // Get actual product name, handling null cases
+                String productName = getProductNameForProfitItem(item);
+                
                 return Map.of(
-                    "productName", item.get("productName"),
-                    "quantity", item.get("quantity"),
+                    "productName", productName,
+                    "quantity", quantityObj != null ? quantityObj : 0,
                     "revenue", finalRevenue,
                     "profit", finalProfit,
                     "currency", targetCurrency.name()
@@ -207,16 +353,17 @@ public class ReportService extends BaseSecurityService {
         
         try {
             // Get daily breakdown with currency information
-            List<Map<String, Object>> dailyDataRaw = reportRepository.getMonthlyPurchaseDailyBreakdown(pharmacyId, startDate, endDate);
+            List<Map<String, Object>> dailyDataRawList = reportRepository.getMonthlyPurchaseDailyBreakdown(pharmacyId, startDate, endDate);
             
             // Get summary data with currency information
             List<Map<String, Object>> summaryRawList = reportRepository.getMonthlyPurchaseSummary(pharmacyId, startDate, endDate);
             
-            // Process currency-aware data
+            // Process currency-aware data for both daily and summary
             Map<String, Object> summaryRaw = processCurrencyAwareData(summaryRawList, currency);
+            List<Map<String, Object>> processedDailyData = processCurrencyAwareDailyData(dailyDataRawList, currency);
             
             // Convert to DTOs using mapper
-            List<PurchaseReportResponse.DailyPurchaseData> dailyData = reportMapper.toDailyPurchaseDataList(dailyDataRaw);
+            List<PurchaseReportResponse.DailyPurchaseData> dailyData = reportMapper.toDailyPurchaseDataList(processedDailyData);
             PurchaseReportResponse.PurchaseSummary summary = reportMapper.toPurchaseSummary(summaryRaw);
             
             // Build response
@@ -303,16 +450,17 @@ public class ReportService extends BaseSecurityService {
         
         try {
             // Get daily breakdown with currency information
-            List<Map<String, Object>> dailyDataRaw = reportRepository.getMonthlyProfitDailyBreakdown(pharmacyId, startDate, endDate);
+            List<Map<String, Object>> dailyDataRawList = reportRepository.getMonthlyProfitDailyBreakdown(pharmacyId, startDate, endDate);
             
             // Get summary data with currency information
             List<Map<String, Object>> summaryRawList = reportRepository.getMonthlyProfitSummary(pharmacyId, startDate, endDate);
             
-            // Process currency-aware data
+            // Process currency-aware data for both daily and summary
             Map<String, Object> summaryRaw = processCurrencyAwareData(summaryRawList, currency);
+            List<Map<String, Object>> processedDailyData = processCurrencyAwareDailyProfitData(dailyDataRawList, currency);
             
             // Convert to DTOs using mapper
-            List<ProfitReportResponse.DailyProfitData> dailyData = reportMapper.toDailyProfitDataList(dailyDataRaw);
+            List<ProfitReportResponse.DailyProfitData> dailyData = reportMapper.toDailyProfitDataList(processedDailyData);
             ProfitReportResponse.ProfitSummary summary = reportMapper.toProfitSummary(summaryRaw);
             
             // Build response
@@ -458,6 +606,89 @@ public class ReportService extends BaseSecurityService {
             errorResponse.setSuccess(false);
             errorResponse.setError(e.getMessage());
             return errorResponse;
+        }
+    }
+    
+    // ============================================================================
+    // HELPER METHODS
+    // ============================================================================
+    
+    /**
+     * Get product name by product ID
+     * This method fetches the actual product name from the appropriate product table
+     */
+    private String getProductName(String productIdStr) {
+        try {
+            Long productId = Long.parseLong(productIdStr);
+            
+            // Try to find in PharmacyProduct first
+            java.util.Optional<PharmacyProduct> pharmacyProduct = pharmacyProductRepo.findById(productId);
+            if (pharmacyProduct.isPresent()) {
+                return pharmacyProduct.get().getTradeName();
+            }
+            
+            // Try to find in MasterProduct
+            java.util.Optional<MasterProduct> masterProduct = masterProductRepo.findById(productId);
+            if (masterProduct.isPresent()) {
+                return masterProduct.get().getTradeName();
+            }
+            
+            // If not found, return the product ID as fallback
+            return "Product ID: " + productId;
+            
+        } catch (NumberFormatException e) {
+            log.warn("Invalid product ID format: {}", productIdStr);
+            return "Invalid Product ID";
+        } catch (Exception e) {
+            log.error("Error fetching product name for ID {}: {}", productIdStr, e.getMessage());
+            return "Unknown Product";
+        }
+    }
+    
+    /**
+     * Get product name for profit item, handling null productName from stockItem
+     * This method tries to get the product name from the stockItem first, 
+     * and if that's null, it fetches from product tables using productId and productType
+     */
+    private String getProductNameForProfitItem(Map<String, Object> item) {
+        try {
+            Object productNameObj = item.get("productName");
+            Object productIdObj = item.get("productId");
+            Object productTypeObj = item.get("productType");
+            
+            // If productName from stockItem is not null and not empty, use it
+            if (productNameObj != null && !productNameObj.toString().trim().isEmpty()) {
+                return productNameObj.toString();
+            }
+            
+            // If productName is null, fetch from product tables using productId and productType
+            if (productIdObj != null && productTypeObj != null) {
+                try {
+                    Long productId = Long.parseLong(productIdObj.toString());
+                    String productType = productTypeObj.toString();
+                    
+                    if ("PHARMACY".equals(productType)) {
+                        java.util.Optional<PharmacyProduct> pharmacyProduct = pharmacyProductRepo.findById(productId);
+                        if (pharmacyProduct.isPresent()) {
+                            return pharmacyProduct.get().getTradeName();
+                        }
+                    } else if ("MASTER".equals(productType)) {
+                        java.util.Optional<MasterProduct> masterProduct = masterProductRepo.findById(productId);
+                        if (masterProduct.isPresent()) {
+                            return masterProduct.get().getTradeName();
+                        }
+                    }
+                } catch (NumberFormatException e) {
+                    log.warn("Invalid product ID format in profit item: {}", productIdObj);
+                }
+            }
+            
+            // If all else fails, return descriptive message
+            return "Product Name Not Available";
+            
+        } catch (Exception e) {
+            log.error("Error getting product name for profit item: {}", e.getMessage());
+            return "Unknown Product";
         }
     }
 }
