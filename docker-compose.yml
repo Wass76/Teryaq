@@ -1,11 +1,10 @@
 version: '3.8'
-# Updated Docker Compose with Pharmaceutical Data Import Support
-# دعم استيراد البيانات الصيدلانية
+# You can just enable docker for psql database, Or run whole project on docker container
 
 # Database service
 services:
   teryaq-db:
-    image: postgres:15  # Updated to specific version for stability
+    image: postgres:latest
     container_name: teryaq-db
     environment:
       POSTGRES_USER: postgres
@@ -29,8 +28,6 @@ services:
     volumes:
       # Named Volume for Persistent Database Data (CRUCIAL FOR DATA PERSISTENCE & RESTORATION)
       - teryaq_pg_data:/var/lib/postgresql/data # Maps internal PGDATA to a named Docker volume
-      # Initialize database with pharmaceutical tables
-      - ./init-scripts:/docker-entrypoint-initdb.d/
     healthcheck: # IMPORTANT: This ensures the DB is truly ready before apps connect
       test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
       interval: 5s
@@ -38,11 +35,9 @@ services:
       retries: 5
       start_period: 10s # Give the DB some initial time to come up
 
-  # Application service with pharmaceutical support
+  # application service
   teryaq-app:
-    build:
-      context: . # Builds the Docker image from the Dockerfile in the current directory
-      dockerfile: Dockerfile
+    build: . # Builds the Docker image from the Dockerfile in the current directory
     image: teryaq-app # Name for your built Docker image
     depends_on:
       # teryaq-app will start ONLY AFTER teryaq-db is healthy
@@ -61,139 +56,23 @@ services:
       SPRING_FLYWAY_ENABLED: "false"
       # JVM memory settings to prevent memory leaks
       JAVA_OPTS: "-Xmx768m -Xms256m"
-
-      # Pharmaceutical service configuration
-      PYTHON_SCRIPT_PATH: /app/scripts/
-      TEMP_DIR: /tmp/pharmaceutical/
-      DB_CONNECTION_STRING: postgresql://postgres:password@teryaq-db:5432/teryaq
-      IMPORT_BATCH_SIZE: "1000"
-      SCRIPT_TIMEOUT: "300"
-      VALIDATION_ENABLED: "true"
-      TRANSLATION_ENABLED: "true"
-
     networks:
       - teryaq-net # Connects to the shared network
     restart: unless-stopped
-    # Resource limits (increased for Python processing)
+    # Resource limits to prevent CPU thrashing and memory issues
     deploy:
       resources:
         limits:
-          cpus: '1.0'  # Increased for Python processing
-          memory: 1536M  # Increased for data processing
-        reservations:
           cpus: '0.5'
-          memory: 768M
-    volumes:
-      # Mount logs directory for persistent logging
-      - teryaq_logs:/app/logs
-      # Mount temporary directory for file processing
-      - teryaq_temp:/tmp/pharmaceutical
-      # Mount scripts directory (optional, for development)
-      # - ./scripts:/app/scripts:ro
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3000/api/pharmaceutical/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 60s
-
-  # Optional: Database administration tool
-  pgadmin:
-    image: dpage/pgadmin4:latest
-    container_name: teryaq-pgadmin
-    environment:
-      PGADMIN_DEFAULT_EMAIL: admin@teryaq.com
-      PGADMIN_DEFAULT_PASSWORD: admin123
-      PGADMIN_CONFIG_SERVER_MODE: 'False'
-    ports:
-      - "15050:80"
-    networks:
-      - teryaq-net
-    depends_on:
-      - teryaq-db
-    restart: unless-stopped
-    profiles:
-      - admin  # Only start with: docker-compose --profile admin up
-    deploy:
-      resources:
-        limits:
+          memory: 1024M
+        reservations:
           cpus: '0.25'
-          memory: 256M
+          memory: 512M
 
 networks:
   teryaq-net:
     driver: bridge
-    # Enable IPv6 support if needed
-    enable_ipv6: false
 
-# Define the named volumes for data persistence
+# Define the named volume for data persistence
 volumes:
-  teryaq_pg_data: # Database data persistence
-    driver: local
-  teryaq_logs: # Application logs persistence
-    driver: local
-  teryaq_temp: # Temporary files for pharmaceutical processing
-    driver: local
-
-# Development override (use with docker-compose -f docker-compose.yml -f docker-compose.dev.yml up)
----
-# docker-compose.dev.yml content for development
-version: '3.8'
-services:
-  teryaq-app:
-    environment:
-      SPRING_PROFILES_ACTIVE: development
-      SPRING_JPA_SHOW_SQL: "true"
-      LOGGING_LEVEL_COM_YOURCOMPANY_PHARMACEUTICAL: DEBUG
-    volumes:
-      # Mount source code for hot reload (if using Spring Boot DevTools)
-      - ./src:/app/src:ro
-      # Mount scripts for development
-      - ./scripts:/app/scripts:ro
-    ports:
-      - "13000:3000"
-      - "15005:5005"  # Debug port
-    command: ["sh", "-c", "java $JAVA_OPTS -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005 -jar /app/teryaq.jar"]
-
-# Production override (use with docker-compose -f docker-compose.yml -f docker-compose.prod.yml up)
----
-# docker-compose.prod.yml content for production
-version: '3.8'
-services:
-  teryaq-db:
-    environment:
-      POSTGRES_PASSWORD_FILE: /run/secrets/postgres_password
-    secrets:
-      - postgres_password
-    deploy:
-      resources:
-        limits:
-          cpus: '1.0'
-          memory: 1024M
-        reservations:
-          cpus: '0.5'
-          memory: 512M
-
-  teryaq-app:
-    environment:
-      SPRING_PROFILES_ACTIVE: production
-      SPRING_JPA_HIBERNATE_DDL_AUTO: validate
-      SPRING_JPA_SHOW_SQL: "false"
-      LOGGING_LEVEL_ROOT: WARN
-      LOGGING_LEVEL_COM_YOURCOMPANY_PHARMACEUTICAL: INFO
-    deploy:
-      resources:
-        limits:
-          cpus: '2.0'
-          memory: 2048M
-        reservations:
-          cpus: '1.0'
-          memory: 1024M
-      replicas: 2  # Scale for production
-    secrets:
-      - postgres_password
-
-secrets:
-  postgres_password:
-    file: ./secrets/postgres_password.txt
-
+  teryaq_pg_data: # This is the named volume that Docker manages on your host
