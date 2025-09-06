@@ -63,9 +63,11 @@ public class StockManagementController {
     )
     public ResponseEntity<List<StockProductOverallDTOResponse>> advancedStockSearch(
             @Parameter(description = "Search keyword for product name, barcode, or trade name", example = "paracetamol")
-            @RequestParam(required = false) String keyword) {
+            @RequestParam(required = false) String keyword,
+            @Parameter(description = "Language code for product names", example = "ar")
+            @RequestParam(defaultValue = "en") String lang) {
         
-        List<StockProductOverallDTOResponse> stockProducts = stockService.stockItemSearch(keyword);
+        List<StockProductOverallDTOResponse> stockProducts = stockService.stockItemSearch(keyword, lang);
         
         // Always apply dual currency conversion
         stockProducts.forEach(product -> {

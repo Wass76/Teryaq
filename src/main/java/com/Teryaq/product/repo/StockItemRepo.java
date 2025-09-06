@@ -1,13 +1,14 @@
 package com.Teryaq.product.repo;
 
-import com.Teryaq.product.entity.StockItem;
-import com.Teryaq.product.Enum.ProductType;
+import java.time.LocalDate;
+import java.util.List;
+
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-import java.time.LocalDate;
-import java.util.List;
+import com.Teryaq.product.Enum.ProductType;
+import com.Teryaq.product.entity.StockItem;
 
 public interface StockItemRepo extends JpaRepository<StockItem, Long> {
     
@@ -58,6 +59,14 @@ public interface StockItemRepo extends JpaRepository<StockItem, Long> {
                         WHERE ppb.product.id = pp.id 
                         AND LOWER(ppb.barcode) LIKE LOWER(CONCAT('%', :keyword, '%'))
                     )
+                    OR EXISTS (
+                        SELECT 1 FROM PharmacyProductTranslation ppt 
+                        WHERE ppt.product.id = pp.id 
+                        AND (
+                            LOWER(ppt.tradeName) LIKE LOWER(CONCAT('%', :keyword, '%'))
+                            OR LOWER(ppt.scientificName) LIKE LOWER(CONCAT('%', :keyword, '%'))
+                        )
+                    )
                 )
             )
             OR EXISTS (
@@ -67,6 +76,14 @@ public interface StockItemRepo extends JpaRepository<StockItem, Long> {
                 AND (
                     LOWER(mp.tradeName) LIKE LOWER(CONCAT('%', :keyword, '%'))
                     OR LOWER(mp.barcode) LIKE LOWER(CONCAT('%', :keyword, '%'))
+                    OR EXISTS (
+                        SELECT 1 FROM MasterProductTranslation mpt 
+                        WHERE mpt.product.id = mp.id 
+                        AND (
+                            LOWER(mpt.tradeName) LIKE LOWER(CONCAT('%', :keyword, '%'))
+                            OR LOWER(mpt.scientificName) LIKE LOWER(CONCAT('%', :keyword, '%'))
+                        )
+                    )
                 )
             )
           )

@@ -158,6 +158,10 @@ public class StockService extends BaseSecurityService {
     }
     
     public List<StockProductOverallDTOResponse> stockItemSearch(String keyword) {
+        return stockItemSearch(keyword, "en"); // Default to English
+    }
+    
+    public List<StockProductOverallDTOResponse> stockItemSearch(String keyword, String lang) {
         Long currentPharmacyId = getCurrentUserPharmacyId();
         
         List<StockItem> matchingStockItems = stockItemRepo.searchStockItems(keyword, currentPharmacyId);
@@ -178,7 +182,7 @@ public class StockService extends BaseSecurityService {
                 Long productId = firstItem.getProductId();
                 ProductType productType = firstItem.getProductType();
                 
-                return stockItemMapper.toProductSummary(productId, productType, stockItems, currentPharmacyId);
+                return stockItemMapper.toProductSummaryWithLang(productId, productType, stockItems, currentPharmacyId, true, lang);
             })
             .filter(Objects::nonNull)
             .collect(Collectors.toList());
