@@ -8,6 +8,7 @@ public enum TransactionType {
     SALE_REFUND,
     PURCHASE_PAYMENT,
     PURCHASE_REFUND,
+    DEBT_PAYMENT, // ✅ ADDED: For customer debt payments
     EXPENSE,
     INCOME,
     TRANSFER_IN,

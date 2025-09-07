@@ -187,18 +187,18 @@ public class CustomerDebtService extends BaseSecurityService {
 
         CustomerDebt savedDebt = customerDebtRepository.save(debt);
         
-        // تسجيل العملية في الصندوق إذا كان الدفع نقدي
+        // تسجيل العملية في الصندوق إذا كان الدفع نقدي - CRITICAL FIX: Use debt payment method
         if (request.getPaymentMethod() == PaymentMethod.CASH) {
             try {
                 // Get current pharmacy ID for MoneyBox integration
                 Long pharmacyId = getCurrentUserPharmacyId();
-                salesIntegrationService.recordSalePayment(
+                salesIntegrationService.recordDebtPayment( // ✅ FIXED: Use recordDebtPayment instead of recordSalePayment
                     pharmacyId,
                     debt.getId(),
                     BigDecimal.valueOf(paymentAmount),
                     SYP
                 );
-                logger.info("Debt payment recorded in MoneyBox for debt: {}", debt.getId());
+                logger.info("Debt payment recorded in MoneyBox for debt: {} - Amount: {}", debt.getId(), paymentAmount);
             } catch (Exception e) {
                 logger.warn("Failed to record debt payment in MoneyBox for debt {}: {}", debt.getId(), e.getMessage());
             }
@@ -457,13 +457,14 @@ public class CustomerDebtService extends BaseSecurityService {
                 float actualPaidAmount = request.getTotalPaymentAmount().floatValue() - remainingPaymentAmount;
                 // Get current pharmacy ID for MoneyBox integration
                 Long pharmacyId = getCurrentUserPharmacyId();
-                salesIntegrationService.recordSalePayment(
+                salesIntegrationService.recordDebtPayment( // ✅ FIXED: Use recordDebtPayment for multiple debt payments
                     pharmacyId,
                     customerId, // Using customerId as reference ID for multiple debts
                     BigDecimal.valueOf(actualPaidAmount),
                     SYP
                 );
-                logger.info("Multiple debt payments recorded in Money Box for customer: {}", customerId);
+                logger.info("Multiple debt payments recorded in Money Box for customer: {} - Amount: {}", 
+                           customerId, actualPaidAmount);
             } catch (Exception e) {
                 logger.warn("Failed to record debt payment in Money Box for customer {}: {}", 
                            customerId, e.getMessage());

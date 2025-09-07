@@ -259,18 +259,19 @@ public class SaleService extends BaseSecurityService {
         SaleInvoice savedInvoice = saleInvoiceRepository.save(invoice);
         saleInvoiceItemRepository.saveAll(items);
         
-        // Integrate with Money Box for cash payments
-        if (requestDTO.getPaymentMethod() == com.Teryaq.product.Enum.PaymentMethod.CASH) {
+        // Integrate with Money Box for cash payments - CRITICAL FIX: Only record paidAmount, not totalAmount
+        if (requestDTO.getPaymentMethod() == com.Teryaq.product.Enum.PaymentMethod.CASH && savedInvoice.getPaidAmount() > 0) {
             try {
                 // Get current pharmacy ID for MoneyBox integration
                 Long currentPharmacyId = getCurrentUserPharmacyId();
                 salesIntegrationService.recordSalePayment(
                     currentPharmacyId,
                     savedInvoice.getId(),
-                    java.math.BigDecimal.valueOf(savedInvoice.getTotalAmount()),
+                    java.math.BigDecimal.valueOf(savedInvoice.getPaidAmount()), // ✅ FIXED: Use paidAmount instead of totalAmount
                     requestDTO.getCurrency()
                 );
-                logger.info("Cash sale recorded in Money Box for invoice: {}", savedInvoice.getId());
+                logger.info("Cash sale recorded in Money Box for invoice: {} - Amount: {} (paidAmount only)", 
+                           savedInvoice.getId(), savedInvoice.getPaidAmount());
             } catch (Exception e) {
                 logger.warn("Failed to record cash sale in Money Box for invoice {}: {}", 
                            savedInvoice.getId(), e.getMessage());
@@ -720,20 +721,24 @@ public class SaleService extends BaseSecurityService {
         float remainingAmount = saleInvoice.getRemainingAmount();
         float paidAmount = saleInvoice.getPaidAmount();
         
-        // الحالة 1: فاتورة نقدية مدفوعة بالكامل
+        // الحالة 1: فاتورة نقدية مدفوعة بالكامل - CRITICAL FIX: Only refund actual cash paid
         if (saleInvoice.getPaymentType() == PaymentType.CASH && remainingAmount == 0) {
-            // إرجاع النقد للصندوق
-            try {
-                salesIntegrationService.recordSaleRefund(
-                    currentPharmacyId,
-                    saleId,
-                    java.math.BigDecimal.valueOf(totalRefundAmount),
-                    saleInvoice.getCurrency()
-                );
-                logger.info("Cash refund recorded in Money Box for invoice: {}", saleId);
-            } catch (Exception e) {
-                logger.warn("Failed to record cash refund in Money Box for invoice {}: {}", 
-                           saleId, e.getMessage());
+            // إرجاع النقد للصندوق - Only refund the amount that was actually paid in cash
+            float refundAmount = Math.min(totalRefundAmount, saleInvoice.getPaidAmount());
+            if (refundAmount > 0) {
+                try {
+                    salesIntegrationService.recordSaleRefund(
+                        currentPharmacyId,
+                        saleId,
+                        java.math.BigDecimal.valueOf(refundAmount), // ✅ FIXED: Only refund actual cash paid
+                        saleInvoice.getCurrency()
+                    );
+                    logger.info("Cash refund recorded in Money Box for invoice: {} - Amount: {} (actual cash paid)", 
+                               saleId, refundAmount);
+                } catch (Exception e) {
+                    logger.warn("Failed to record cash refund in Money Box for invoice {}: {}", 
+                               saleId, e.getMessage());
+                }
             }
         }
         

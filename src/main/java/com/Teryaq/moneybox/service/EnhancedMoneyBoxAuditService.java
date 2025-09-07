@@ -468,6 +468,7 @@ public class EnhancedMoneyBoxAuditService {
     
     private boolean isRevenueTransaction(TransactionType transactionType) {
         return transactionType == TransactionType.SALE_PAYMENT ||
+               transactionType == TransactionType.DEBT_PAYMENT || // ✅ ADDED: Debt payments are revenue
                transactionType == TransactionType.CASH_DEPOSIT ||
                transactionType == TransactionType.INCOME ||
                transactionType == TransactionType.TRANSFER_IN ||
