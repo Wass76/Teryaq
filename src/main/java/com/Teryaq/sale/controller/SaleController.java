@@ -33,7 +33,7 @@ public class SaleController {
     
     private final SaleService saleService;
    
-    @PreAuthorize("hasRole('PHARMACY_MANAGER') or hasRole('PHARMACIST') or hasRole('TRAINEE') ")
+    @PreAuthorize("hasRole('PHARMACY_MANAGER') or hasRole('PHARMACY_EMPLOYEE') or hasRole('PHARMACY_TRAINEE') ")
     @Operation(
         summary = "Create a new sale invoice", 
         description = "Creates a new sale invoice with the given request. Requires EMPLOYEE role."
@@ -56,7 +56,7 @@ public class SaleController {
         return ResponseEntity.ok(response);
     }
 
-    @PreAuthorize("hasRole('PHARMACY_MANAGER') or hasRole('PHARMACIST') or hasRole('TRAINEE') ")
+    @PreAuthorize("hasRole('PHARMACY_MANAGER') or hasRole('PHARMACY_EMPLOYEE') or hasRole('PHARMACY_TRAINEE') ")
     @Operation(
         summary = "Get all sale invoices", 
         description = "Retrieves all sale invoices for the current pharmacy. Requires EMPLOYEE role."
@@ -74,7 +74,7 @@ public class SaleController {
         return ResponseEntity.ok(response);
     }
 
-    @PreAuthorize("hasRole('PHARMACY_MANAGER') or hasRole('PHARMACIST') or hasRole('TRAINEE') ")
+    @PreAuthorize("hasRole('PHARMACY_MANAGER') or hasRole('PHARMACY_EMPLOYEE') or hasRole('PHARMACY_TRAINEE') ")
     @Operation(
         summary = "Get a sale invoice by ID", 
         description = "Retrieves a sale invoice by its ID. Requires EMPLOYEE role."
@@ -95,7 +95,7 @@ public class SaleController {
         return ResponseEntity.ok(response);
     }
 
-    @PreAuthorize("hasRole('PHARMACY_MANAGER') or hasRole('PHARMACIST') or hasRole('TRAINEE') ")
+    @PreAuthorize("hasRole('PHARMACY_MANAGER') or hasRole('PHARMACY_EMPLOYEE') or hasRole('PHARMACY_TRAINEE') ")
     @Operation(
         summary = "Cancel a sale invoice", 
         description = "Cancels a sale invoice and restores stock quantities. Requires EMPLOYEE role."
@@ -115,7 +115,7 @@ public class SaleController {
         return ResponseEntity.ok().build();
     }
 
-    @PreAuthorize("hasRole('PHARMACY_MANAGER') or hasRole('PHARMACIST') or hasRole('TRAINEE') ")
+    @PreAuthorize("hasRole('PHARMACY_MANAGER') or hasRole('PHARMACY_EMPLOYEE') or hasRole('PHARMACY_TRAINEE') ")
     @Operation(
         summary = "Process sale refund", 
         description = "Process a refund for a sale invoice. Can be full invoice or partial items refund."
@@ -140,7 +140,7 @@ public class SaleController {
         return ResponseEntity.ok(response);
     }
 
-    @PreAuthorize("hasRole('PHARMACY_MANAGER') or hasRole('PHARMACIST') or hasRole('TRAINEE') ")
+    @PreAuthorize("hasRole('PHARMACY_MANAGER') or hasRole('PHARMACY_EMPLOYEE') or hasRole('PHARMACY_TRAINEE') ")
     @Operation(
         summary = "Get refunds by sale invoice ID", 
         description = "Retrieves all refunds for a specific sale invoice."
@@ -160,7 +160,7 @@ public class SaleController {
         return ResponseEntity.ok(response);
     }
 
-    @PreAuthorize("hasRole('PHARMACY_MANAGER') or hasRole('PHARMACIST') or hasRole('TRAINEE') ")
+    @PreAuthorize("hasRole('PHARMACY_MANAGER') or hasRole('PHARMACY_EMPLOYEE') or hasRole('PHARMACY_TRAINEE') ")
     @Operation(
         summary = "Get all refunds", 
         description = "Retrieves all refunds for the current pharmacy."
@@ -178,7 +178,7 @@ public class SaleController {
         return ResponseEntity.ok(response);
     }
 
-    @PreAuthorize("hasRole('PHARMACY_MANAGER') or hasRole('PHARMACIST') or hasRole('TRAINEE') ")
+    @PreAuthorize("hasRole('PHARMACY_MANAGER') or hasRole('PHARMACY_EMPLOYEE') or hasRole('PHARMACY_TRAINEE') ")
     @Operation(
         summary = "Get refund details with debt and cash information", 
         description = "Retrieves detailed refund information including debt reduction and cash refund details."
@@ -199,7 +199,7 @@ public class SaleController {
         return ResponseEntity.ok(response);
     }
 
-    @PreAuthorize("hasRole('PHARMACY_MANAGER') or hasRole('PHARMACIST') or hasRole('TRAINEE') ")
+    @PreAuthorize("hasRole('PHARMACY_MANAGER') or hasRole('PHARMACY_EMPLOYEE') or hasRole('PHARMACY_TRAINEE') ")
     @Operation(
         summary = "Get refunds by date range", 
         description = "Retrieves refunds between two dates for the current pharmacy."
@@ -233,7 +233,7 @@ public class SaleController {
     //     return ResponseEntity.ok(response);
     // }
 
-    @PreAuthorize("hasRole('PHARMACY_MANAGER') or hasRole('PHARMACIST') or hasRole('TRAINEE') ")
+    @PreAuthorize("hasRole('PHARMACY_MANAGER') or hasRole('PHARMACY_EMPLOYEE') or hasRole('PHARMACY_TRAINEE') ")
     @GetMapping("/searchByDateRange")
     @Operation(
         summary = "Search sale invoices by date range",

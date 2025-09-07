@@ -2,7 +2,7 @@ package com.Teryaq.user.Enum;
 
 public enum Role {
     PHARMACY_MANAGER,
-    PHARMACIST,
-    TRAINEE,
+    PHARMACY_EMPLOYEE,
+    PHARMACY_TRAINEE,
     PLATFORM_ADMIN;
 }
