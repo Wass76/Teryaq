@@ -1,5 +1,6 @@
 package com.Teryaq.user.service;
 
+import com.Teryaq.purchase.repository.PurchaseOrderRepo;
 import com.Teryaq.user.dto.SupplierDTORequest;
 import com.Teryaq.user.dto.SupplierDTOResponse;
 import com.Teryaq.user.entity.Supplier;
@@ -25,15 +26,17 @@ public class SupplierService extends BaseSecurityService {
     private final SupplierRepository supplierRepository;
     private final SupplierMapper supplierMapper;
     private final PurchaseInvoiceRepo purchaseInvoiceRepo;
+    private final PurchaseOrderRepo purchaseOrderRepo;
 
     public SupplierService(SupplierRepository supplierRepository,
-                         SupplierMapper supplierMapper,
-                         UserRepository userRepository,
-                         PurchaseInvoiceRepo purchaseInvoiceRepo) {
+                           SupplierMapper supplierMapper,
+                           UserRepository userRepository,
+                           PurchaseInvoiceRepo purchaseInvoiceRepo, PurchaseOrderRepo purchaseOrderRepo) {
         super(userRepository);
         this.supplierRepository = supplierRepository;
         this.supplierMapper = supplierMapper;
         this.purchaseInvoiceRepo = purchaseInvoiceRepo;
+        this.purchaseOrderRepo = purchaseOrderRepo;
     }
 
     @Transactional
@@ -116,6 +119,11 @@ public class SupplierService extends BaseSecurityService {
         
         // Check if supplier has any purchase invoices
         if (purchaseInvoiceRepo.countByPharmacyIdAndSupplierId(pharmacyId, id) > 0) {
+            throw new ConflictException("Cannot delete supplier. Supplier has associated purchase invoices. Please delete all purchase invoices first.");
+        }
+
+        // Check if supplier has any purchase order
+        if (purchaseOrderRepo.countByPharmacyIdAndSupplierId(pharmacyId, id) > 0) {
             throw new ConflictException("Cannot delete supplier. Supplier has associated purchase invoices. Please delete all purchase invoices first.");
         }
         

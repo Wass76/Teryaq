@@ -30,4 +30,10 @@ public interface PurchaseOrderRepo extends JpaRepository<PurchaseOrder, Long> {
     
     // New methods for filtering by supplier
     Page<PurchaseOrder> findByPharmacyIdAndSupplierId(Long pharmacyId, Long supplierId, Pageable pageable);
+
+    /**
+     * Count purchase invoices by pharmacy ID and supplier ID
+     */
+    long countByPharmacyIdAndSupplierId(Long pharmacyId, Long supplierId);
+
 } 

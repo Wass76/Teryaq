@@ -1,10 +1,16 @@
 package com.Teryaq.config;
 
+import com.Teryaq.utils.exception.TokenExpiredException;
+import com.Teryaq.utils.restExceptionHanding.ApiException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.lang.NonNull;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -15,6 +21,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
+import java.time.LocalDateTime;
 
 @Component
 @RequiredArgsConstructor
@@ -37,21 +44,45 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             return;
         }
         jwt = authHeader.substring(7);
-        userEmail = jwtService.extractUsername(jwt);
-        if(userEmail != null && SecurityContextHolder.getContext().getAuthentication()==null){
-            UserDetails userDetails = this.userDetailsService.loadUserByUsername(userEmail);
-            if(jwtService.isTokenValid(jwt,userDetails)){
-                UsernamePasswordAuthenticationToken authToken =  new UsernamePasswordAuthenticationToken(
-                        userDetails,
-                        null,
-                        userDetails.getAuthorities()
-                );
-                authToken.setDetails(
-                        new WebAuthenticationDetailsSource().buildDetails(request)
-                );
-                SecurityContextHolder.getContext().setAuthentication(authToken);
+        try {
+            userEmail = jwtService.extractUsername(jwt);
+            if(userEmail != null && SecurityContextHolder.getContext().getAuthentication()==null){
+                UserDetails userDetails = this.userDetailsService.loadUserByUsername(userEmail);
+                if(jwtService.isTokenValid(jwt,userDetails)){
+                    UsernamePasswordAuthenticationToken authToken =  new UsernamePasswordAuthenticationToken(
+                            userDetails,
+                            null,
+                            userDetails.getAuthorities()
+                    );
+                    authToken.setDetails(
+                            new WebAuthenticationDetailsSource().buildDetails(request)
+                    );
+                    SecurityContextHolder.getContext().setAuthentication(authToken);
+                }
             }
+        } catch (Exception e) {
+            // If token parsing fails due to expiration or other issues, return 401 response
+            handleTokenExpiredException(response);
+            return;
         }
         filterChain.doFilter(request,response);
+    }
+    
+    private void handleTokenExpiredException(HttpServletResponse response) throws IOException {
+        response.setStatus(HttpStatus.UNAUTHORIZED.value());
+        response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+        
+        ApiException apiException = new ApiException(
+                "Token expired",
+                HttpStatus.UNAUTHORIZED,
+                LocalDateTime.now()
+        );
+        
+        ObjectMapper objectMapper = new ObjectMapper();
+        objectMapper.registerModule(new JavaTimeModule());
+        String jsonResponse = objectMapper.writeValueAsString(apiException);
+        
+        response.getWriter().write(jsonResponse);
+        response.getWriter().flush();
     }
 }
