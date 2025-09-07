@@ -225,21 +225,81 @@ public interface ReportRepository extends JpaRepository<SaleInvoice, Long> {
     // ============================================================================
     
     /**
-     * Get most sold categories monthly
-     * Returns the most sold categories in the pharmacy for the specified month
-     * Note: This is a simplified version that groups by product name since category relationship is complex
+     * Get most sold categories for MasterProduct
+     * Returns categories from MasterProduct sales with language support
      */
     @Query("SELECT " +
-           "sii.stockItem.productName as categoryName, " +
+           "COALESCE(ct.name, c.name) as categoryName, " +
            "SUM(sii.quantity) as totalQuantity, " +
            "SUM(sii.subTotal) as totalRevenue, " +
            "COUNT(DISTINCT si) as invoiceCount " +
            "FROM SaleInvoiceItem sii " +
            "JOIN sii.saleInvoice si " +
+           "JOIN sii.stockItem st " +
+           "JOIN MasterProduct mp ON st.productId = mp.id " +
+           "JOIN mp.categories c " +
+           "LEFT JOIN CategoryTranslation ct ON (ct.category.id = c.id AND (:languageId IS NULL OR ct.language.id = :languageId)) " +
            "WHERE si.pharmacy.id = :pharmacyId " +
            "AND DATE(si.invoiceDate) BETWEEN :startDate AND :endDate " +
            "AND si.status = 'SOLD' " +
-           "GROUP BY sii.stockItem.productName " +
+           "AND st.productType = com.Teryaq.product.Enum.ProductType.MASTER " +
+           "GROUP BY COALESCE(ct.name, c.name) " +
+           "ORDER BY totalQuantity DESC")
+    List<Map<String, Object>> getMostSoldCategoriesFromMasterProduct(
+            @Param("pharmacyId") Long pharmacyId,
+            @Param("startDate") LocalDate startDate,
+            @Param("endDate") LocalDate endDate,
+            @Param("languageId") Long languageId);
+    
+    /**
+     * Get most sold categories for PharmacyProduct
+     * Returns categories from PharmacyProduct sales with language support
+     */
+    @Query("SELECT " +
+           "COALESCE(ct.name, c.name) as categoryName, " +
+           "SUM(sii.quantity) as totalQuantity, " +
+           "SUM(sii.subTotal) as totalRevenue, " +
+           "COUNT(DISTINCT si) as invoiceCount " +
+           "FROM SaleInvoiceItem sii " +
+           "JOIN sii.saleInvoice si " +
+           "JOIN sii.stockItem st " +
+           "JOIN PharmacyProduct pp ON st.productId = pp.id " +
+           "JOIN pp.categories c " +
+           "LEFT JOIN CategoryTranslation ct ON (ct.category.id = c.id AND (:languageId IS NULL OR ct.language.id = :languageId)) " +
+           "WHERE si.pharmacy.id = :pharmacyId " +
+           "AND DATE(si.invoiceDate) BETWEEN :startDate AND :endDate " +
+           "AND si.status = 'SOLD' " +
+           "AND st.productType = com.Teryaq.product.Enum.ProductType.PHARMACY " +
+           "GROUP BY COALESCE(ct.name, c.name) " +
+           "ORDER BY totalQuantity DESC")
+    List<Map<String, Object>> getMostSoldCategoriesFromPharmacyProduct(
+            @Param("pharmacyId") Long pharmacyId,
+            @Param("startDate") LocalDate startDate,
+            @Param("endDate") LocalDate endDate,
+            @Param("languageId") Long languageId);
+    
+    /**
+     * Get most sold categories monthly
+     * Returns the most sold categories in the pharmacy for the specified month
+     * Uses JPQL to handle entity relationships properly
+     */
+    @Query("SELECT " +
+           "COALESCE(c.name, 'Uncategorized') as categoryName, " +
+           "SUM(sii.quantity) as totalQuantity, " +
+           "SUM(sii.subTotal) as totalRevenue, " +
+           "COUNT(DISTINCT si) as invoiceCount " +
+           "FROM SaleInvoiceItem sii " +
+           "JOIN sii.saleInvoice si " +
+           "JOIN sii.stockItem st " +
+           "LEFT JOIN MasterProduct mp ON st.productId = mp.id " +
+           "LEFT JOIN PharmacyProduct pp ON st.productId = pp.id " +
+           "LEFT JOIN mp.categories c " +
+           "LEFT JOIN pp.categories c2 " +
+           "WHERE si.pharmacy.id = :pharmacyId " +
+           "AND DATE(si.invoiceDate) BETWEEN :startDate AND :endDate " +
+           "AND si.status = 'SOLD' " +
+           "AND (st.productType = com.Teryaq.product.Enum.ProductType.MASTER OR st.productType = com.Teryaq.product.Enum.ProductType.PHARMACY) " +
+           "GROUP BY COALESCE(c.name, c2.name, 'Uncategorized') " +
            "ORDER BY totalQuantity DESC")
     List<Map<String, Object>> getMostSoldCategories(
             @Param("pharmacyId") Long pharmacyId,

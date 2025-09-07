@@ -1,9 +1,11 @@
 package com.Teryaq.product.controller;
 
 
+import com.Teryaq.product.config.PharmaceuticalImportConfig;
 import com.Teryaq.product.dto.ImportResponse;
 import com.Teryaq.product.service.PharmaceuticalImportService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -22,6 +24,9 @@ public class PharmaceuticalController {
 
     @Autowired
     private PharmaceuticalImportService importService;
+
+    @Autowired
+    private PharmaceuticalImportConfig config;
 
     /**
      * Import pharmaceutical data from Excel file to existing database tables
@@ -45,6 +50,15 @@ public class PharmaceuticalController {
             if (filename == null || (!filename.endsWith(".xlsx") && !filename.endsWith(".xls"))) {
                 return ResponseEntity.badRequest()
                         .body(new ImportResponse(false, "نوع الملف غير مدعوم. يجب أن يكون Excel / Unsupported file type. Must be Excel", 0, null));
+            }
+
+            // Check file size
+            long fileSizeMB = file.getSize() / (1024 * 1024);
+            if (fileSizeMB > config.getImport().getMaxFileSize().getMb()) {
+                return ResponseEntity.badRequest()
+                        .body(new ImportResponse(false, 
+                                String.format("حجم الملف كبير جداً. الحد الأقصى %d ميجابايت / File too large. Maximum %d MB", 
+                                        config.getImport().getMaxFileSize().getMb(), config.getImport().getMaxFileSize().getMb()), 0, null));
             }
 
             // Validate database schema before processing

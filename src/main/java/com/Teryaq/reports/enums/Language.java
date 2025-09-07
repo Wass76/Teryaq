@@ -5,6 +5,6 @@ package com.Teryaq.reports.enums;
  * Supported languages in the pharmacy management system
  */
 public enum Language {
-    EN,
-    AR
+    en,
+    ar
 }

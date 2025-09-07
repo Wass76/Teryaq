@@ -114,7 +114,7 @@ class DatabaseManager:
     def get_form_id(self, form_name: str) -> int:
         """Get form ID by name, create if not exists"""
         if not form_name or not form_name.strip():
-            return 1  # Default form ID
+              return None  # Return None instead of default fallback
 
         form_name = form_name.strip()
 
@@ -150,13 +150,12 @@ class DatabaseManager:
 
         except Exception as e:
             logging.error(f"خطأ في إنشاء الشكل الصيدلاني / Error creating form {form_name}: {e}")
-
-        return 1  # Default fallback
+            return None  # Return None instead of default fallback
 
     def get_manufacturer_id(self, manufacturer_name: str) -> int:
         """Get manufacturer ID by name, create if not exists"""
         if not manufacturer_name or not manufacturer_name.strip():
-            return 1  # Default manufacturer ID
+            return None  # Return None instead of default fallback
 
         manufacturer_name = manufacturer_name.strip()
 
@@ -192,8 +191,7 @@ class DatabaseManager:
 
         except Exception as e:
             logging.error(f"خطأ في إنشاء المصنع / Error creating manufacturer {manufacturer_name}: {e}")
-
-        return 1  # Default fallback
+            return None  # Return None instead of default fallback
 
     def close(self):
         """Close database connection"""
@@ -359,28 +357,58 @@ def extract_pharmaceutical_data(excel_file_path: str, db_config: Dict[str, Any])
         # Prepare the output data
         pharmaceutical_data = []
 
-        # Process each row
-        for index, row in df.iterrows():
+        # Validate required columns
+        required_columns = ['الاسم التجاري', 'التركيب ', 'العيار', ' العبوة', 'المعمل', ' الشكل الصيدلاني', 'السعر للعموم', 'السعر للصيدلاني']
+        missing_columns = [col for col in required_columns if col not in df.columns]
+        if missing_columns:
+            logging.error(f"Missing required columns: {missing_columns}")
+            return None
+
+        # Process first 100 rows only for testing
+        max_rows = min(100, len(df))
+        logging.info(f"Processing first {max_rows} rows out of {len(df)} total rows")
+        
+        processed_count = 0
+        logging.info(f"Starting to process {max_rows} records...")
+        for index, row in df.head(max_rows).iterrows():
+            processed_count += 1
+            if processed_count % 10 == 0:  # Log every 10 records
+                logging.info(f"Processed {processed_count}/{max_rows} records")
             try:
-                # Extract basic information
-                trade_name = clean_text(row['الاسم التجاري'])
-                scientific_name = clean_text(row['التركيب '])
-                concentration = clean_text(row['العيار'])
-                size = clean_text(row[' العبوة'])
-                manufacturer = clean_text(row['المعمل'])
-                form = clean_text(row[' الشكل الصيدلاني'])
+                # Extract basic information with safe access
+                trade_name = clean_text(row.get('الاسم التجاري', ''))
+                scientific_name = clean_text(row.get('التركيب ', ''))
+                concentration = clean_text(row.get('العيار', ''))
+                size = clean_text(row.get(' العبوة', ''))
+                manufacturer = clean_text(row.get('المعمل', ''))
+                form = clean_text(row.get(' الشكل الصيدلاني', ''))
 
                 # Skip empty rows
                 if not trade_name and not scientific_name:
                     continue
 
-                # Handle prices
-                selling_price = row['السعر للعموم'] if not pd.isna(row['السعر للعموم']) else 0.0
-                purchase_price = row['السعر للصيدلاني'] if not pd.isna(row['السعر للصيدلاني']) else calculate_purchase_price(selling_price)
+                # Handle prices with safe access
+                selling_price = row.get('السعر للعموم', 0.0) if not pd.isna(row.get('السعر للعموم', 0.0)) else 0.0
+                purchase_price = row.get('السعر للصيدلاني', 0.0) if not pd.isna(row.get('السعر للصيدلاني', 0.0)) else calculate_purchase_price(selling_price)
 
                 # Get form and manufacturer IDs from existing database
-                form_id = db_manager.get_form_id(form)
-                manufacturer_id = db_manager.get_manufacturer_id(manufacturer)
+                try:
+                    form_id = db_manager.get_form_id(form)
+                    if form_id is None:
+                        form_id = 1  # Default form ID
+                        logging.warning(f"Using default form ID 1 for: {form}")
+                except Exception as e:
+                    form_id = 1  # Default form ID
+                    logging.warning(f"Error getting form ID for {form}: {e}, using default form ID 1")
+                
+                try:
+                    manufacturer_id = db_manager.get_manufacturer_id(manufacturer)
+                    if manufacturer_id is None:
+                        manufacturer_id = 1  # Default manufacturer ID
+                        logging.warning(f"Using default manufacturer ID 1 for: {manufacturer}")
+                except Exception as e:
+                    manufacturer_id = 1  # Default manufacturer ID
+                    logging.warning(f"Error getting manufacturer ID for {manufacturer}: {e}, using default manufacturer ID 1")
 
                 # Create the pharmaceutical record for master_product table
                 pharmaceutical_record = {
@@ -393,9 +421,11 @@ def extract_pharmaceutical_data(excel_file_path: str, db_config: Dict[str, Any])
                     "notes": f"دواء من إنتاج {manufacturer} - {form}",
                     "tax": 15.0,
                     "barcode": generate_random_barcode(),
+                    "requiresPrescription": False,  # Default to False, can be updated later
+                    "typeId": 1,  # Default pharmaceutical type ID
                     "formId": form_id,
                     "manufacturerId": manufacturer_id,
-                    "isActive": True,
+                    "categoryIds": [1],  # Default pharmaceutical category
                     "translations": [
                         {
                             "tradeName": translate_to_arabic(trade_name),
@@ -412,6 +442,7 @@ def extract_pharmaceutical_data(excel_file_path: str, db_config: Dict[str, Any])
                 continue
 
         logging.info(f"تم استخراج {len(pharmaceutical_data)} سجل بنجاح / Successfully extracted {len(pharmaceutical_data)} records")
+        logging.info(f"Finished processing {processed_count} rows")
         return pharmaceutical_data
 
     except Exception as e:
@@ -424,7 +455,7 @@ def extract_pharmaceutical_data(excel_file_path: str, db_config: Dict[str, Any])
 def main():
     """Main function"""
     if len(sys.argv) < 2:
-        logging.error("Usage: python3 extract_with_postgresql.py <excel_file_path> [database_config]")
+        logging.error("Usage: python3 extract_for_spring_boot.py <excel_file_path> [database_config]")
         logging.error("Database config examples:")
         logging.error("  postgresql://username:password@localhost:5432/teryaq")
         logging.error("  postgresql://postgres:password@postgres:5432/teryaq (Docker)")

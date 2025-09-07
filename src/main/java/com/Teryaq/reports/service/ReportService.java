@@ -12,6 +12,7 @@ import com.Teryaq.product.entity.PharmacyProduct;
 import com.Teryaq.product.entity.MasterProduct;
 import com.Teryaq.product.repo.PharmacyProductRepo;
 import com.Teryaq.product.repo.MasterProductRepo;
+import com.Teryaq.language.LanguageRepo;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
@@ -22,6 +23,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
+import java.util.HashMap;
+import java.util.ArrayList;
 
 /**
  * Simplified Reports Service
@@ -42,16 +45,18 @@ public class ReportService extends BaseSecurityService {
     private final ExchangeRateService exchangeRateService;
     private final PharmacyProductRepo pharmacyProductRepo;
     private final MasterProductRepo masterProductRepo;
+    private final LanguageRepo languageRepo;
     
     public ReportService(UserRepository userRepository, ReportRepository reportRepository, ReportMapper reportMapper, 
                         ExchangeRateService exchangeRateService, PharmacyProductRepo pharmacyProductRepo, 
-                        MasterProductRepo masterProductRepo) {
+                        MasterProductRepo masterProductRepo, LanguageRepo languageRepo) {
         super(userRepository);
         this.reportRepository = reportRepository;
         this.reportMapper = reportMapper;
         this.exchangeRateService = exchangeRateService;
         this.pharmacyProductRepo = pharmacyProductRepo;
         this.masterProductRepo = masterProductRepo;
+        this.languageRepo = languageRepo;
     }
     
     // ============================================================================
@@ -77,6 +82,88 @@ public class ReportService extends BaseSecurityService {
         }
         Currency userCurrency = Currency.valueOf(targetCurrency.name());
         return exchangeRateService.convertFromSYP(amount, userCurrency);
+    }
+    
+    /**
+     * Process currency-aware profit data and convert to target currency
+     * This method is specifically designed for profit reports
+     */
+    private Map<String, Object> processCurrencyAwareProfitData(List<Map<String, Object>> rawData, Currency targetCurrency) {
+        return processCurrencyAwareProfitData(rawData, targetCurrency, null);
+    }
+    
+    /**
+     * Process currency-aware profit data and convert to target currency
+     * This method is specifically designed for profit reports
+     */
+    private Map<String, Object> processCurrencyAwareProfitData(List<Map<String, Object>> rawData, Currency targetCurrency, LocalDate date) {
+        BigDecimal totalRevenue = BigDecimal.ZERO;
+        BigDecimal totalProfit = BigDecimal.ZERO;
+        int totalInvoices = 0;
+        BigDecimal sumForAverage = BigDecimal.ZERO;
+        
+        for (Map<String, Object> data : rawData) {
+            // Handle null values safely
+            Object currencyObj = data.get("currency");
+            Object revenueObj = data.get("totalRevenue");
+            Object profitObj = data.get("totalProfit");
+            Object invoicesObj = data.get("totalInvoices");
+            Object averageObj = data.get("averageRevenue");
+            
+            // Skip this data entry if essential fields are null
+            if (currencyObj == null || revenueObj == null || profitObj == null || invoicesObj == null) {
+                log.warn("Skipping profit data entry with null essential fields: {}", data);
+                continue;
+            }
+            
+            Currency currency = Currency.valueOf(currencyObj.toString());
+            BigDecimal revenue = new BigDecimal(revenueObj.toString());
+            BigDecimal profit = new BigDecimal(profitObj.toString());
+            int invoices = ((Number) invoicesObj).intValue();
+            
+            // Convert to SYP for consistent calculation
+            BigDecimal revenueInSYP = convertToSYP(revenue, currency);
+            BigDecimal profitInSYP = convertToSYP(profit, currency);
+            
+            totalRevenue = totalRevenue.add(revenueInSYP);
+            totalProfit = totalProfit.add(profitInSYP);
+            totalInvoices += invoices;
+            sumForAverage = sumForAverage.add(revenueInSYP);
+        }
+        
+        // Convert final totals to target currency for display
+        BigDecimal finalTotalRevenue = convertFromSYP(totalRevenue, targetCurrency);
+        BigDecimal finalTotalProfit = convertFromSYP(totalProfit, targetCurrency);
+        BigDecimal finalTotalCost = finalTotalRevenue.subtract(finalTotalProfit);
+        BigDecimal averageRevenue = totalInvoices > 0 ? convertFromSYP(sumForAverage.divide(BigDecimal.valueOf(totalInvoices), 2, BigDecimal.ROUND_HALF_UP), targetCurrency) : BigDecimal.ZERO;
+        
+        // Calculate profit margin
+        Double profitMargin = finalTotalRevenue.compareTo(BigDecimal.ZERO) > 0 ? 
+            finalTotalProfit.divide(finalTotalRevenue, 4, BigDecimal.ROUND_HALF_UP).multiply(BigDecimal.valueOf(100)).doubleValue() : 0.0;
+        
+        Map<String, Object> result = Map.of(
+            "totalInvoices", totalInvoices,
+            "totalRevenue", finalTotalRevenue,
+            "totalCost", finalTotalCost,
+            "totalProfit", finalTotalProfit,
+            "averageRevenue", averageRevenue,
+            "profitMargin", profitMargin
+        );
+        
+        // Add date if provided (for daily reports)
+        if (date != null) {
+            result = Map.of(
+                "date", date,
+                "totalInvoices", totalInvoices,
+                "totalRevenue", finalTotalRevenue,
+                "totalCost", finalTotalCost,
+                "totalProfit", finalTotalProfit,
+                "averageRevenue", averageRevenue,
+                "profitMargin", profitMargin
+            );
+        }
+        
+        return result;
     }
     
     /**
@@ -325,6 +412,13 @@ public class ReportService extends BaseSecurityService {
                 BigDecimal finalRevenue = convertFromSYP(revenueInSYP, targetCurrency);
                 BigDecimal finalProfit = convertFromSYP(profitInSYP, targetCurrency);
                 
+                // Calculate cost (revenue - profit)
+                BigDecimal finalCost = finalRevenue.subtract(finalProfit);
+                
+                // Calculate profit margin
+                Double profitMargin = finalRevenue.compareTo(BigDecimal.ZERO) > 0 ? 
+                    finalProfit.divide(finalRevenue, 4, BigDecimal.ROUND_HALF_UP).multiply(BigDecimal.valueOf(100)).doubleValue() : 0.0;
+                
                 // Get actual product name, handling null cases
                 String productName = getProductNameForProfitItem(item);
                 
@@ -332,7 +426,9 @@ public class ReportService extends BaseSecurityService {
                     "productName", productName,
                     "quantity", quantityObj != null ? quantityObj : 0,
                     "revenue", finalRevenue,
+                    "cost", finalCost,
                     "profit", finalProfit,
+                    "profitMargin", profitMargin,
                     "currency", targetCurrency.name()
                 );
             })
@@ -382,10 +478,13 @@ public class ReportService extends BaseSecurityService {
                 Double profitMargin = finalRevenue.compareTo(BigDecimal.ZERO) > 0 ? 
                     finalProfit.divide(finalRevenue, 4, BigDecimal.ROUND_HALF_UP).multiply(BigDecimal.valueOf(100)).doubleValue() : 0.0;
                 
+                // Get actual product name using the helper method with product type
+                String actualProductName = getProductName(productIdObj.toString(), productTypeObj != null ? productTypeObj.toString() : null);
+                
                 return Map.of(
                     "productId", productIdObj,
                     "productType", productTypeObj != null ? productTypeObj : "UNKNOWN",
-                    "productName", productNameObj != null ? productNameObj.toString() : "Unknown Product",
+                    "productName", actualProductName,
                     "totalQuantity", quantityObj != null ? quantityObj : 0,
                     "totalRevenue", finalRevenue,
                     "averagePrice", finalAveragePrice,
@@ -516,7 +615,7 @@ public class ReportService extends BaseSecurityService {
             List<Map<String, Object>> summaryRawList = reportRepository.getMonthlyProfitSummary(pharmacyId, startDate, endDate);
             
             // Process currency-aware data for both daily and summary
-            Map<String, Object> summaryRaw = processCurrencyAwareData(summaryRawList, currency);
+            Map<String, Object> summaryRaw = processCurrencyAwareProfitData(summaryRawList, currency);
             List<Map<String, Object>> processedDailyData = processCurrencyAwareDailyProfitData(dailyDataRawList, currency);
             
             // Convert to DTOs using mapper
@@ -558,8 +657,8 @@ public class ReportService extends BaseSecurityService {
             // Get daily profit data with currency information
             List<Map<String, Object>> dailyDataRawList = reportRepository.getDailyProfitSummary(pharmacyId, date);
             
-            // Process currency-aware data
-            Map<String, Object> dailyDataRaw = processCurrencyAwareData(dailyDataRawList, currency);
+            // Process currency-aware profit data
+            Map<String, Object> dailyDataRaw = processCurrencyAwareProfitData(dailyDataRawList, currency, date);
             
             // Get profit items for the day with currency information
             List<Map<String, Object>> profitItemsRaw = reportRepository.getDailyProfitItems(pharmacyId, date);
@@ -606,8 +705,52 @@ public class ReportService extends BaseSecurityService {
         log.info("Generating most sold categories report for pharmacy: {}, period: {} to {}", pharmacyId, startDate, endDate);
         
         try {
-            // Get most sold categories
-            List<Map<String, Object>> categoriesRaw = reportRepository.getMostSoldCategories(pharmacyId, startDate, endDate);
+            // Convert Language enum to Language entity ID
+            Long languageId = getLanguageId(language);
+            
+            // Get categories from both MasterProduct and PharmacyProduct
+            List<Map<String, Object>> masterCategories = reportRepository.getMostSoldCategoriesFromMasterProduct(pharmacyId, startDate, endDate, languageId);
+            List<Map<String, Object>> pharmacyCategories = reportRepository.getMostSoldCategoriesFromPharmacyProduct(pharmacyId, startDate, endDate, languageId);
+            
+            // Combine and merge categories
+            Map<String, Map<String, Object>> combinedCategories = new HashMap<>();
+            
+            // Process MasterProduct categories
+            for (Map<String, Object> category : masterCategories) {
+                String categoryName = (String) category.get("categoryName");
+                if (categoryName != null) {
+                    combinedCategories.put(categoryName, category);
+                }
+            }
+            
+            // Process PharmacyProduct categories and merge with existing ones
+            for (Map<String, Object> category : pharmacyCategories) {
+                String categoryName = (String) category.get("categoryName");
+                if (categoryName != null) {
+                    if (combinedCategories.containsKey(categoryName)) {
+                        // Merge with existing category
+                        Map<String, Object> existing = combinedCategories.get(categoryName);
+                        Long totalQuantity = ((Number) existing.get("totalQuantity")).longValue() + ((Number) category.get("totalQuantity")).longValue();
+                        Double totalRevenue = ((Number) existing.get("totalRevenue")).doubleValue() + ((Number) category.get("totalRevenue")).doubleValue();
+                        Long invoiceCount = ((Number) existing.get("invoiceCount")).longValue() + ((Number) category.get("invoiceCount")).longValue();
+                        
+                        existing.put("totalQuantity", totalQuantity);
+                        existing.put("totalRevenue", totalRevenue);
+                        existing.put("invoiceCount", invoiceCount);
+                    } else {
+                        // Add new category
+                        combinedCategories.put(categoryName, category);
+                    }
+                }
+            }
+            
+            // Convert to list and sort by total quantity
+            List<Map<String, Object>> categoriesRaw = new ArrayList<>(combinedCategories.values());
+            categoriesRaw.sort((a, b) -> {
+                Long qtyA = ((Number) a.get("totalQuantity")).longValue();
+                Long qtyB = ((Number) b.get("totalQuantity")).longValue();
+                return qtyB.compareTo(qtyA); // Descending order
+            });
             
             // Convert to DTOs using mapper
             List<CategoryReportResponse.CategoryData> categories = reportMapper.toCategoryDataList(categoriesRaw);
@@ -680,20 +823,31 @@ public class ReportService extends BaseSecurityService {
     // ============================================================================
     
     /**
-     * Get product name by product ID
+     * Get product name by product ID and product type
      * This method fetches the actual product name from the appropriate product table
      */
-    private String getProductName(String productIdStr) {
+    private String getProductName(String productIdStr, String productType) {
         try {
             Long productId = Long.parseLong(productIdStr);
             
-            // Try to find in PharmacyProduct first
+            if ("PHARMACY".equals(productType)) {
+                java.util.Optional<PharmacyProduct> pharmacyProduct = pharmacyProductRepo.findById(productId);
+                if (pharmacyProduct.isPresent()) {
+                    return pharmacyProduct.get().getTradeName();
+                }
+            } else if ("MASTER".equals(productType)) {
+                java.util.Optional<MasterProduct> masterProduct = masterProductRepo.findById(productId);
+                if (masterProduct.isPresent()) {
+                    return masterProduct.get().getTradeName();
+                }
+            }
+            
+            // If not found with specific type, try both tables as fallback
             java.util.Optional<PharmacyProduct> pharmacyProduct = pharmacyProductRepo.findById(productId);
             if (pharmacyProduct.isPresent()) {
                 return pharmacyProduct.get().getTradeName();
             }
             
-            // Try to find in MasterProduct
             java.util.Optional<MasterProduct> masterProduct = masterProductRepo.findById(productId);
             if (masterProduct.isPresent()) {
                 return masterProduct.get().getTradeName();
@@ -709,6 +863,14 @@ public class ReportService extends BaseSecurityService {
             log.error("Error fetching product name for ID {}: {}", productIdStr, e.getMessage());
             return "Unknown Product";
         }
+    }
+    
+    /**
+     * Get product name by product ID only (fallback method)
+     * This method fetches the actual product name from the appropriate product table
+     */
+    private String getProductName(String productIdStr) {
+        return getProductName(productIdStr, null);
     }
     
     /**
@@ -755,6 +917,34 @@ public class ReportService extends BaseSecurityService {
         } catch (Exception e) {
             log.error("Error getting product name for profit item: {}", e.getMessage());
             return "Unknown Product";
+        }
+    }
+    
+    /**
+     * Get language ID from Language enum
+     * Converts the Language enum to the corresponding Language entity ID
+     */
+    private Long getLanguageId(Language language) {
+        try {
+            // Convert enum to string and find the corresponding Language entity
+            String languageCode = language.name().toLowerCase();
+            com.Teryaq.language.Language languageEntity = languageRepo.findByCode(languageCode).orElse(null);
+            if (languageEntity != null) {
+                return languageEntity.getId();
+            }
+            
+            // Fallback to English if not found
+            com.Teryaq.language.Language englishEntity = languageRepo.findByCode("en").orElse(null);
+            if (englishEntity != null) {
+                return englishEntity.getId();
+            }
+            
+            // If no language found, return null (will use default category names)
+            return null;
+            
+        } catch (Exception e) {
+            log.warn("Error getting language ID for {}: {}", language, e.getMessage());
+            return null;
         }
     }
 }

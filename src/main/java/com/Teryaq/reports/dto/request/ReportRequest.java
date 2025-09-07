@@ -40,5 +40,5 @@ public class ReportRequest {
     private Currency currency = Currency.SYP;
     
     @Builder.Default
-    private Language language = Language.EN;
+    private Language language = Language.en;
 }
