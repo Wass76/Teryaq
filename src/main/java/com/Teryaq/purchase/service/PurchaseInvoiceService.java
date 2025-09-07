@@ -468,7 +468,11 @@ public class PurchaseInvoiceService extends BaseSecurityService {
             // Set basic properties
             stockItem.setProductId(item.getProductId());
             stockItem.setProductType(item.getProductType());
-            stockItem.setQuantity(item.getReceivedQty());
+            
+            // Calculate total quantity: receivedQty + bonusQty
+            int bonusQty = item.getBonusQty() != null ? item.getBonusQty() : 0;
+            int totalQuantity = item.getReceivedQty() + bonusQty;
+            stockItem.setQuantity(totalQuantity);
             stockItem.setBonusQty(item.getBonusQty());
             stockItem.setActualPurchasePrice(actualPurchasePrice);
             
