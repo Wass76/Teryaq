@@ -781,9 +781,10 @@ public class ReportService extends BaseSecurityService {
      * Returns the top 10 most sold products in the pharmacy for the specified month
      * Includes currency conversion and profit calculations
      */
-    public ProductReportResponse getTop10Products(Long pharmacyId, LocalDate startDate, LocalDate endDate, Currency currency, Language language) {
+    public ProductReportResponse getTop10Products( LocalDate startDate, LocalDate endDate, Currency currency, Language language) {
+        Long pharmacyId = getCurrentUserPharmacyId();
         log.info("Generating top 10 products report for pharmacy: {}, period: {} to {}", pharmacyId, startDate, endDate);
-        
+
         try {
             // Get top products with currency information
             List<Map<String, Object>> productsRaw = reportRepository.getTop10Products(pharmacyId, startDate, endDate);

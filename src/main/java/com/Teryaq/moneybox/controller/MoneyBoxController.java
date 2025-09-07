@@ -19,6 +19,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import jakarta.validation.Valid;
@@ -42,7 +43,8 @@ public class MoneyBoxController {
     
     private final MoneyBoxService moneyBoxService;
     private final ExchangeRateService exchangeRateService;
-    
+
+    @PreAuthorize("hasRole('PHARMACY_MANAGER') or hasRole('PHARMACIST') ")
     @PostMapping
     @Operation(summary = "Create a new money box", description = "Creates a new money box for the current pharmacy with automatic currency conversion to SYP")
     @ApiResponses(value = {
@@ -55,7 +57,7 @@ public class MoneyBoxController {
         MoneyBoxResponseDTO response = moneyBoxService.createMoneyBox(request);
         return ResponseEntity.ok(response);
     }
-    
+    @PreAuthorize("hasRole('PHARMACY_MANAGER') or hasRole('PHARMACIST') ")
     @GetMapping
     @Operation(summary = "Get current pharmacy money box", description = "Retrieves the money box information for the current pharmacy")
     @ApiResponses(value = {
@@ -67,7 +69,8 @@ public class MoneyBoxController {
         MoneyBoxResponseDTO response = moneyBoxService.getMoneyBoxByCurrentPharmacy();
         return ResponseEntity.ok(response);
     }
-    
+
+    @PreAuthorize("hasRole('PHARMACY_MANAGER') or hasRole('PHARMACIST') ")
     @PostMapping("/transactions")
     @Operation(summary = "Add manual transaction", description = "Adds a manual transaction to the money box with automatic currency conversion to SYP")
     @ApiResponses(value = {
@@ -90,7 +93,8 @@ public class MoneyBoxController {
         MoneyBoxResponseDTO response = moneyBoxService.addTransaction(amount, description);
         return ResponseEntity.ok(response);
     }
-    
+
+    @PreAuthorize("hasRole('PHARMACY_MANAGER') or hasRole('PHARMACIST')")
     @PostMapping("/transactions/syp")
     @Operation(summary = "Add transaction in SYP", description = "Adds a manual transaction to the money box in SYP (legacy endpoint)")
     @ApiResponses(value = {
@@ -113,7 +117,8 @@ public class MoneyBoxController {
         MoneyBoxResponseDTO response = moneyBoxService.addTransaction(amount, description);
         return ResponseEntity.ok(response);
     }
-    
+
+    @PreAuthorize("hasRole('PHARMACY_MANAGER') or hasRole('PHARMACIST') ")
     @PostMapping("/reconcile")
     @Operation(summary = "Reconcile cash", description = "Reconciles the money box with actual cash count")
     @ApiResponses(value = {
@@ -135,7 +140,8 @@ public class MoneyBoxController {
         MoneyBoxResponseDTO response = moneyBoxService.reconcileCash(actualCashCount, notes);
         return ResponseEntity.ok(response);
     }
-    
+
+    @PreAuthorize("hasRole('PHARMACY_MANAGER') or hasRole('PHARMACIST') ")
     @GetMapping("/summary")
     @Operation(summary = "Get period summary", description = "Gets money box summary for a specific time period")
     @ApiResponses(value = {
@@ -151,7 +157,8 @@ public class MoneyBoxController {
         // For now, return a placeholder response
         return ResponseEntity.ok().build();
     }
-    
+
+    @PreAuthorize("hasRole('PHARMACY_MANAGER') or hasRole('PHARMACIST') ")
     @GetMapping("/currency/convert")
     @Operation(summary = "Convert currency to SYP", description = "Converts an amount from any currency to SYP using current exchange rates")
     @ApiResponses(value = {
@@ -171,7 +178,8 @@ public class MoneyBoxController {
         CurrencyConversionResponseDTO response = moneyBoxService.convertCurrencyToSYP(amount, fromCurrency);
         return ResponseEntity.ok(response);
     }
-    
+
+    @PreAuthorize("hasRole('PHARMACY_MANAGER') or hasRole('PHARMACIST') ")
     @GetMapping("/currency/rates")
     @Operation(summary = "Get current exchange rates", description = "Gets current exchange rates for all supported currencies")
     @ApiResponses(value = {
@@ -183,6 +191,7 @@ public class MoneyBoxController {
         return ResponseEntity.ok(rates);
     }
 
+    @PreAuthorize("hasRole('PHARMACY_MANAGER') or hasRole('PHARMACIST') ")
     @GetMapping("/transactions")
     @Operation(summary = "Get all money box transactions", description = "Retrieves paginated transactions for the current pharmacy money box with dual currency amounts")
     @ApiResponses(value = {

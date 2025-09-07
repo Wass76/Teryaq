@@ -137,8 +137,8 @@ public class ReportController {
             @RequestParam LocalDate startDate,
             @Parameter(description = "End date (YYYY-MM-DD)", example = "2024-01-31")
             @RequestParam LocalDate endDate,
-            @Parameter(description = "Language", example = "EN")
-            @RequestParam(defaultValue = "EN") String language) {
+            @Parameter(description = "Language", example = "en")
+            @RequestParam(defaultValue = "en") String language) {
         log.info("Generating most sold categories report for period: {} to {}", startDate, endDate);
         try {
             CategoryReportResponse response = reportService.getMostSoldCategories(
@@ -153,20 +153,18 @@ public class ReportController {
     @GetMapping("/products/top-10")
     @Operation(summary = "Top 10 Products", description = "Get top 10 most sold products monthly")
     public ResponseEntity<ProductReportResponse> getTop10Products(
-            @Parameter(description = "Pharmacy ID", example = "1")
-            @RequestParam Long pharmacyId,
             @Parameter(description = "Start date (YYYY-MM-DD)", example = "2024-01-01")
             @RequestParam LocalDate startDate,
             @Parameter(description = "End date (YYYY-MM-DD)", example = "2024-01-31")
             @RequestParam LocalDate endDate,
             @Parameter(description = "Currency", example = "SYP")
             @RequestParam(defaultValue = "SYP") String currency,
-            @Parameter(description = "Language", example = "EN")
-            @RequestParam(defaultValue = "EN") String language) {
-        log.info("Generating top 10 products report for pharmacy: {}, period: {} to {}", pharmacyId, startDate, endDate);
+            @Parameter(description = "Language", example = "en")
+            @RequestParam(defaultValue = "en") String language) {
+        log.info("Generating top 10 products report period: {} to {}", startDate, endDate);
         try {
             ProductReportResponse response = reportService.getTop10Products(
-                    pharmacyId, startDate, endDate, Currency.valueOf(currency), Language.valueOf(language));
+                     startDate, endDate, Currency.valueOf(currency), Language.valueOf(language));
             return ResponseEntity.ok(response);
         } catch (Exception e) {
             log.error("Error generating top 10 products report: {}", e.getMessage(), e);
