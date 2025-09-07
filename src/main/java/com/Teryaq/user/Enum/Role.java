@@ -4,5 +4,5 @@ public enum Role {
     PHARMACY_MANAGER,
     PHARMACIST,
     TRAINEE,
-    SYSTEM_ADMIN;
+    PLATFORM_ADMIN;
 }
