@@ -316,11 +316,12 @@ public class MoneyBoxService extends BaseSecurityService {
                 Map.of("pharmacyId", currentPharmacyId, "actualCount", actualCashCount, "expectedCount", balanceBefore, "difference", difference)
             );
             
-            // IMPORTANT: After the audit service runs, we need to fetch the updated MoneyBox
-            // and set the balance to the exact reconciled amount
+            // IMPORTANT: After the audit service runs, fetch the updated MoneyBox
+            // The audit service has already updated the balance correctly
             MoneyBox updatedMoneyBox = moneyBoxRepository.findById(moneyBox.getId())
                 .orElseThrow(() -> new RuntimeException("MoneyBox not found after transaction"));
-            updatedMoneyBox.setCurrentBalance(actualCashCount);
+            
+            // Only update reconciliation fields, NOT the balance (audit service handled that)
             updatedMoneyBox.setReconciledBalance(actualCashCount);
             updatedMoneyBox.setLastReconciled(LocalDateTime.now());
             moneyBox = moneyBoxRepository.save(updatedMoneyBox);

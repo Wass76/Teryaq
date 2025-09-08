@@ -107,8 +107,14 @@ public class EnhancedMoneyBoxAuditService {
             
             // Store the transaction amount with correct sign for display purposes
             BigDecimal transactionAmount;
-            if (transactionType == TransactionType.CASH_DEPOSIT || transactionType == TransactionType.CASH_WITHDRAWAL) {
+            if (transactionType == TransactionType.OPENING_BALANCE) {
+                // For opening balance transactions, store as positive (initial balance)
+                transactionAmount = convertedAmount.abs();
+            } else if (transactionType == TransactionType.CASH_DEPOSIT || transactionType == TransactionType.CASH_WITHDRAWAL) {
                 // For manual transactions, store the amount as-is (already has correct sign)
+                transactionAmount = convertedAmount;
+            } else if (transactionType == TransactionType.ADJUSTMENT) {
+                // For adjustment transactions, store the amount as-is (already has correct sign)
                 transactionAmount = convertedAmount;
             } else if (isExpenseTransaction(transactionType)) {
                 // For expense transactions, store as negative
@@ -438,23 +444,24 @@ public class EnhancedMoneyBoxAuditService {
 
     // Helper methods
     private BigDecimal getCurrentMoneyBoxBalance(Long moneyBoxId) {
-        // Get the latest transaction to determine current balance
-        Optional<MoneyBoxTransaction> latestTransaction = transactionRepository
-                .findTopByMoneyBoxIdOrderByCreatedAtDesc(moneyBoxId);
+        // Get the current balance directly from MoneyBox entity for accuracy
+        MoneyBox moneyBox = moneyBoxRepository.findById(moneyBoxId)
+                .orElseThrow(() -> new RuntimeException("MoneyBox not found with ID: " + moneyBoxId));
         
-        if (latestTransaction.isPresent()) {
-            return latestTransaction.get().getBalanceAfter();
-        }
-        
-        // If no transactions exist, return zero
-        return BigDecimal.ZERO;
+        return moneyBox.getCurrentBalance();
     }
     
     private BigDecimal calculateNewBalance(BigDecimal currentBalance, BigDecimal amount, TransactionType transactionType) {
         // For manual transactions (CASH_DEPOSIT/CASH_WITHDRAWAL), the amount already has the correct sign
         // For other transaction types, we need to determine the sign based on transaction type
-        if (transactionType == TransactionType.CASH_DEPOSIT || transactionType == TransactionType.CASH_WITHDRAWAL) {
+        if (transactionType == TransactionType.OPENING_BALANCE) {
+            // Opening balance: set to the amount (not add to current balance)
+            return amount.abs();
+        } else if (transactionType == TransactionType.CASH_DEPOSIT || transactionType == TransactionType.CASH_WITHDRAWAL) {
             // Manual transactions: amount already has correct sign
+            return currentBalance.add(amount);
+        } else if (transactionType == TransactionType.ADJUSTMENT) {
+            // Adjustment transactions: amount already has the correct sign (positive for increase, negative for decrease)
             return currentBalance.add(amount);
         } else if (isRevenueTransaction(transactionType)) {
             // Revenue transactions: always add positive amount

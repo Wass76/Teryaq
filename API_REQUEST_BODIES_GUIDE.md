@@ -282,7 +282,7 @@ Content-Type: application/json
 
 **Endpoint:** `POST /api/v1/products/master`
 
-**Description:** Creates master products that can be used across multiple pharmacies.
+**Description:** Creates mastermaster products that can be used across multiple pharmacies.
 
 ### Request Body Structure
 
