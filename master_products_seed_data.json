@@ -1,0 +1,1152 @@
+[
+  {
+    "tradeName": "Panadol",
+    "scientificName": "Paracetamol",
+    "concentration": "500mg",
+    "size": "20 tablets",
+    "refPurchasePrice": 1500,
+    "refSellingPrice": 2000,
+    "notes": "Pain relief and fever reducer - Over the counter medication",
+    "tax": 5.0,
+    "barcode": "1234567890123",
+    "requiresPrescription": false,
+    "typeId": 1,
+    "formId": 1,
+    "manufacturerId": 1,
+    "categoryIds": [1],
+    "translations": [
+      {
+        "tradeName": "بانادول",
+        "scientificName": "باراسيتامول",
+        "lang": "ar"
+      }
+    ]
+  },
+  {
+    "tradeName": "Augmentin",
+    "scientificName": "Amoxicillin + Clavulanic Acid",
+    "concentration": "625mg",
+    "size": "14 tablets",
+    "refPurchasePrice": 8500,
+    "refSellingPrice": 10000,
+    "notes": "Broad spectrum antibiotic for bacterial infections",
+    "tax": 5.0,
+    "barcode": "1234567890124",
+    "requiresPrescription": true,
+    "typeId": 1,
+    "formId": 2,
+    "manufacturerId": 2,
+    "categoryIds": [2],
+    "translations": [
+      {
+        "tradeName": "أوجمنتين",
+        "scientificName": "أموكسيسيلين + حمض الكلافولانيك",
+        "lang": "ar"
+      }
+    ]
+  },
+  {
+    "tradeName": "Omeprazole",
+    "scientificName": "Omeprazole Magnesium",
+    "concentration": "20mg",
+    "size": "14 capsules",
+    "refPurchasePrice": 2550,
+    "refSellingPrice": 3000,
+    "notes": "Proton pump inhibitor for gastric acid reduction",
+    "tax": 5.0,
+    "barcode": "1234567890125",
+    "requiresPrescription": true,
+    "typeId": 1,
+    "formId": 3,
+    "manufacturerId": 3,
+    "categoryIds": [5],
+    "translations": [
+      {
+        "tradeName": "أوميبرازول",
+        "scientificName": "أوميبرازول ماغنيسيوم",
+        "lang": "ar"
+      }
+    ]
+  },
+  {
+    "tradeName": "Ventolin Syrup",
+    "scientificName": "Salbutamol",
+    "concentration": "2mg/5ml",
+    "size": "100ml syrup",
+    "refPurchasePrice": 4250,
+    "refSellingPrice": 5000,
+    "notes": "Bronchodilator for asthma and respiratory conditions",
+    "tax": 5.0,
+    "barcode": "1234567890126",
+    "requiresPrescription": true,
+    "typeId": 1,
+    "formId": 4,
+    "manufacturerId": 4,
+    "categoryIds": [6],
+    "translations": [
+      {
+        "tradeName": "فنتولين شراب",
+        "scientificName": "سالبوتامول",
+        "lang": "ar"
+      }
+    ]
+  },
+  {
+    "tradeName": "Insulin Regular",
+    "scientificName": "Human Insulin",
+    "concentration": "100 IU/ml",
+    "size": "10ml vial",
+    "refPurchasePrice": 17000,
+    "refSellingPrice": 20000,
+    "notes": "Human insulin for diabetes management",
+    "tax": 5.0,
+    "barcode": "1234567890127",
+    "requiresPrescription": true,
+    "typeId": 1,
+    "formId": 5,
+    "manufacturerId": 5,
+    "categoryIds": [4],
+    "translations": [
+      {
+        "tradeName": "أنسولين عادي",
+        "scientificName": "أنسولين بشري",
+        "lang": "ar"
+      }
+    ]
+  },
+  {
+    "tradeName": "Betadine",
+    "scientificName": "Povidone Iodine",
+    "concentration": "10%",
+    "size": "30ml solution",
+    "refPurchasePrice": 1700,
+    "refSellingPrice": 2000,
+    "notes": "Antiseptic solution for wound cleaning",
+    "tax": 5.0,
+    "barcode": "1234567890128",
+    "requiresPrescription": false,
+    "typeId": 1,
+    "formId": 7,
+    "manufacturerId": 6,
+    "categoryIds": [3],
+    "translations": [
+      {
+        "tradeName": "بيتادين",
+        "scientificName": "بوفيدون اليود",
+        "lang": "ar"
+      }
+    ]
+  },
+  {
+    "tradeName": "Aspirin",
+    "scientificName": "Acetylsalicylic Acid",
+    "concentration": "100mg",
+    "size": "30 tablets",
+    "refPurchasePrice": 850,
+    "refSellingPrice": 1000,
+    "notes": "Anti-inflammatory and blood thinner",
+    "tax": 5.0,
+    "barcode": "1234567890129",
+    "requiresPrescription": false,
+    "typeId": 1,
+    "formId": 1,
+    "manufacturerId": 7,
+    "categoryIds": [1, 4],
+    "translations": [
+      {
+        "tradeName": "أسبرين",
+        "scientificName": "حمض الأسيتيل ساليسيليك",
+        "lang": "ar"
+      }
+    ]
+  },
+  {
+    "tradeName": "Vitamin C",
+    "scientificName": "Ascorbic Acid",
+    "concentration": "1000mg",
+    "size": "20 effervescent tablets",
+    "refPurchasePrice": 2550,
+    "refSellingPrice": 3000,
+    "notes": "Vitamin C supplement for immune support",
+    "tax": 5.0,
+    "barcode": "1234567890130",
+    "requiresPrescription": false,
+    "typeId": 4,
+    "formId": 1,
+    "manufacturerId": 1,
+    "categoryIds": [7],
+    "translations": [
+      {
+        "tradeName": "فيتامين سي",
+        "scientificName": "حمض الأسكوربيك",
+        "lang": "ar"
+      }
+    ]
+  },
+  {
+    "tradeName": "Cough Syrup",
+    "scientificName": "Dextromethorphan",
+    "concentration": "15mg/5ml",
+    "size": "120ml syrup",
+    "refPurchasePrice": 3400,
+    "refSellingPrice": 4000,
+    "notes": "Cough suppressant for dry cough relief",
+    "tax": 5.0,
+    "barcode": "1234567890131",
+    "requiresPrescription": false,
+    "typeId": 1,
+    "formId": 4,
+    "manufacturerId": 2,
+    "categoryIds": [6],
+    "translations": [
+      {
+        "tradeName": "شراب السعال",
+        "scientificName": "ديكستروميثورفان",
+        "lang": "ar"
+      }
+    ]
+  },
+  {
+    "tradeName": "Eye Drops",
+    "scientificName": "Chloramphenicol",
+    "concentration": "0.5%",
+    "size": "10ml drops",
+    "refPurchasePrice": 4250,
+    "refSellingPrice": 5000,
+    "notes": "Antibiotic eye drops for bacterial eye infections",
+    "tax": 5.0,
+    "barcode": "1234567890132",
+    "requiresPrescription": true,
+    "typeId": 1,
+    "formId": 8,
+    "manufacturerId": 3,
+    "categoryIds": [2],
+    "translations": [
+      {
+        "tradeName": "قطرة العين",
+        "scientificName": "كلورامفينيكول",
+        "lang": "ar"
+      }
+    ]
+  },
+  {
+    "tradeName": "Metformin",
+    "scientificName": "Metformin Hydrochloride",
+    "concentration": "500mg",
+    "size": "30 tablets",
+    "refPurchasePrice": 3400,
+    "refSellingPrice": 4000,
+    "notes": "Antidiabetic medication for type 2 diabetes",
+    "tax": 5.0,
+    "barcode": "1234567890133",
+    "requiresPrescription": true,
+    "typeId": 1,
+    "formId": 1,
+    "manufacturerId": 4,
+    "categoryIds": [4],
+    "translations": [
+      {
+        "tradeName": "ميتفورمين",
+        "scientificName": "ميتفورمين هيدروكلوريد",
+        "lang": "ar"
+      }
+    ]
+  },
+  {
+    "tradeName": "Ibuprofen",
+    "scientificName": "Ibuprofen",
+    "concentration": "400mg",
+    "size": "20 tablets",
+    "refPurchasePrice": 1700,
+    "refSellingPrice": 2000,
+    "notes": "Non-steroidal anti-inflammatory drug (NSAID)",
+    "tax": 5.0,
+    "barcode": "1234567890134",
+    "requiresPrescription": false,
+    "typeId": 1,
+    "formId": 1,
+    "manufacturerId": 5,
+    "categoryIds": [1],
+    "translations": [
+      {
+        "tradeName": "أيبوبروفين",
+        "scientificName": "أيبوبروفين",
+        "lang": "ar"
+      }
+    ]
+  },
+  {
+    "tradeName": "Cetirizine",
+    "scientificName": "Cetirizine Hydrochloride",
+    "concentration": "10mg",
+    "size": "20 tablets",
+    "refPurchasePrice": 1275,
+    "refSellingPrice": 1500,
+    "notes": "Antihistamine for allergy relief",
+    "tax": 5.0,
+    "barcode": "1234567890135",
+    "requiresPrescription": false,
+    "typeId": 1,
+    "formId": 1,
+    "manufacturerId": 6,
+    "categoryIds": [1],
+    "translations": [
+      {
+        "tradeName": "سيتيريزين",
+        "scientificName": "سيتيريزين هيدروكلوريد",
+        "lang": "ar"
+      }
+    ]
+  },
+  {
+    "tradeName": "Ranitidine",
+    "scientificName": "Ranitidine Hydrochloride",
+    "concentration": "150mg",
+    "size": "20 tablets",
+    "refPurchasePrice": 2125,
+    "refSellingPrice": 2500,
+    "notes": "H2 receptor antagonist for gastric acid reduction",
+    "tax": 5.0,
+    "barcode": "1234567890136",
+    "requiresPrescription": true,
+    "typeId": 1,
+    "formId": 1,
+    "manufacturerId": 7,
+    "categoryIds": [5],
+    "translations": [
+      {
+        "tradeName": "رانيتيدين",
+        "scientificName": "رانيتيدين هيدروكلوريد",
+        "lang": "ar"
+      }
+    ]
+  },
+  {
+    "tradeName": "Amoxicillin",
+    "scientificName": "Amoxicillin Trihydrate",
+    "concentration": "500mg",
+    "size": "21 capsules",
+    "refPurchasePrice": 4250,
+    "refSellingPrice": 5000,
+    "notes": "Penicillin antibiotic for bacterial infections",
+    "tax": 5.0,
+    "barcode": "1234567890137",
+    "requiresPrescription": true,
+    "typeId": 1,
+    "formId": 3,
+    "manufacturerId": 1,
+    "categoryIds": [2],
+    "translations": [
+      {
+        "tradeName": "أموكسيسيلين",
+        "scientificName": "أموكسيسيلين تريهيدرات",
+        "lang": "ar"
+      }
+    ]
+  },
+  {
+    "tradeName": "Vitamin D3",
+    "scientificName": "Cholecalciferol",
+    "concentration": "1000 IU",
+    "size": "30 capsules",
+    "refPurchasePrice": 3400,
+    "refSellingPrice": 4000,
+    "notes": "Vitamin D3 supplement for bone health",
+    "tax": 5.0,
+    "barcode": "1234567890138",
+    "requiresPrescription": false,
+    "typeId": 4,
+    "formId": 3,
+    "manufacturerId": 2,
+    "categoryIds": [7],
+    "translations": [
+      {
+        "tradeName": "فيتامين د3",
+        "scientificName": "كوليكالسيفيرول",
+        "lang": "ar"
+      }
+    ]
+  },
+  {
+    "tradeName": "Loperamide",
+    "scientificName": "Loperamide Hydrochloride",
+    "concentration": "2mg",
+    "size": "20 capsules",
+    "refPurchasePrice": 1700,
+    "refSellingPrice": 2000,
+    "notes": "Antidiarrheal medication",
+    "tax": 5.0,
+    "barcode": "1234567890139",
+    "requiresPrescription": false,
+    "typeId": 1,
+    "formId": 3,
+    "manufacturerId": 3,
+    "categoryIds": [5],
+    "translations": [
+      {
+        "tradeName": "لوبيراميد",
+        "scientificName": "لوبيراميد هيدروكلوريد",
+        "lang": "ar"
+      }
+    ]
+  },
+  {
+    "tradeName": "Hydrocortisone Cream",
+    "scientificName": "Hydrocortisone",
+    "concentration": "1%",
+    "size": "30g ointment",
+    "refPurchasePrice": 2550,
+    "refSellingPrice": 3000,
+    "notes": "Topical corticosteroid for skin inflammation",
+    "tax": 5.0,
+    "barcode": "1234567890140",
+    "requiresPrescription": true,
+    "typeId": 1,
+    "formId": 6,
+    "manufacturerId": 4,
+    "categoryIds": [1],
+    "translations": [
+      {
+        "tradeName": "كريم هيدروكورتيزون",
+        "scientificName": "هيدروكورتيزون",
+        "lang": "ar"
+      }
+    ]
+  },
+  {
+    "tradeName": "Simvastatin",
+    "scientificName": "Simvastatin",
+    "concentration": "20mg",
+    "size": "30 tablets",
+    "refPurchasePrice": 4250,
+    "refSellingPrice": 5000,
+    "notes": "Statin medication for cholesterol management",
+    "tax": 5.0,
+    "barcode": "1234567890141",
+    "requiresPrescription": true,
+    "typeId": 1,
+    "formId": 1,
+    "manufacturerId": 5,
+    "categoryIds": [4],
+    "translations": [
+      {
+        "tradeName": "سيمفاستاتين",
+        "scientificName": "سيمفاستاتين",
+        "lang": "ar"
+      }
+    ]
+  },
+  {
+    "tradeName": "Multivitamin",
+    "scientificName": "Multivitamin Complex",
+    "concentration": "Various",
+    "size": "30 tablets",
+    "refPurchasePrice": 3400,
+    "refSellingPrice": 4000,
+    "notes": "Complete multivitamin supplement",
+    "tax": 5.0,
+    "barcode": "1234567890142",
+    "requiresPrescription": false,
+    "typeId": 4,
+    "formId": 1,
+    "manufacturerId": 6,
+    "categoryIds": [7],
+    "translations": [
+      {
+        "tradeName": "فيتامينات متعددة",
+        "scientificName": "مركب فيتامينات متعددة",
+        "lang": "ar"
+      }
+    ]
+  },
+  {
+    "tradeName": "Ciprofloxacin",
+    "scientificName": "Ciprofloxacin Hydrochloride",
+    "concentration": "500mg",
+    "size": "14 tablets",
+    "refPurchasePrice": 5100,
+    "refSellingPrice": 6000,
+    "notes": "Fluoroquinolone antibiotic for bacterial infections",
+    "tax": 5.0,
+    "barcode": "1234567890143",
+    "requiresPrescription": true,
+    "typeId": 1,
+    "formId": 1,
+    "manufacturerId": 7,
+    "categoryIds": [2],
+    "translations": [
+      {
+        "tradeName": "سيبروفلوكساسين",
+        "scientificName": "سيبروفلوكساسين هيدروكلوريد",
+        "lang": "ar"
+      }
+    ]
+  },
+  {
+    "tradeName": "Calcium Carbonate",
+    "scientificName": "Calcium Carbonate",
+    "concentration": "500mg",
+    "size": "60 tablets",
+    "refPurchasePrice": 1700,
+    "refSellingPrice": 2000,
+    "notes": "Calcium supplement for bone health",
+    "tax": 5.0,
+    "barcode": "1234567890144",
+    "requiresPrescription": false,
+    "typeId": 4,
+    "formId": 1,
+    "manufacturerId": 1,
+    "categoryIds": [7],
+    "translations": [
+      {
+        "tradeName": "كربونات الكالسيوم",
+        "scientificName": "كربونات الكالسيوم",
+        "lang": "ar"
+      }
+    ]
+  },
+  {
+    "tradeName": "Diazepam",
+    "scientificName": "Diazepam",
+    "concentration": "5mg",
+    "size": "20 tablets",
+    "refPurchasePrice": 3400,
+    "refSellingPrice": 4000,
+    "notes": "Benzodiazepine for anxiety and muscle relaxation",
+    "tax": 5.0,
+    "barcode": "1234567890145",
+    "requiresPrescription": true,
+    "typeId": 1,
+    "formId": 1,
+    "manufacturerId": 2,
+    "categoryIds": [1],
+    "translations": [
+      {
+        "tradeName": "ديازيبام",
+        "scientificName": "ديازيبام",
+        "lang": "ar"
+      }
+    ]
+  },
+  {
+    "tradeName": "Folic Acid",
+    "scientificName": "Folic Acid",
+    "concentration": "5mg",
+    "size": "30 tablets",
+    "refPurchasePrice": 850,
+    "refSellingPrice": 1000,
+    "notes": "Folic acid supplement for pregnancy and anemia",
+    "tax": 5.0,
+    "barcode": "1234567890146",
+    "requiresPrescription": false,
+    "typeId": 4,
+    "formId": 1,
+    "manufacturerId": 3,
+    "categoryIds": [7],
+    "translations": [
+      {
+        "tradeName": "حمض الفوليك",
+        "scientificName": "حمض الفوليك",
+        "lang": "ar"
+      }
+    ]
+  },
+  {
+    "tradeName": "Nitroglycerin",
+    "scientificName": "Nitroglycerin",
+    "concentration": "0.5mg",
+    "size": "100 tablets",
+    "refPurchasePrice": 4250,
+    "refSellingPrice": 5000,
+    "notes": "Nitrate medication for angina and heart conditions",
+    "tax": 5.0,
+    "barcode": "1234567890147",
+    "requiresPrescription": true,
+    "typeId": 1,
+    "formId": 1,
+    "manufacturerId": 4,
+    "categoryIds": [4],
+    "translations": [
+      {
+        "tradeName": "نيتروجليسرين",
+        "scientificName": "نيتروجليسرين",
+        "lang": "ar"
+      }
+    ]
+  },
+  {
+    "tradeName": "Iron Supplement",
+    "scientificName": "Ferrous Sulfate",
+    "concentration": "200mg",
+    "size": "30 tablets",
+    "refPurchasePrice": 1700,
+    "refSellingPrice": 2000,
+    "notes": "Iron supplement for iron deficiency anemia",
+    "tax": 5.0,
+    "barcode": "1234567890148",
+    "requiresPrescription": false,
+    "typeId": 4,
+    "formId": 1,
+    "manufacturerId": 5,
+    "categoryIds": [7],
+    "translations": [
+      {
+        "tradeName": "مكمل الحديد",
+        "scientificName": "كبريتات الحديدوز",
+        "lang": "ar"
+      }
+    ]
+  },
+  {
+    "tradeName": "Prednisolone",
+    "scientificName": "Prednisolone",
+    "concentration": "5mg",
+    "size": "30 tablets",
+    "refPurchasePrice": 2550,
+    "refSellingPrice": 3000,
+    "notes": "Corticosteroid for inflammation and immune suppression",
+    "tax": 5.0,
+    "barcode": "1234567890149",
+    "requiresPrescription": true,
+    "typeId": 1,
+    "formId": 1,
+    "manufacturerId": 6,
+    "categoryIds": [1],
+    "translations": [
+      {
+        "tradeName": "بريدنيزولون",
+        "scientificName": "بريدنيزولون",
+        "lang": "ar"
+      }
+    ]
+  },
+  {
+    "tradeName": "Zinc Supplement",
+    "scientificName": "Zinc Sulfate",
+    "concentration": "50mg",
+    "size": "30 tablets",
+    "refPurchasePrice": 1275,
+    "refSellingPrice": 1500,
+    "notes": "Zinc supplement for immune system support",
+    "tax": 5.0,
+    "barcode": "1234567890150",
+    "requiresPrescription": false,
+    "typeId": 4,
+    "formId": 1,
+    "manufacturerId": 7,
+    "categoryIds": [7],
+    "translations": [
+      {
+        "tradeName": "مكمل الزنك",
+        "scientificName": "كبريتات الزنك",
+        "lang": "ar"
+      }
+    ]
+  },
+  {
+    "tradeName": "Digoxin",
+    "scientificName": "Digoxin",
+    "concentration": "0.25mg",
+    "size": "100 tablets",
+    "refPurchasePrice": 3400,
+    "refSellingPrice": 4000,
+    "notes": "Cardiac glycoside for heart failure and arrhythmias",
+    "tax": 5.0,
+    "barcode": "1234567890151",
+    "requiresPrescription": true,
+    "typeId": 1,
+    "formId": 1,
+    "manufacturerId": 1,
+    "categoryIds": [4],
+    "translations": [
+      {
+        "tradeName": "ديجوكسين",
+        "scientificName": "ديجوكسين",
+        "lang": "ar"
+      }
+    ]
+  },
+  {
+    "tradeName": "Magnesium Supplement",
+    "scientificName": "Magnesium Oxide",
+    "concentration": "400mg",
+    "size": "60 tablets",
+    "refPurchasePrice": 1700,
+    "refSellingPrice": 2000,
+    "notes": "Magnesium supplement for muscle and nerve function",
+    "tax": 5.0,
+    "barcode": "1234567890152",
+    "requiresPrescription": false,
+    "typeId": 4,
+    "formId": 1,
+    "manufacturerId": 2,
+    "categoryIds": [7],
+    "translations": [
+      {
+        "tradeName": "مكمل المغنيسيوم",
+        "scientificName": "أكسيد المغنيسيوم",
+        "lang": "ar"
+      }
+    ]
+  },
+  {
+    "tradeName": "Lisinopril",
+    "scientificName": "Lisinopril",
+    "concentration": "10mg",
+    "size": "30 tablets",
+    "refPurchasePrice": 2550,
+    "refSellingPrice": 3000,
+    "notes": "ACE inhibitor for hypertension and heart failure",
+    "tax": 5.0,
+    "barcode": "1234567890153",
+    "requiresPrescription": true,
+    "typeId": 1,
+    "formId": 1,
+    "manufacturerId": 3,
+    "categoryIds": [4],
+    "translations": [
+      {
+        "tradeName": "ليزينوبريل",
+        "scientificName": "ليزينوبريل",
+        "lang": "ar"
+      }
+    ]
+  },
+  {
+    "tradeName": "Atorvastatin",
+    "scientificName": "Atorvastatin Calcium",
+    "concentration": "20mg",
+    "size": "30 tablets",
+    "refPurchasePrice": 4250,
+    "refSellingPrice": 5000,
+    "notes": "Statin medication for cholesterol management",
+    "tax": 5.0,
+    "barcode": "1234567890154",
+    "requiresPrescription": true,
+    "typeId": 1,
+    "formId": 1,
+    "manufacturerId": 4,
+    "categoryIds": [4],
+    "translations": [
+      {
+        "tradeName": "أتورفاستاتين",
+        "scientificName": "أتورفاستاتين كالسيوم",
+        "lang": "ar"
+      }
+    ]
+  },
+  {
+    "tradeName": "Loratadine",
+    "scientificName": "Loratadine",
+    "concentration": "10mg",
+    "size": "30 tablets",
+    "refPurchasePrice": 1700,
+    "refSellingPrice": 2000,
+    "notes": "Antihistamine for allergy relief",
+    "tax": 5.0,
+    "barcode": "1234567890155",
+    "requiresPrescription": false,
+    "typeId": 1,
+    "formId": 1,
+    "manufacturerId": 5,
+    "categoryIds": [1],
+    "translations": [
+      {
+        "tradeName": "لوراتادين",
+        "scientificName": "لوراتادين",
+        "lang": "ar"
+      }
+    ]
+  },
+  {
+    "tradeName": "Fluoxetine",
+    "scientificName": "Fluoxetine Hydrochloride",
+    "concentration": "20mg",
+    "size": "30 capsules",
+    "refPurchasePrice": 3400,
+    "refSellingPrice": 4000,
+    "notes": "SSRI antidepressant for depression and anxiety",
+    "tax": 5.0,
+    "barcode": "1234567890156",
+    "requiresPrescription": true,
+    "typeId": 1,
+    "formId": 3,
+    "manufacturerId": 6,
+    "categoryIds": [1],
+    "translations": [
+      {
+        "tradeName": "فلوكسيتين",
+        "scientificName": "فلوكسيتين هيدروكلوريد",
+        "lang": "ar"
+      }
+    ]
+  },
+  {
+    "tradeName": "Tramadol",
+    "scientificName": "Tramadol Hydrochloride",
+    "concentration": "50mg",
+    "size": "20 tablets",
+    "refPurchasePrice": 2550,
+    "refSellingPrice": 3000,
+    "notes": "Opioid analgesic for moderate to severe pain",
+    "tax": 5.0,
+    "barcode": "1234567890157",
+    "requiresPrescription": true,
+    "typeId": 1,
+    "formId": 1,
+    "manufacturerId": 7,
+    "categoryIds": [1],
+    "translations": [
+      {
+        "tradeName": "ترامادول",
+        "scientificName": "ترامادول هيدروكلوريد",
+        "lang": "ar"
+      }
+    ]
+  },
+  {
+    "tradeName": "Warfarin",
+    "scientificName": "Warfarin Sodium",
+    "concentration": "5mg",
+    "size": "100 tablets",
+    "refPurchasePrice": 1700,
+    "refSellingPrice": 2000,
+    "notes": "Anticoagulant for blood clot prevention",
+    "tax": 5.0,
+    "barcode": "1234567890158",
+    "requiresPrescription": true,
+    "typeId": 1,
+    "formId": 1,
+    "manufacturerId": 1,
+    "categoryIds": [4],
+    "translations": [
+      {
+        "tradeName": "وارفارين",
+        "scientificName": "وارفارين صوديوم",
+        "lang": "ar"
+      }
+    ]
+  },
+  {
+    "tradeName": "Clopidogrel",
+    "scientificName": "Clopidogrel Bisulfate",
+    "concentration": "75mg",
+    "size": "30 tablets",
+    "refPurchasePrice": 4250,
+    "refSellingPrice": 5000,
+    "notes": "Antiplatelet medication for cardiovascular protection",
+    "tax": 5.0,
+    "barcode": "1234567890159",
+    "requiresPrescription": true,
+    "typeId": 1,
+    "formId": 1,
+    "manufacturerId": 2,
+    "categoryIds": [4],
+    "translations": [
+      {
+        "tradeName": "كلوبيدوجريل",
+        "scientificName": "كلوبيدوجريل بيسلفات",
+        "lang": "ar"
+      }
+    ]
+  },
+  {
+    "tradeName": "Metoprolol",
+    "scientificName": "Metoprolol Tartrate",
+    "concentration": "50mg",
+    "size": "30 tablets",
+    "refPurchasePrice": 2550,
+    "refSellingPrice": 3000,
+    "notes": "Beta-blocker for hypertension and heart conditions",
+    "tax": 5.0,
+    "barcode": "1234567890160",
+    "requiresPrescription": true,
+    "typeId": 1,
+    "formId": 1,
+    "manufacturerId": 3,
+    "categoryIds": [4],
+    "translations": [
+      {
+        "tradeName": "ميتوبرولول",
+        "scientificName": "ميتوبرولول تارتارات",
+        "lang": "ar"
+      }
+    ]
+  },
+  {
+    "tradeName": "Sertraline",
+    "scientificName": "Sertraline Hydrochloride",
+    "concentration": "50mg",
+    "size": "30 tablets",
+    "refPurchasePrice": 3400,
+    "refSellingPrice": 4000,
+    "notes": "SSRI antidepressant for depression and anxiety disorders",
+    "tax": 5.0,
+    "barcode": "1234567890161",
+    "requiresPrescription": true,
+    "typeId": 1,
+    "formId": 1,
+    "manufacturerId": 4,
+    "categoryIds": [1],
+    "translations": [
+      {
+        "tradeName": "سيرترالين",
+        "scientificName": "سيرترالين هيدروكلوريد",
+        "lang": "ar"
+      }
+    ]
+  },
+  {
+    "tradeName": "Amlodipine",
+    "scientificName": "Amlodipine Besylate",
+    "concentration": "5mg",
+    "size": "30 tablets",
+    "refPurchasePrice": 2550,
+    "refSellingPrice": 3000,
+    "notes": "Calcium channel blocker for hypertension",
+    "tax": 5.0,
+    "barcode": "1234567890162",
+    "requiresPrescription": true,
+    "typeId": 1,
+    "formId": 1,
+    "manufacturerId": 5,
+    "categoryIds": [4],
+    "translations": [
+      {
+        "tradeName": "أملوديبين",
+        "scientificName": "أملوديبين بيسيلات",
+        "lang": "ar"
+      }
+    ]
+  },
+  {
+    "tradeName": "Losartan",
+    "scientificName": "Losartan Potassium",
+    "concentration": "50mg",
+    "size": "30 tablets",
+    "refPurchasePrice": 3400,
+    "refSellingPrice": 4000,
+    "notes": "ARB medication for hypertension and kidney protection",
+    "tax": 5.0,
+    "barcode": "1234567890163",
+    "requiresPrescription": true,
+    "typeId": 1,
+    "formId": 1,
+    "manufacturerId": 6,
+    "categoryIds": [4],
+    "translations": [
+      {
+        "tradeName": "لوسارتان",
+        "scientificName": "لوسارتان بوتاسيوم",
+        "lang": "ar"
+      }
+    ]
+  },
+  {
+    "tradeName": "Pantoprazole",
+    "scientificName": "Pantoprazole Sodium",
+    "concentration": "40mg",
+    "size": "30 tablets",
+    "refPurchasePrice": 4250,
+    "refSellingPrice": 5000,
+    "notes": "Proton pump inhibitor for gastric acid reduction",
+    "tax": 5.0,
+    "barcode": "1234567890164",
+    "requiresPrescription": true,
+    "typeId": 1,
+    "formId": 1,
+    "manufacturerId": 7,
+    "categoryIds": [5],
+    "translations": [
+      {
+        "tradeName": "بانتوبرازول",
+        "scientificName": "بانتوبرازول صوديوم",
+        "lang": "ar"
+      }
+    ]
+  },
+  {
+    "tradeName": "Citalopram",
+    "scientificName": "Citalopram Hydrobromide",
+    "concentration": "20mg",
+    "size": "30 tablets",
+    "refPurchasePrice": 2550,
+    "refSellingPrice": 3000,
+    "notes": "SSRI antidepressant for depression",
+    "tax": 5.0,
+    "barcode": "1234567890165",
+    "requiresPrescription": true,
+    "typeId": 1,
+    "formId": 1,
+    "manufacturerId": 1,
+    "categoryIds": [1],
+    "translations": [
+      {
+        "tradeName": "سيتالوبرام",
+        "scientificName": "سيتالوبرام هيدروبروميد",
+        "lang": "ar"
+      }
+    ]
+  },
+  {
+    "tradeName": "Furosemide",
+    "scientificName": "Furosemide",
+    "concentration": "40mg",
+    "size": "30 tablets",
+    "refPurchasePrice": 1700,
+    "refSellingPrice": 2000,
+    "notes": "Loop diuretic for fluid retention and hypertension",
+    "tax": 5.0,
+    "barcode": "1234567890166",
+    "requiresPrescription": true,
+    "typeId": 1,
+    "formId": 1,
+    "manufacturerId": 2,
+    "categoryIds": [4],
+    "translations": [
+      {
+        "tradeName": "فوروسيميد",
+        "scientificName": "فوروسيميد",
+        "lang": "ar"
+      }
+    ]
+  },
+  {
+    "tradeName": "Hydrochlorothiazide",
+    "scientificName": "Hydrochlorothiazide",
+    "concentration": "25mg",
+    "size": "30 tablets",
+    "refPurchasePrice": 1275,
+    "refSellingPrice": 1500,
+    "notes": "Thiazide diuretic for hypertension and edema",
+    "tax": 5.0,
+    "barcode": "1234567890167",
+    "requiresPrescription": true,
+    "typeId": 1,
+    "formId": 1,
+    "manufacturerId": 3,
+    "categoryIds": [4],
+    "translations": [
+      {
+        "tradeName": "هيدروكلوروثيازيد",
+        "scientificName": "هيدروكلوروثيازيد",
+        "lang": "ar"
+      }
+    ]
+  },
+  {
+    "tradeName": "Spironolactone",
+    "scientificName": "Spironolactone",
+    "concentration": "25mg",
+    "size": "30 tablets",
+    "refPurchasePrice": 1700,
+    "refSellingPrice": 2000,
+    "notes": "Potassium-sparing diuretic for heart failure and hypertension",
+    "tax": 5.0,
+    "barcode": "1234567890168",
+    "requiresPrescription": true,
+    "typeId": 1,
+    "formId": 1,
+    "manufacturerId": 4,
+    "categoryIds": [4],
+    "translations": [
+      {
+        "tradeName": "سبيرونولاكتون",
+        "scientificName": "سبيرونولاكتون",
+        "lang": "ar"
+      }
+    ]
+  },
+  {
+    "tradeName": "Carvedilol",
+    "scientificName": "Carvedilol",
+    "concentration": "25mg",
+    "size": "30 tablets",
+    "refPurchasePrice": 3400,
+    "refSellingPrice": 4000,
+    "notes": "Beta-blocker for heart failure and hypertension",
+    "tax": 5.0,
+    "barcode": "1234567890169",
+    "requiresPrescription": true,
+    "typeId": 1,
+    "formId": 1,
+    "manufacturerId": 5,
+    "categoryIds": [4],
+    "translations": [
+      {
+        "tradeName": "كارفيديلول",
+        "scientificName": "كارفيديلول",
+        "lang": "ar"
+      }
+    ]
+  },
+  {
+    "tradeName": "Enalapril",
+    "scientificName": "Enalapril Maleate",
+    "concentration": "5mg",
+    "size": "30 tablets",
+    "refPurchasePrice": 2550,
+    "refSellingPrice": 3000,
+    "notes": "ACE inhibitor for hypertension and heart failure",
+    "tax": 5.0,
+    "barcode": "1234567890170",
+    "requiresPrescription": true,
+    "typeId": 1,
+    "formId": 1,
+    "manufacturerId": 6,
+    "categoryIds": [4],
+    "translations": [
+      {
+        "tradeName": "إينالابريل",
+        "scientificName": "إينالابريل ماليات",
+        "lang": "ar"
+      }
+    ]
+  },
+  {
+    "tradeName": "Ramipril",
+    "scientificName": "Ramipril",
+    "concentration": "5mg",
+    "size": "30 tablets",
+    "refPurchasePrice": 3400,
+    "refSellingPrice": 4000,
+    "notes": "ACE inhibitor for cardiovascular protection",
+    "tax": 5.0,
+    "barcode": "1234567890171",
+    "requiresPrescription": true,
+    "typeId": 1,
+    "formId": 1,
+    "manufacturerId": 7,
+    "categoryIds": [4],
+    "translations": [
+      {
+        "tradeName": "راميبريل",
+        "scientificName": "راميبريل",
+        "lang": "ar"
+      }
+    ]
+  },
+  {
+    "tradeName": "Telmisartan",
+    "scientificName": "Telmisartan",
+    "concentration": "40mg",
+    "size": "30 tablets",
+    "refPurchasePrice": 4250,
+    "refSellingPrice": 5000,
+    "notes": "ARB medication for hypertension",
+    "tax": 5.0,
+    "barcode": "1234567890172",
+    "requiresPrescription": true,
+    "typeId": 1,
+    "formId": 1,
+    "manufacturerId": 1,
+    "categoryIds": [4],
+    "translations": [
+      {
+        "tradeName": "تلميسارتان",
+        "scientificName": "تلميسارتان",
+        "lang": "ar"
+      }
+    ]
+  }
+]

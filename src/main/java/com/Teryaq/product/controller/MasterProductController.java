@@ -5,6 +5,7 @@ import com.Teryaq.product.dto.MProductDTORequest;
 import com.Teryaq.product.dto.ProductMultiLangDTOResponse;
 import com.Teryaq.product.dto.MasterProductMinStockLevelRequest;
 import com.Teryaq.product.service.MasterProductService;
+import java.util.List;
 import io.swagger.v3.oas.annotations.Parameter;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -100,6 +101,27 @@ public class MasterProductController {
             @Parameter(description = "Language code", example = "en") 
             @RequestParam(name = "lang", defaultValue = "ar") String lang) {
        return ResponseEntity.ok(masterProductService.insertMasterProduct(masterProduct, lang));
+    }
+
+    @PostMapping("/bulk")
+    @PreAuthorize("hasRole('PLATFORM_ADMIN')")
+    @Operation(
+        summary = "Create multiple master products",
+        description = "Creates multiple master products in bulk. Requires PLATFORM_ADMIN role."
+    )
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Successfully created master products",
+            content = @Content(mediaType = "application/json")),
+        @ApiResponse(responseCode = "400", description = "Invalid master product data"),
+        @ApiResponse(responseCode = "403", description = "Access denied - insufficient permissions"),
+        @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
+    public ResponseEntity<?> createMasterProductsBulk(
+            @Parameter(description = "List of master product data", required = true)
+            @Valid @RequestBody List<MProductDTORequest> masterProducts,
+            @Parameter(description = "Language code", example = "en") 
+            @RequestParam(name = "lang", defaultValue = "ar") String lang) {
+       return ResponseEntity.ok(masterProductService.insertMasterProductsBulk(masterProducts, lang));
     }
 
     @PutMapping("{id}")

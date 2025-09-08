@@ -248,4 +248,45 @@ public class MasterProductService extends BaseSecurityService {
         masterProductRepo.save(product);
     }
 
+    /**
+     * Insert multiple master products in bulk
+     * إدراج عدة منتجات رئيسية بشكل مجمع
+     * Uses the existing insertMasterProduct method to prevent code duplication
+     */
+    public List<MProductDTOResponse> insertMasterProductsBulk(List<MProductDTORequest> requestDTOs, String lang) {
+        if (requestDTOs == null || requestDTOs.isEmpty()) {
+            throw new ConflictException("Product list cannot be empty");
+        }
+
+        List<MProductDTOResponse> responses = new java.util.ArrayList<>();
+        List<String> errors = new java.util.ArrayList<>();
+        int successCount = 0;
+        int failureCount = 0;
+
+        // Process each product individually using the existing insertMasterProduct method
+        for (int i = 0; i < requestDTOs.size(); i++) {
+            MProductDTORequest requestDTO = requestDTOs.get(i);
+            try {
+                // Use the existing insertMasterProduct method to ensure consistency
+                MProductDTOResponse response = insertMasterProduct(requestDTO, lang);
+                responses.add(response);
+                successCount++;
+                
+            } catch (Exception e) {
+                String error = String.format("Product %d (%s): %s", 
+                    i + 1, requestDTO.getTradeName(), e.getMessage());
+                errors.add(error);
+                failureCount++;
+            }
+        }
+
+        // Log errors for debugging if there were any failures
+        if (failureCount > 0) {
+            System.err.println("Bulk insert completed with errors:");
+            errors.forEach(System.err::println);
+        }
+
+        return responses;
+    }
+
 }
