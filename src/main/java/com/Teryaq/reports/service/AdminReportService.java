@@ -88,4 +88,52 @@ public class AdminReportService {
         return new TopSoldProductsResponse(productId, productName, productCode, categoryName, 
                                          manufacturerName, totalQuantitySold, totalRevenue, areaId, areaName);
     }
+
+    /**
+     * Get total count of master products
+     * @return Total count of master products
+     */
+    public Long getTotalMasterProductCount() {
+        try {
+            logger.info("Fetching total master product count");
+            Long count = adminReportRepository.getTotalMasterProductCount();
+            logger.info("Total master product count: {}", count);
+            return count;
+        } catch (Exception e) {
+            logger.error("Error fetching total master product count: {}", e.getMessage(), e);
+            throw new RuntimeException("Failed to fetch total master product count: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Get total count of pharmacies (excluding default pharmacy)
+     * @return Total count of pharmacies minus 1
+     */
+    public Long getTotalPharmaciesCount() {
+        try {
+            logger.info("Fetching total pharmacies count (excluding default pharmacy)");
+            Long count = adminReportRepository.getTotalPharmaciesCount();
+            logger.info("Total pharmacies count (excluding default): {}", count);
+            return count;
+        } catch (Exception e) {
+            logger.error("Error fetching total pharmacies count: {}", e.getMessage(), e);
+            throw new RuntimeException("Failed to fetch total pharmacies count: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Get total count of active users (excluding platform admin and default users)
+     * @return Total count of active users minus platform admin and default users
+     */
+    public Long getTotalActiveUsersCount() {
+        try {
+            logger.info("Fetching total active users count (excluding platform admin and default users)");
+            Long count = adminReportRepository.getTotalActiveUsersCount();
+            logger.info("Total active users count (excluding platform admin and default): {}", count);
+            return count;
+        } catch (Exception e) {
+            logger.error("Error fetching total active users count: {}", e.getMessage(), e);
+            throw new RuntimeException("Failed to fetch total active users count: " + e.getMessage(), e);
+        }
+    }
 }

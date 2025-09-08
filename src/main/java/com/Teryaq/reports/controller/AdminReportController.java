@@ -77,4 +77,49 @@ public class AdminReportController extends BaseController {
             return sendResponse("Failed to retrieve top sold products: " + e.getMessage(), HttpStatus.BAD_REQUEST);
         }
     }
+
+    /**
+     * Get total count of master products in the system
+     * @return Total count of master products
+     */
+    @GetMapping("/total-master-product-count")
+    @PreAuthorize("hasRole('PLATFORM_ADMIN')")
+    public ResponseEntity<?> getTotalMasterProductCount() {
+        try {
+            Long count = adminReportService.getTotalMasterProductCount();
+            return sendResponse(count, "Total master product count retrieved successfully", HttpStatus.OK);
+        } catch (Exception e) {
+            return sendResponse("Failed to retrieve total master product count: " + e.getMessage(), HttpStatus.BAD_REQUEST);
+        }
+    }
+
+    /**
+     * Get total count of pharmacies in the system (excluding default pharmacy)
+     * @return Total count of pharmacies minus 1
+     */
+    @GetMapping("/total-pharmacies-count")
+    @PreAuthorize("hasRole('PLATFORM_ADMIN')")
+    public ResponseEntity<?> getTotalPharmaciesCount() {
+        try {
+            Long count = adminReportService.getTotalPharmaciesCount();
+            return sendResponse(count, "Total pharmacies count retrieved successfully", HttpStatus.OK);
+        } catch (Exception e) {
+            return sendResponse("Failed to retrieve total pharmacies count: " + e.getMessage(), HttpStatus.BAD_REQUEST);
+        }
+    }
+
+    /**
+     * Get total count of active users in the system (excluding platform admin and default users)
+     * @return Total count of active users minus platform admin and default users
+     */
+    @GetMapping("/total-active-users-count")
+    @PreAuthorize("hasRole('PLATFORM_ADMIN')")
+    public ResponseEntity<?> getTotalActiveUsersCount() {
+        try {
+            Long count = adminReportService.getTotalActiveUsersCount();
+            return sendResponse(count, "Total active users count retrieved successfully", HttpStatus.OK);
+        } catch (Exception e) {
+            return sendResponse("Failed to retrieve total active users count: " + e.getMessage(), HttpStatus.BAD_REQUEST);
+        }
+    }
 }

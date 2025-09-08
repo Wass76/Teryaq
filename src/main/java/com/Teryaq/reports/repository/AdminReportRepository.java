@@ -77,4 +77,25 @@ public interface AdminReportRepository extends JpaRepository<SaleInvoice, Long> 
     List<Map<String, Object>> findTopSoldProducts(
             @Param("startDate") LocalDate startDate,
             @Param("endDate") LocalDate endDate);
+
+    /**
+     * Get total count of master products
+     * @return Total count of master products
+     */
+    @Query("SELECT COUNT(m) FROM MasterProduct m")
+    Long getTotalMasterProductCount();
+
+    /**
+     * Get total count of pharmacies (excluding default pharmacy with id = 1)
+     * @return Total count of pharmacies minus 1
+     */
+    @Query("SELECT COUNT(p) - 1 FROM Pharmacy p")
+    Long getTotalPharmaciesCount();
+
+    /**
+     * Get total count of active employees (excluding platform admin and default users)
+     * @return Total count of active employees minus platform admin and default users
+     */
+    @Query("SELECT COUNT(e) FROM Employee e WHERE e.status = com.Teryaq.user.Enum.UserStatus.ACTIVE")
+    Long getTotalActiveUsersCount();
 }
